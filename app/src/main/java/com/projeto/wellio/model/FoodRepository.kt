@@ -1,0 +1,87 @@
+package com.projeto.wellio.model
+
+object FoodRepository {
+    val list = listOf(
+        FoodBlueprint("c1", "Arroz Branco (Cozido)", "Carboidratos", 130.0, "100g (4 col. sopa)", "🍚"),
+        FoodBlueprint("c2", "Arroz Integral (Cozido)", "Carboidratos", 110.0, "100g", "🍚"),
+        FoodBlueprint("c3", "Feijão Carioca (Cozido)", "Carboidratos", 76.0, "1 concha média", "🫘"),
+        FoodBlueprint("c4", "Feijão Preto (Cozido)", "Carboidratos", 77.0, "1 concha média", "🥘"),
+        FoodBlueprint("c5", "Macarrão (Cozido)", "Carboidratos", 157.0, "100g", "🍝"),
+        FoodBlueprint("c6", "Batata Inglesa (Cozida)", "Carboidratos", 52.0, "100g", "🥔"),
+        FoodBlueprint("c7", "Batata Doce (Cozida)", "Carboidratos", 86.0, "100g", "🍠"),
+        FoodBlueprint("c8", "Purê de Batata", "Carboidratos", 113.0, "100g", "🥣"),
+        FoodBlueprint("c9", "Mandioca / Aipim", "Carboidratos", 125.0, "100g", "🪵"),
+        FoodBlueprint("c10", "Milho Verde", "Carboidratos", 98.0, "100g", "🌽"),
+        FoodBlueprint("c11", "Aveia em Flocos", "Carboidratos", 394.0, "100g", "🌾"),
+        FoodBlueprint("c12", "Granola", "Carboidratos", 471.0, "100g", "🥣"),
+
+        FoodBlueprint("b1", "Pão Francês", "Padaria", 135.0, "1 unidade (50g)", "🥖"),
+        FoodBlueprint("b2", "Pão de Forma", "Padaria", 60.0, "1 fatia", "🍞"),
+        FoodBlueprint("b3", "Pão Integral", "Padaria", 55.0, "1 fatia", "🍞"),
+        FoodBlueprint("b4", "Tapioca (Goma)", "Padaria", 130.0, "1 unidade média", "🫓"),
+        FoodBlueprint("b5", "Cuscuz de Milho", "Padaria", 110.0, "100g", "🟡"),
+        FoodBlueprint("b6", "Pão de Queijo", "Padaria", 85.0, "1 unidade média", "🧀"),
+        FoodBlueprint("b7", "Torrada", "Padaria", 35.0, "1 unidade", "🍞"),
+        FoodBlueprint("b8", "Biscoito Cream Cracker", "Padaria", 30.0, "1 unidade", "🍪"),
+
+        FoodBlueprint("p1", "Peito de Frango (Grelhado)", "Proteínas", 165.0, "1 filé (100g)", "🍗"),
+        FoodBlueprint("p2", "Frango Desfiado", "Proteínas", 160.0, "100g", "🍗"),
+        FoodBlueprint("p3", "Ovo Cozido", "Proteínas", 70.0, "1 unidade grande", "🥚"),
+        FoodBlueprint("p4", "Ovo Frito / Mexido", "Proteínas", 90.0, "1 unidade", "🍳"),
+        FoodBlueprint("p5", "Carne Moída (Refogada)", "Proteínas", 210.0, "100g", "🥩"),
+        FoodBlueprint("p6", "Contra Filé (Grelhado)", "Proteínas", 250.0, "1 bife (100g)", "🥩"),
+        FoodBlueprint("p7", "Filé de Tilápia", "Proteínas", 96.0, "1 filé (100g)", "🐟"),
+        FoodBlueprint("p8", "Salmão", "Proteínas", 208.0, "100g", "🍣"),
+        FoodBlueprint("p9", "Atum (Em lata/água)", "Proteínas", 116.0, "1 lata", "🐟"),
+        FoodBlueprint("p10", "Whey Protein", "Proteínas", 120.0, "1 scoop (30g)", "💪"),
+
+        FoodBlueprint("l1", "Leite Integral", "Laticínios", 120.0, "1 copo (200ml)", "🥛"),
+        FoodBlueprint("l2", "Leite Desnatado", "Laticínios", 70.0, "1 copo (200ml)", "🥛"),
+        FoodBlueprint("l3", "Queijo Mussarela", "Laticínios", 60.0, "1 fatia (20g)", "🧀"),
+        FoodBlueprint("l4", "Queijo Minas / Branco", "Laticínios", 50.0, "1 fatia grossa", "🧀"),
+        FoodBlueprint("l5", "Requeijão", "Laticínios", 80.0, "1 col. sopa", "🥄"),
+        FoodBlueprint("l6", "Iogurte Natural", "Laticínios", 90.0, "1 pote", "🥣"),
+        FoodBlueprint("l7", "Manteiga", "Laticínios", 74.0, "1 ponta de faca (10g)", "🧈"),
+
+        FoodBlueprint("f1", "Banana Prata", "Frutas", 98.0, "1 unidade média", "🍌"),
+        FoodBlueprint("f2", "Maçã", "Frutas", 72.0, "1 unidade média", "🍎"),
+        FoodBlueprint("f3", "Laranja", "Frutas", 62.0, "1 unidade", "🍊"),
+        FoodBlueprint("f4", "Mamão", "Frutas", 45.0, "1 fatia", "🥭"),
+        FoodBlueprint("f5", "Melancia", "Frutas", 30.0, "1 fatia", "🍉"),
+        FoodBlueprint("f6", "Abacaxi", "Frutas", 50.0, "1 rodela", "🍍"),
+        FoodBlueprint("f7", "Uva", "Frutas", 67.0, "1 cacho pequeno", "🍇"),
+        FoodBlueprint("f8", "Morango", "Frutas", 30.0, "100g (vários)", "🍓"),
+        FoodBlueprint("f9", "Abacate", "Frutas", 160.0, "100g", "🥑"),
+        FoodBlueprint("f10", "Açaí (Puro/Polpa)", "Frutas", 60.0, "100g", "🥣"),
+        FoodBlueprint("f11", "Açaí (Tigela c/ Xarope)", "Frutas", 250.0, "1 tigela peq.", "🍧"),
+
+        FoodBlueprint("v1", "Alface", "Vegetais", 15.0, "À vontade", "🥬"),
+        FoodBlueprint("v2", "Tomate", "Vegetais", 18.0, "1 unidade", "🍅"),
+        FoodBlueprint("v3", "Cenoura (Crua/Ralada)", "Vegetais", 41.0, "100g", "🥕"),
+        FoodBlueprint("v4", "Brócolis", "Vegetais", 35.0, "100g", "🥦"),
+        FoodBlueprint("v5", "Abobrinha", "Vegetais", 17.0, "100g", "🥒"),
+        FoodBlueprint("v6", "Abóbora", "Vegetais", 40.0, "100g", "🎃"),
+        FoodBlueprint("v7", "Beterraba", "Vegetais", 43.0, "100g", "🍠"),
+        FoodBlueprint("v8", "Pepino", "Vegetais", 15.0, "1 unidade", "🥒"),
+
+        FoodBlueprint("x1", "Pizza (Mussarela)", "Besteiras", 280.0, "1 fatia", "🍕"),
+        FoodBlueprint("x2", "Hambúrguer (Fast Food)", "Besteiras", 500.0, "1 unidade", "🍔"),
+        FoodBlueprint("x3", "Batata Frita", "Besteiras", 312.0, "1 porção média", "🍟"),
+        FoodBlueprint("x4", "Coxinha de Frango", "Besteiras", 300.0, "1 unidade", "🍗"),
+        FoodBlueprint("x5", "Pastel de Carne", "Besteiras", 350.0, "1 unidade", "🥟"),
+        FoodBlueprint("x6", "Cachorro Quente", "Besteiras", 290.0, "1 unidade", "🌭"),
+        FoodBlueprint("x7", "Chocolate ao Leite", "Besteiras", 135.0, "4 quadradinhos (25g)", "🍫"),
+        FoodBlueprint("x8", "Sorvete", "Besteiras", 200.0, "1 bola", "🍦"),
+        FoodBlueprint("x9", "Pipoca (Óleo)", "Besteiras", 100.0, "1 xícara", "🍿"),
+
+        FoodBlueprint("d1", "Café (Sem açúcar)", "Bebidas", 2.0, "1 xícara", "☕"),
+        FoodBlueprint("d2", "Café com Leite", "Bebidas", 80.0, "1 xícara", "☕"),
+        FoodBlueprint("d3", "Suco de Laranja (Natural)", "Bebidas", 120.0, "1 copo (250ml)", "🧃"),
+        FoodBlueprint("d4", "Refrigerante", "Bebidas", 150.0, "1 lata (350ml)", "🥤"),
+        FoodBlueprint("d5", "Refrigerante Zero", "Bebidas", 0.0, "1 lata", "🥤"),
+        FoodBlueprint("d6", "Cerveja", "Bebidas", 150.0, "1 lata (350ml)", "🍺"),
+        FoodBlueprint("d7", "Vinho Tinto", "Bebidas", 120.0, "1 taça", "🍷")
+    )
+
+    val categories = list.map { it.category }.distinct().sorted()
+}

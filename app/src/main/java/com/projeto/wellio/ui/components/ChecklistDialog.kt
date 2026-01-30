@@ -103,7 +103,8 @@ fun ChecklistDialog(
                                 modifier = Modifier.fillMaxSize(),
                                 contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp)
                             ) {
-                                items(tasks) { task ->
+                                items(tasks
+                                ) { task ->
                                     TaskItem(
                                         task = task,
                                         onToggle = { onToggleTask(task) },

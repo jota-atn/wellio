@@ -17,23 +17,28 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.projeto.wellio.model.GoalType
 
 @Composable
-fun DashboardCard(modifier: Modifier = Modifier) {
+fun DashboardCard(
+    modifier: Modifier = Modifier,
+    onAddMetaClick: (GoalType) -> Unit = {},
+    onDetailsClick: () -> Unit = {}
+) {
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF152259)),
         elevation = CardDefaults.cardElevation(0.dp)
+
     ) {
         Row(
             modifier = Modifier
-                .padding(16.dp) // Mantive compacto (16dp)
+                .padding(16.dp)
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.Top
         ) {
-            // --- COLUNA DA ESQUERDA (Dashboard + Gráfico) ---
             Column(
                 modifier = Modifier.weight(0.7f),
                 verticalArrangement = Arrangement.SpaceBetween
@@ -47,7 +52,6 @@ fun DashboardCard(modifier: Modifier = Modifier) {
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Gráfico (Altura 30dp para ser compacto)
                 Row(
                     verticalAlignment = Alignment.Bottom,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -62,7 +66,6 @@ fun DashboardCard(modifier: Modifier = Modifier) {
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // --- COLUNA DA DIREITA (Metas em Grid) ---
             Column(
                 modifier = Modifier.weight(1.3f),
                 horizontalAlignment = Alignment.End
@@ -75,35 +78,31 @@ fun DashboardCard(modifier: Modifier = Modifier) {
                     modifier = Modifier.padding(bottom = 6.dp)
                 )
 
-                // Grid de 2 Colunas
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.Top // Garante alinhamento no topo
+                    verticalAlignment = Alignment.Top
                 ) {
-                    // Coluna 1 (3 Itens)
                     Column(
                         modifier = Modifier.weight(1f),
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        MetaItem("ÁGUA", Color(0xFF2979FF))
-                        MetaItem("SONO", Color(0xFF536DFE))
-                        MetaItem("EXERCÍCIOS", Color(0xFFB0BEC5))
+                        MetaItem("ÁGUA", GoalType.WATER.color) { onAddMetaClick(GoalType.WATER) }
+                        MetaItem("SONO", GoalType.SLEEP.color) { onAddMetaClick(GoalType.SLEEP) }
+                        MetaItem("EXERCÍCIOS", GoalType.EXERCISE.color) { onAddMetaClick(GoalType.EXERCISE) }
                     }
 
                     Spacer(modifier = Modifier.width(12.dp))
 
-                    // Coluna 2 (2 Itens + Detalhes no final)
                     Column(
                         modifier = Modifier.weight(1f),
                         verticalArrangement = Arrangement.spacedBy(4.dp),
-                        horizontalAlignment = Alignment.End // Alinha o texto detalhes à direita
+                        horizontalAlignment = Alignment.End
                     ) {
-                        MetaItem("ALIMENTAÇÃO", Color(0xFF66BB6A))
-                        MetaItem("ESTUDO", Color(0xFFFFCA28))
+                        MetaItem("ALIMENTAÇÃO", GoalType.FOOD.color) { onAddMetaClick(GoalType.FOOD) }
+                        MetaItem("ESTUDO", GoalType.STUDY.color) { onAddMetaClick(GoalType.STUDY) }
 
-                        // O "Detalhes" entra aqui, ocupando o espaço do 3º item
-                        Spacer(modifier = Modifier.height(2.dp)) // Pequeno ajuste fino
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = "DETALHES",
                             color = Color.White,
@@ -111,7 +110,7 @@ fun DashboardCard(modifier: Modifier = Modifier) {
                             fontWeight = FontWeight.Bold,
                             textAlign = TextAlign.End,
                             modifier = Modifier
-                                .clickable { /* Ação */ }
+                                .clickable { onDetailsClick() }
                         )
                     }
                 }
@@ -121,7 +120,10 @@ fun DashboardCard(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun MetaItem(label: String, color: Color) {
+fun MetaItem(
+    label: String, color: Color,
+    onClick: () -> Unit
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -136,7 +138,7 @@ fun MetaItem(label: String, color: Color) {
         Surface(
             modifier = Modifier
                 .size(18.dp)
-                .clickable { /* Logica de definir meta */ },
+                .clickable { onClick() },
             shape = RoundedCornerShape(4.dp),
             color = color
         ) {

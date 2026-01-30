@@ -47,7 +47,6 @@ fun TrainCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Dados
             Text("KCAL GASTAS", fontSize = 12.sp, color = Color.Gray)
             Text(
                 text = "$burnedKcal/$goalKcal",
@@ -58,7 +57,6 @@ fun TrainCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Botão "cadastrar" alinhado à direita
             Text(
                 text = "CADASTRAR",
                 color = Color(0xFF424242),

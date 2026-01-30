@@ -11,7 +11,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ModifierLocalBeyondBoundsLayout
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -21,13 +20,16 @@ import androidx.compose.ui.unit.sp
 fun MindCard(
     modifier: Modifier = Modifier,
     selectedMood: String? = null,
+    totalStudyTime: String = "0h",
+    goalStudyTime: String = "20h",
     onMoodSelected: (String) -> Unit = {},
-    onChecklistClick: () -> Unit = {}
+    onChecklistClick: () -> Unit = {},
+    onStudyClick: () -> Unit = {}
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF7C4DFF)), // Roxo Vibrante
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF7C4DFF)),
         elevation = CardDefaults.cardElevation(0.dp)
     ) {
         Row(
@@ -73,7 +75,11 @@ fun MindCard(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                Text("HORAS DE ESTUDO: 12h/20h", color = Color.White, fontSize = 14.sp)
+                Text(
+                    text = "HORAS DE ESTUDO: $totalStudyTime/$goalStudyTime",
+                    color = Color.White,
+                    fontSize = 14.sp
+                )
 
                 Row(
                     modifier = Modifier
@@ -99,7 +105,9 @@ fun MindCard(
                     "ESTUDAR",
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.align(Alignment.End)
+                    modifier = Modifier
+                        .align(Alignment.End)
+                        .clickable { onStudyClick() }
                 )
             }
         }

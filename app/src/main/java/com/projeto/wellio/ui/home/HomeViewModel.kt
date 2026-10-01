@@ -1,79 +1,102 @@
 package com.projeto.wellio.ui.home
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateMapOf
-import com.projeto.wellio.model.EatenFood
-import com.projeto.wellio.model.ExerciseBlueprint
-import com.projeto.wellio.model.FoodBlueprint
-import com.projeto.wellio.model.GoalType
-import com.projeto.wellio.model.RegisteredExercise
+import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.projeto.wellio.WellioApp
+import com.projeto.wellio.data.prefs.GoalsStore
+import com.projeto.wellio.data.repository.ExerciseRepository
+import com.projeto.wellio.data.repository.FoodRepository
+import com.projeto.wellio.data.repository.WaterRepository
+import com.projeto.wellio.data.time.todayFlow
+import com.projeto.wellio.domain.goals.waterAdjustment
+import com.projeto.wellio.domain.model.ExerciseType
+import com.projeto.wellio.domain.model.Food
+import com.projeto.wellio.domain.model.Goal
+import com.projeto.wellio.domain.model.GoalType
+import com.projeto.wellio.domain.model.Goals
+import com.projeto.wellio.domain.model.Totals
+import com.projeto.wellio.domain.time.weekOf
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import java.time.Clock
+import java.time.LocalDate
 
-class HomeViewModel : ViewModel() {
+data class HomeUiState(
+    val goals: Goals = Goals.Default,
+    val today: Totals = Totals(),
+    val week: Totals = Totals(),
+    val foods: List<Food> = emptyList(),
+    val exerciseTypes: List<ExerciseType> = emptyList()
+)
 
-    var waterCurrentMl by mutableIntStateOf(0)
-        private set
-    var waterGoalMl = 2000
+@OptIn(ExperimentalCoroutinesApi::class)
+class HomeViewModel(
+    private val waterRepository: WaterRepository,
+    private val foodRepository: FoodRepository,
+    private val exerciseRepository: ExerciseRepository,
+    private val goalsStore: GoalsStore,
+    clock: Clock
+) : ViewModel() {
 
-    private val _exercisesDone = mutableStateListOf<RegisteredExercise>()
-    val exercisesDone: List<RegisteredExercise> get() = _exercisesDone
+    private val today = todayFlow(clock)
 
-    var userWeightKg = 70.0
+    val uiState: StateFlow<HomeUiState> = combine(
+        goalsStore.goals,
+        today.flatMapLatest { day -> totals(day..day) },
+        today.flatMapLatest { day -> totals(weekOf(day)) },
+        foodRepository.foods,
+        exerciseRepository.types
+    ) { goals, todayTotals, weekTotals, foods, types ->
+        HomeUiState(goals, todayTotals, weekTotals, foods, types)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
 
-    private val _foodLog = mutableStateListOf<EatenFood>()
-    val foodLog: List<EatenFood> get() = _foodLog
+    private fun totals(days: ClosedRange<LocalDate>): Flow<Totals> = combine(
+        waterRepository.totalMl(days),
+        foodRepository.kcal(days),
+        exerciseRepository.kcal(days)
+    ) { water, consumed, burned -> Totals(water, consumed, burned) }
 
-    val totalCaloriesConsumed: Int
-        get() = _foodLog.sumOf { it.totalCalories }
-
-    private val _goals = mutableStateMapOf<GoalType, Pair<Int, Int>>()
-    val goals: Map<GoalType, Pair<Int, Int>> get() = _goals
-
-    init {
-        _goals[GoalType.WATER] = 2000 to 14000
-        _goals[GoalType.EXERCISE] = 500 to 3500 // Kcal
-        _goals[GoalType.FOOD] = 2000 to 14000 // Kcal
+    fun addWater(deltaMl: Int) {
+        val amount = waterAdjustment(uiState.value.today.waterMl, deltaMl)
+        if (amount == 0) return
+        viewModelScope.launch { waterRepository.add(amount) }
     }
 
-    fun addWater(amount: Int) {
-        waterCurrentMl = (waterCurrentMl + amount).coerceIn(0, waterGoalMl)
+    fun addFood(food: Food, portions: Double) {
+        viewModelScope.launch { foodRepository.add(food, portions) }
     }
 
-    fun addFood(blueprint: FoodBlueprint, quantity: Double) {
-        // Cálculo simples: (CaloriasBase * Quantidade)
-        // Se a base for "100g" e a pessoa colocar "1" (significando 1 porção de 100g), multiplica direto.
-        val totalKcal = (blueprint.kcal * quantity).toInt()
-
-        _foodLog.add(EatenFood(blueprint, quantity, totalKcal))
+    fun addExercise(type: ExerciseType, minutes: Int) {
+        viewModelScope.launch { exerciseRepository.add(type, minutes) }
     }
 
     fun updateGoal(type: GoalType, daily: Int, weekly: Int) {
-        _goals[type] = daily to weekly
-
-        if (type == GoalType.WATER) {
-            waterGoalMl = daily
-        }
+        // Semanal igual a diária × 7 continua automática; qualquer outro valor vira meta própria
+        val goal = Goal(daily = daily, weeklyOverride = weekly.takeIf { it != daily * 7 })
+        viewModelScope.launch { goalsStore.setGoal(type, goal) }
     }
 
-    fun getCurrentProgress(type: GoalType): Int {
-        return when(type) {
-            GoalType.WATER -> waterCurrentMl
-            GoalType.EXERCISE -> getTotalCaloriesBurned
-            GoalType.FOOD -> totalCaloriesConsumed
+    companion object {
+        val Factory = viewModelFactory {
+            initializer {
+                val container = (this[APPLICATION_KEY] as WellioApp).container
+                HomeViewModel(
+                    container.waterRepository,
+                    container.foodRepository,
+                    container.exerciseRepository,
+                    container.goalsStore,
+                    container.clock
+                )
+            }
         }
-    }
-
-    val getTotalCaloriesBurned: Int
-        get() = _exercisesDone.sumOf { it.caloriesBurned }
-
-    fun addExercise(blueprint: ExerciseBlueprint, minutes: Int) {
-        // FÓRMULA: METs * Peso * (Minutos / 60)
-        val calories = (blueprint.mets * userWeightKg * (minutes / 60.0)).toInt()
-
-        val newExercise = RegisteredExercise(blueprint, minutes, calories)
-        _exercisesDone.add(newExercise)
     }
 }

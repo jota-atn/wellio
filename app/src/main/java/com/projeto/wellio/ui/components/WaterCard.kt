@@ -15,6 +15,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.projeto.wellio.domain.goals.progress
 
 @Composable
 fun WaterCard(
@@ -70,7 +71,7 @@ fun WaterCard(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 // 3. BARRA DE PROGRESSO
-                val progress = (currentMl.toFloat() / goalMl.toFloat()).coerceIn(0f, 1f)
+                val progress = progress(currentMl, goalMl)
                 Box(
                     contentAlignment = Alignment.CenterStart,
                     modifier = Modifier

@@ -16,12 +16,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.projeto.wellio.model.GoalType
+import com.projeto.wellio.domain.goals.progress
+import com.projeto.wellio.domain.model.GoalType
 
 @Composable
 fun DashboardDetailsDialog(
     onDismiss: () -> Unit,
-    getDataForType: (GoalType) -> Triple<Int, Int, Int>
+    getDataForType: (GoalType) -> Triple<Int, Int, Int>,
+    getWeekTotal: (GoalType) -> Int
 ) {
     Dialog(
         onDismissRequest = onDismiss,
@@ -47,9 +49,9 @@ fun DashboardDetailsDialog(
                 Spacer(modifier = Modifier.height(20.dp))
 
                 Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
-                    GoalType.values().forEach { type ->
+                    GoalType.entries.forEach { type ->
                         val (current, dailyGoal, weeklyGoal) = getDataForType(type)
-                        DetailItem(type, current, dailyGoal, weeklyGoal)
+                        DetailItem(type, current, dailyGoal, getWeekTotal(type), weeklyGoal)
                     }
                 }
             }
@@ -58,7 +60,7 @@ fun DashboardDetailsDialog(
 }
 
 @Composable
-fun DetailItem(type: GoalType, current: Int, dailyGoal: Int, weeklyGoal: Int) {
+fun DetailItem(type: GoalType, current: Int, dailyGoal: Int, weekTotal: Int, weeklyGoal: Int) {
     Column {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
@@ -76,15 +78,13 @@ fun DetailItem(type: GoalType, current: Int, dailyGoal: Int, weeklyGoal: Int) {
 
         Spacer(modifier = Modifier.height(4.dp))
 
-        // Barra Semanal (Simulada, pois não temos histórico real ainda,
-        // vamos assumir que o "Atual" da semana é o acumulado de hoje para exemplo visual)
-        ProgressRow(label = "Semanal", current = current, max = weeklyGoal, color = type.color.copy(alpha = 0.6f), unit = type.unit)
+        ProgressRow(label = "Semanal", current = weekTotal, max = weeklyGoal, color = type.color.copy(alpha = 0.6f), unit = type.unit)
     }
 }
 
 @Composable
 fun ProgressRow(label: String, current: Int, max: Int, color: Color, unit: String) {
-    val progress = (current.toFloat() / max.toFloat()).coerceIn(0f, 1f)
+    val progress = progress(current, max)
 
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(label, color = Color.Gray, fontSize = 10.sp, modifier = Modifier.width(50.dp))

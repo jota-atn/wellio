@@ -21,17 +21,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.projeto.wellio.model.ExerciseBlueprint
-import com.projeto.wellio.model.ExerciseRepository
+import com.projeto.wellio.domain.model.ExerciseType
+import com.projeto.wellio.ui.icons.WellioIcon
 
 @Composable
 fun ExerciseDialog(
+    exercises: List<ExerciseType>,
     onDismiss: () -> Unit,
-    onConfirm: (ExerciseBlueprint, Int) -> Unit
+    onConfirm: (ExerciseType, Int) -> Unit
 ) {
-    var selectedCategory by remember { mutableStateOf(ExerciseRepository.categories.first()) }
+    val categories = remember(exercises) { exercises.map { it.category }.distinct().sorted() }
+    var selectedCategory by remember(categories) { mutableStateOf(categories.firstOrNull()) }
 
-    var selectedExercise by remember { mutableStateOf<ExerciseBlueprint?>(null) }
+    var selectedExercise by remember { mutableStateOf<ExerciseType?>(null) }
     var minutesText by remember { mutableStateOf("") }
 
     Dialog(
@@ -63,7 +65,7 @@ fun ExerciseDialog(
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(ExerciseRepository.categories) { category ->
+                    items(categories) { category ->
                         val isSelected = category == selectedCategory
                         FilterChip(
                             selected = isSelected,
@@ -87,7 +89,7 @@ fun ExerciseDialog(
                         LazyColumn(
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            val filteredList = ExerciseRepository.list.filter { it.category == selectedCategory }
+                            val filteredList = exercises.filter { it.category == selectedCategory }
 
                             items(filteredList) { exercise ->
                                 Card(
@@ -99,7 +101,7 @@ fun ExerciseDialog(
                                         modifier = Modifier.padding(16.dp).fillMaxWidth(),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text(exercise.icon, fontSize = 24.sp)
+                                        WellioIcon(exercise.iconKey, size = 24.sp)
                                         Spacer(modifier = Modifier.width(16.dp))
                                         Column {
                                             Text(exercise.name, fontWeight = FontWeight.Bold)
@@ -115,7 +117,7 @@ fun ExerciseDialog(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center
                         ) {
-                            Text(selectedExercise!!.icon, fontSize = 48.sp)
+                            WellioIcon(selectedExercise!!.iconKey, size = 48.sp)
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(selectedExercise!!.name, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                             Spacer(modifier = Modifier.height(24.dp))

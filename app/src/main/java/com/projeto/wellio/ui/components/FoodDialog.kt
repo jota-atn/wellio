@@ -21,18 +21,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.projeto.wellio.model.FoodBlueprint
-import com.projeto.wellio.model.FoodRepository
+import com.projeto.wellio.domain.model.Food
+import com.projeto.wellio.ui.icons.WellioIcon
 
 @Composable
 fun FoodDialog(
+    foods: List<Food>,
     onDismiss: () -> Unit,
-    onConfirm: (FoodBlueprint, Double) -> Unit
+    onConfirm: (Food, Double) -> Unit
 ) {
-    var selectedCategory by remember { mutableStateOf(FoodRepository.categories.first()) }
+    val categories = remember(foods) { foods.map { it.category }.distinct().sorted() }
+    var selectedCategory by remember(categories) { mutableStateOf(categories.firstOrNull()) }
     var searchText by remember { mutableStateOf("") }
 
-    var selectedFood by remember { mutableStateOf<FoodBlueprint?>(null) }
+    var selectedFood by remember { mutableStateOf<Food?>(null) }
     var quantityText by remember { mutableStateOf("1") }
 
     Dialog(
@@ -81,7 +83,7 @@ fun FoodDialog(
 
                 if (searchText.isEmpty()) {
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        items(FoodRepository.categories) { category ->
+                        items(categories) { category ->
                             val isSelected = category == selectedCategory
                             FilterChip(
                                 selected = isSelected,
@@ -104,9 +106,9 @@ fun FoodDialog(
                     if (selectedFood == null) {
                         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             val filteredList = if (searchText.isNotBlank()) {
-                                FoodRepository.list.filter { it.name.contains(searchText, ignoreCase = true) }
+                                foods.filter { it.name.contains(searchText, ignoreCase = true) }
                             } else {
-                                FoodRepository.list.filter { it.category == selectedCategory }
+                                foods.filter { it.category == selectedCategory }
                             }
 
                             items(filteredList) { food ->
@@ -119,11 +121,11 @@ fun FoodDialog(
                                         modifier = Modifier.padding(16.dp).fillMaxWidth(),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text(food.icon, fontSize = 24.sp)
+                                        WellioIcon(food.iconKey, size = 24.sp)
                                         Spacer(modifier = Modifier.width(16.dp))
                                         Column {
                                             Text(food.name, fontWeight = FontWeight.Bold)
-                                            Text("${food.kcal.toInt()} kcal / ${food.portionDescription}", fontSize = 12.sp, color = Color.Gray)
+                                            Text("${food.kcalPerPortion.toInt()} kcal / ${food.portionDescription}", fontSize = 12.sp, color = Color.Gray)
                                         }
                                     }
                                 }
@@ -135,7 +137,7 @@ fun FoodDialog(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center
                         ) {
-                            Text(selectedFood!!.icon, fontSize = 48.sp)
+                            WellioIcon(selectedFood!!.iconKey, size = 48.sp)
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(selectedFood!!.name, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                             Text("Base: ${selectedFood!!.portionDescription}", color = Color.Gray)

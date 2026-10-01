@@ -193,7 +193,11 @@ Regras:
 - **Configurações**: ver §9.3
 - **Layout da Home e do painel rápido**: listas ordenadas de instâncias de card `{instanceId, cardType, size, config}`; `config` guarda o que é próprio da instância (ex.: lista do Checklist, linhas e nome do Combinado)
 
-### 4.3 Preparação para sync futuro
+### 4.3 Fase de desenvolvimento
+
+Até o fim do **M1**, o banco usa `fallbackToDestructiveMigration`: mudar o formato apaga os dados de teste. Ao fechar o M1, o schema vira a **versão 1 oficial**, o fallback sai, e a partir daí toda mudança de versão tem migração e teste (§2.7). O uso "pra valer" começa depois do M1.
+
+### 4.4 Preparação para sync futuro
 
 - IDs como **UUID** (`String`), não autoincremento.
 - Todas as tabelas com `createdAt` e `updatedAt`.
@@ -714,19 +718,19 @@ Seção no fim da sidebar, do esboço original:
 
 ## 12. Correções conhecidas no código atual
 
-- [ ] `MainActivity` não mostra a Home; `HomeViewModel` não é usado.
-- [ ] Nenhum dado é persistido.
-- [ ] `addWater` limita o total à meta (`coerceIn(0, waterGoalMl)`).
-- [ ] Meta de água duplicada em `waterGoalMl` e `_goals`.
+- [x] `MainActivity` não mostra a Home; `HomeViewModel` não é usado.
+- [x] Nenhum dado é persistido.
+- [x] `addWater` limita o total à meta (`coerceIn(0, waterGoalMl)`).
+- [x] Meta de água duplicada em `waterGoalMl` e `_goals`.
 - [ ] Peso fixo em 70 kg no cálculo de exercício.
 - [ ] Quantidade de comida não aceita vírgula e falha em silêncio com entrada inválida.
 - [ ] Barras do gráfico do Dashboard são fixas.
-- [ ] Barra "semanal" do Dashboard usa o valor do dia.
+- [x] Barra "semanal" do Dashboard usa o valor do dia.
 - [ ] "DETALHES" do card de água sem ação.
 - [ ] `FoodCard`/`TrainCard` com valores padrão fictícios (1500/1200, 2000/2500).
 - [ ] Título do `ExerciseDialog` usa o verde da alimentação; cor de Exercício no `GoalType` é cinza-claro e some no fundo.
-- [ ] Pacote `com.projeto.wellio.components` em pasta `ui/components`.
-- [ ] Dependências defasadas (core-ktx 1.10, lifecycle 2.6, Compose BOM 2024.09).
+- [x] Pacote `com.projeto.wellio.components` em pasta `ui/components`.
+- [x] Dependências defasadas (core-ktx 1.10, lifecycle 2.6, Compose BOM 2024.09).
 
 ## 13. Integrações e extras
 

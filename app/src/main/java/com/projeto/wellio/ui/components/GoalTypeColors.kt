@@ -1,12 +1,16 @@
 package com.projeto.wellio.ui.components
 
-import androidx.compose.ui.graphics.Color
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import com.projeto.wellio.domain.model.GoalType
+import com.projeto.wellio.ui.theme.ModuleColors
+import com.projeto.wellio.ui.theme.WellioTheme
 
-// Cores provisórias por meta; vão para os tokens do tema no futuro (SPEC §2.5)
-val GoalType.color: Color
+/** Cores do módulo correspondente a cada meta. */
+val GoalType.colors: ModuleColors
+    @Composable @ReadOnlyComposable
     get() = when (this) {
-        GoalType.WATER -> Color(0xFF2979FF)
-        GoalType.EXERCISE -> Color(0xFFB0BEC5)
-        GoalType.FOOD -> Color(0xFF66BB6A)
+        GoalType.WATER -> WellioTheme.colors.water
+        GoalType.FOOD -> WellioTheme.colors.food
+        GoalType.EXERCISE -> WellioTheme.colors.exercise
     }

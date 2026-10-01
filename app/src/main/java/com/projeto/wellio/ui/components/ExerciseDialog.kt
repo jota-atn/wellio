@@ -23,6 +23,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.projeto.wellio.domain.model.ExerciseType
 import com.projeto.wellio.ui.icons.WellioIcon
+import com.projeto.wellio.ui.theme.WellioTheme
 
 @Composable
 fun ExerciseDialog(
@@ -30,6 +31,7 @@ fun ExerciseDialog(
     onDismiss: () -> Unit,
     onConfirm: (ExerciseType, Int) -> Unit
 ) {
+    val colors = WellioTheme.colors.exercise
     val categories = remember(exercises) { exercises.map { it.category }.distinct().sorted() }
     var selectedCategory by remember(categories) { mutableStateOf(categories.firstOrNull()) }
 
@@ -45,7 +47,7 @@ fun ExerciseDialog(
                 .fillMaxWidth(0.95f)
                 .fillMaxHeight(0.85f),
             shape = RoundedCornerShape(24.dp),
-            color = Color(0xFFF5F5F7)
+            color = MaterialTheme.colorScheme.background
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
 
@@ -54,7 +56,7 @@ fun ExerciseDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Registrar Treino", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Color(0xFF2E7D32))
+                    Text("Registrar Treino", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = colors.onContainer)
                     IconButton(onClick = onDismiss) {
                         Icon(Icons.Default.Close, contentDescription = "Fechar")
                     }
@@ -75,8 +77,8 @@ fun ExerciseDialog(
                             },
                             label = { Text(category) },
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Color(0xFFC8E6C9),
-                                selectedLabelColor = Color(0xFF1B5E20)
+                                selectedContainerColor = colors.container,
+                                selectedLabelColor = colors.onContainer
                             )
                         )
                     }
@@ -94,7 +96,7 @@ fun ExerciseDialog(
                             items(filteredList) { exercise ->
                                 Card(
                                     onClick = { selectedExercise = exercise },
-                                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                     elevation = CardDefaults.cardElevation(0.dp)
                                 ) {
                                     Row(
@@ -105,7 +107,7 @@ fun ExerciseDialog(
                                         Spacer(modifier = Modifier.width(16.dp))
                                         Column {
                                             Text(exercise.name, fontWeight = FontWeight.Bold)
-                                            Text("Intensidade: ${exercise.mets} METs", fontSize = 12.sp, color = Color.Gray)
+                                            Text("Intensidade: ${exercise.mets} METs", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         }
                                     }
                                 }
@@ -141,14 +143,14 @@ fun ExerciseDialog(
                                     }
                                 },
                                 modifier = Modifier.fillMaxWidth().height(50.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
+                                colors = ButtonDefaults.buttonColors(containerColor = colors.accent, contentColor = colors.onAccent),
                                 enabled = minutesText.isNotEmpty()
                             ) {
                                 Text("SALVAR TREINO")
                             }
 
                             TextButton(onClick = { selectedExercise = null }) {
-                                Text("Voltar para lista", color = Color.Gray)
+                                Text("Voltar para lista", color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                     }

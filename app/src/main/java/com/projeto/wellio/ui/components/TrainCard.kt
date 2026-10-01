@@ -14,6 +14,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.projeto.wellio.ui.theme.WellioTheme
 
 @Composable
 fun TrainCard(
@@ -22,10 +23,11 @@ fun TrainCard(
     goalKcal: Int = 2500,
     onRegisterClick: () -> Unit = {}
 ) {
+    val colors = WellioTheme.colors.exercise
     Card(
         modifier = modifier.fillMaxWidth(), // Vai preencher o espaço que derem pra ele
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFE0E0E0)), // Cinza Claro
+        colors = CardDefaults.cardColors(containerColor = colors.container),
         elevation = CardDefaults.cardElevation(0.dp)
     ) {
         Column(
@@ -37,7 +39,7 @@ fun TrainCard(
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "EXERCÍCIOS",
-                    color = Color(0xFF424242),
+                    color = colors.onContainer,
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp,
                     maxLines = 1,
@@ -47,19 +49,19 @@ fun TrainCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Text("KCAL GASTAS", fontSize = 12.sp, color = Color.Gray)
+            Text("KCAL GASTAS", fontSize = 12.sp, color = colors.onContainer)
             Text(
                 text = "$burnedKcal/$goalKcal",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF212121)
+                color = colors.onContainer
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
                 text = "CADASTRAR",
-                color = Color(0xFF424242),
+                color = colors.onContainer,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.End,

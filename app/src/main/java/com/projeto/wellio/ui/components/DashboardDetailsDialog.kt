@@ -18,6 +18,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.projeto.wellio.domain.goals.progress
 import com.projeto.wellio.domain.model.GoalType
+import com.projeto.wellio.ui.theme.WellioTheme
 
 @Composable
 fun DashboardDetailsDialog(
@@ -32,7 +33,7 @@ fun DashboardDetailsDialog(
         Surface(
             modifier = Modifier.fillMaxWidth(0.95f).fillMaxHeight(0.8f),
             shape = RoundedCornerShape(24.dp),
-            color = Color(0xFF152259) // Fundo Azul Escuro do Dashboard
+            color = WellioTheme.colors.base.container
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
                 Row(
@@ -40,9 +41,9 @@ fun DashboardDetailsDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Visão Geral", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                    Text("Visão Geral", color = WellioTheme.colors.base.onContainer, fontSize = 22.sp, fontWeight = FontWeight.Bold)
                     IconButton(onClick = onDismiss) {
-                        Icon(Icons.Default.Close, contentDescription = "Fechar", tint = Color.White)
+                        Icon(Icons.Default.Close, contentDescription = "Fechar", tint = WellioTheme.colors.base.onContainer)
                     }
                 }
 
@@ -66,19 +67,19 @@ fun DetailItem(type: GoalType, current: Int, dailyGoal: Int, weekTotal: Int, wee
             Box(
                 modifier = Modifier
                     .size(10.dp)
-                    .background(type.color, shape = RoundedCornerShape(2.dp))
+                    .background(type.colors.accent, shape = RoundedCornerShape(2.dp))
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Text(type.title, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            Text(type.title, color = WellioTheme.colors.base.onContainer, fontWeight = FontWeight.Bold, fontSize = 16.sp)
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        ProgressRow(label = "Diário", current = current, max = dailyGoal, color = type.color, unit = type.unit)
+        ProgressRow(label = "Diário", current = current, max = dailyGoal, color = type.colors.accent, unit = type.unit)
 
         Spacer(modifier = Modifier.height(4.dp))
 
-        ProgressRow(label = "Semanal", current = weekTotal, max = weeklyGoal, color = type.color.copy(alpha = 0.6f), unit = type.unit)
+        ProgressRow(label = "Semanal", current = weekTotal, max = weeklyGoal, color = type.colors.accent.copy(alpha = 0.6f), unit = type.unit)
     }
 }
 
@@ -87,14 +88,14 @@ fun ProgressRow(label: String, current: Int, max: Int, color: Color, unit: Strin
     val progress = progress(current, max)
 
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(label, color = Color.Gray, fontSize = 10.sp, modifier = Modifier.width(50.dp))
+        Text(label, color = WellioTheme.colors.base.onContainer.copy(alpha = 0.75f), fontSize = 10.sp, modifier = Modifier.width(50.dp))
 
         Box(
             modifier = Modifier
                 .weight(1f)
                 .height(8.dp)
                 .clip(RoundedCornerShape(4.dp))
-                .background(Color(0xFF2C3E80))
+                .background(WellioTheme.colors.base.track)
         ) {
             Box(
                 modifier = Modifier
@@ -108,7 +109,7 @@ fun ProgressRow(label: String, current: Int, max: Int, color: Color, unit: Strin
 
         Text(
             "${(progress * 100).toInt()}%",
-            color = Color.White,
+            color = WellioTheme.colors.base.onContainer,
             fontSize = 10.sp,
             modifier = Modifier.width(30.dp)
         )

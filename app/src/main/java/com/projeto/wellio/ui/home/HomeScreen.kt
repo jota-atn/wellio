@@ -7,10 +7,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -56,7 +56,7 @@ fun HomeScreen(
     var showFoodDialog by remember { mutableStateOf(false) }
     var showExerciseDialog by remember { mutableStateOf(false) }
 
-    Scaffold(containerColor = Color(0xFFF5F5F7)) { innerPadding ->
+    Scaffold(containerColor = MaterialTheme.colorScheme.background) { innerPadding ->
         Column(
             modifier = Modifier
                 .padding(innerPadding)

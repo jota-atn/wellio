@@ -102,6 +102,16 @@ Só **pt-BR** por enquanto, mas todos os textos de interface ficam em `res/value
 
 ### 2.5 Tema e cores
 
+- Paleta definida:
+
+  | Módulo | Cor | Uso |
+  |---|---|---|
+  | Base | azul-marinho `#152259` | Dashboard, sidebar, FAB, botões gerais (cor primária do app) |
+  | Água | azul | card, telas e registros de água |
+  | Alimentação | verde | card, telas e registros de comida |
+  | Exercício | coral `#C4471B` | card, telas e registros de treino |
+
+- Cada módulo tem os tokens `container` (fundo do card), `onContainer` (texto sobre ele), `accent` (barras, anéis, botões), `onAccent` (texto sobre o destaque) e `track` (trilho das barras), em `ui/theme/Color.kt`, acessados por `WellioTheme.colors.<módulo>`. Pares de texto verificados para contraste AA nos dois temas.
 - Cada módulo tem uma **cor de identidade** (Água = azul, Alimentação = verde, Exercício, Dashboard etc.), com variantes para **tema claro e escuro**.
 - As cores ficam em tokens no tema (`ui/theme`), por exemplo `WellioColors.water.container` / `.onContainer` / `.accent`. Nenhum card usa `Color(0xFF...)` fixo.
 - `GoalType` deixa de carregar `Color`: a cor é resolvida pelo tema a partir do tipo.

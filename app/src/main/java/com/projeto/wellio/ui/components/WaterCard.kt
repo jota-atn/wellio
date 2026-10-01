@@ -16,6 +16,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.projeto.wellio.domain.goals.progress
+import com.projeto.wellio.ui.theme.WellioTheme
 
 @Composable
 fun WaterCard(
@@ -24,10 +25,11 @@ fun WaterCard(
     goalMl: Int = 2000,
     onAddWater: (Int) -> Unit = {}
 ) {
+    val colors = WellioTheme.colors.water
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFD1E4FC)),
+        colors = CardDefaults.cardColors(containerColor = colors.container),
         elevation = CardDefaults.cardElevation(0.dp)
     ) {
         Row(
@@ -44,7 +46,7 @@ fun WaterCard(
 
                 Text(
                     text = "ÁGUA",
-                    color = Color(0xFF2979FF),
+                    color = colors.onContainer,
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
                     modifier = Modifier.padding(bottom = 0.dp)
@@ -78,17 +80,17 @@ fun WaterCard(
                         .fillMaxWidth()
                         .height(20.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFFAECBF7))
+                        .background(colors.track)
                 ) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth(progress)
                             .fillMaxHeight()
-                            .background(Color(0xFF2979FF))
+                            .background(colors.accent)
                     )
                     Text(
                         text = "${(progress * 100).toInt()}%",
-                        color = if (progress > 0.5f) Color.White else Color.Black,
+                        color = if (progress > 0.5f) colors.onAccent else colors.onContainer,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(start = 8.dp)
@@ -100,7 +102,7 @@ fun WaterCard(
                 // 4. DETALHES
                 Text(
                     text = "DETALHES",
-                    color = Color(0xFF2979FF),
+                    color = colors.onContainer,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.End,
@@ -124,7 +126,7 @@ fun CompactTextButton(text: String, onClick: () -> Unit) {
     ) {
         Text(
             text = text,
-            color = Color(0xFF2979FF),
+            color = WellioTheme.colors.water.onContainer,
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold
         )

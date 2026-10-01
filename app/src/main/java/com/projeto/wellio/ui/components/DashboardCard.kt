@@ -18,6 +18,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.projeto.wellio.domain.model.GoalType
+import com.projeto.wellio.ui.theme.ModuleColors
+import com.projeto.wellio.ui.theme.WellioTheme
 
 @Composable
 fun DashboardCard(
@@ -25,10 +27,11 @@ fun DashboardCard(
     onAddMetaClick: (GoalType) -> Unit = {},
     onDetailsClick: () -> Unit = {}
 ) {
+    val colors = WellioTheme.colors.base
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF152259)),
+        colors = CardDefaults.cardColors(containerColor = colors.container),
         elevation = CardDefaults.cardElevation(0.dp)
 
     ) {
@@ -45,7 +48,7 @@ fun DashboardCard(
             ) {
                 Text(
                     text = "DASHBOARD",
-                    color = Color.White,
+                    color = colors.onContainer,
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp
                 )
@@ -57,10 +60,10 @@ fun DashboardCard(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.height(60.dp)
                 ) {
-                    Box(modifier = Modifier.width(16.dp).fillMaxHeight(0.4f).clip(RoundedCornerShape(4.dp)).background(Color(0xFF536DFE)))
-                    Box(modifier = Modifier.width(16.dp).fillMaxHeight(0.7f).clip(RoundedCornerShape(4.dp)).background(Color(0xFF536DFE)))
-                    Box(modifier = Modifier.width(16.dp).fillMaxHeight(1.0f).clip(RoundedCornerShape(4.dp)).background(Color(0xFF8C9EFF)))
-                    Box(modifier = Modifier.width(16.dp).fillMaxHeight(0.5f).clip(RoundedCornerShape(4.dp)).background(Color(0xFF536DFE)))
+                    Box(modifier = Modifier.width(16.dp).fillMaxHeight(0.4f).clip(RoundedCornerShape(4.dp)).background(colors.track))
+                    Box(modifier = Modifier.width(16.dp).fillMaxHeight(0.7f).clip(RoundedCornerShape(4.dp)).background(colors.track))
+                    Box(modifier = Modifier.width(16.dp).fillMaxHeight(1.0f).clip(RoundedCornerShape(4.dp)).background(colors.accent))
+                    Box(modifier = Modifier.width(16.dp).fillMaxHeight(0.5f).clip(RoundedCornerShape(4.dp)).background(colors.track))
                 }
             }
 
@@ -72,7 +75,7 @@ fun DashboardCard(
             ) {
                 Text(
                     text = "METAS",
-                    color = Color.White,
+                    color = colors.onContainer,
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp,
                     modifier = Modifier.padding(bottom = 6.dp)
@@ -83,14 +86,14 @@ fun DashboardCard(
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                     horizontalAlignment = Alignment.End
                 ) {
-                    MetaItem("ÁGUA", GoalType.WATER.color) { onAddMetaClick(GoalType.WATER) }
-                    MetaItem("ALIMENTAÇÃO", GoalType.FOOD.color) { onAddMetaClick(GoalType.FOOD) }
-                    MetaItem("EXERCÍCIOS", GoalType.EXERCISE.color) { onAddMetaClick(GoalType.EXERCISE) }
+                    MetaItem("ÁGUA", GoalType.WATER.colors) { onAddMetaClick(GoalType.WATER) }
+                    MetaItem("ALIMENTAÇÃO", GoalType.FOOD.colors) { onAddMetaClick(GoalType.FOOD) }
+                    MetaItem("EXERCÍCIOS", GoalType.EXERCISE.colors) { onAddMetaClick(GoalType.EXERCISE) }
 
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = "DETALHES",
-                        color = Color.White,
+                        color = colors.onContainer,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.End,
@@ -105,7 +108,7 @@ fun DashboardCard(
 
 @Composable
 fun MetaItem(
-    label: String, color: Color,
+    label: String, colors: ModuleColors,
     onClick: () -> Unit
 ) {
     Row(
@@ -115,7 +118,7 @@ fun MetaItem(
     ) {
         Text(
             text = label,
-            color = Color(0xFFC5CAE9),
+            color = WellioTheme.colors.base.onContainer.copy(alpha = 0.8f),
             fontSize = 11.sp
         )
 
@@ -124,12 +127,12 @@ fun MetaItem(
                 .size(18.dp)
                 .clickable { onClick() },
             shape = RoundedCornerShape(4.dp),
-            color = color
+            color = colors.accent
         ) {
             Icon(
                 imageVector = Icons.Default.Add,
                 contentDescription = "Definir",
-                tint = Color.White,
+                tint = colors.onAccent,
                 modifier = Modifier.padding(2.dp)
             )
         }

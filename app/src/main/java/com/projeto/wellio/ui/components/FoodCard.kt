@@ -14,6 +14,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.projeto.wellio.ui.theme.WellioTheme
 
 @Composable
 fun FoodCard(
@@ -22,10 +23,11 @@ fun FoodCard(
     goalKcal: Int = 1200,
     onRegisterClick: () -> Unit = {}
 ) {
+    val colors = WellioTheme.colors.food
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFC8E6C9)), // Verde Claro
+        colors = CardDefaults.cardColors(containerColor = colors.container),
         elevation = CardDefaults.cardElevation(0.dp)
     ) {
         Column(
@@ -36,7 +38,7 @@ fun FoodCard(
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "ALIMENTAÇÃO",
-                    color = Color(0xFF1B5E20), // Verde escuro
+                    color = colors.onContainer,
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp,
                     maxLines = 1,
@@ -46,19 +48,19 @@ fun FoodCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Text("CALORIAS INGERIDAS", fontSize = 12.sp, color = Color(0xFF2E7D32))
+            Text("CALORIAS INGERIDAS", fontSize = 12.sp, color = colors.onContainer)
             Text(
                 text = "$ingestedKcal/$goalKcal",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF1B5E20)
+                color = colors.onContainer
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
                 text = "CADASTRAR",
-                color = Color(0xFF1B5E20),
+                color = colors.onContainer,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.End,

@@ -23,6 +23,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.projeto.wellio.domain.model.Food
 import com.projeto.wellio.ui.icons.WellioIcon
+import com.projeto.wellio.ui.theme.WellioTheme
 
 @Composable
 fun FoodDialog(
@@ -30,6 +31,7 @@ fun FoodDialog(
     onDismiss: () -> Unit,
     onConfirm: (Food, Double) -> Unit
 ) {
+    val colors = WellioTheme.colors.food
     val categories = remember(foods) { foods.map { it.category }.distinct().sorted() }
     var selectedCategory by remember(categories) { mutableStateOf(categories.firstOrNull()) }
     var searchText by remember { mutableStateOf("") }
@@ -44,7 +46,7 @@ fun FoodDialog(
         Surface(
             modifier = Modifier.fillMaxWidth(0.95f).fillMaxHeight(0.85f),
             shape = RoundedCornerShape(24.dp),
-            color = Color(0xFFFFF8E1)
+            color = MaterialTheme.colorScheme.background
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
 
@@ -53,7 +55,7 @@ fun FoodDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Registrar Alimento", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Color(0xFFF57C00))
+                    Text("Registrar Alimento", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = colors.onContainer)
                     IconButton(onClick = onDismiss) {
                         Icon(Icons.Default.Close, contentDescription = "Fechar")
                     }
@@ -72,9 +74,9 @@ fun FoodDialog(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.White,
-                        focusedBorderColor = Color(0xFFF57C00)
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                        focusedBorderColor = colors.accent
                     ),
                     singleLine = true
                 )
@@ -93,8 +95,8 @@ fun FoodDialog(
                                 },
                                 label = { Text(category) },
                                 colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = Color(0xFFFFCC80),
-                                    selectedLabelColor = Color(0xFFE65100)
+                                    selectedContainerColor = colors.container,
+                                    selectedLabelColor = colors.onContainer
                                 )
                             )
                         }
@@ -114,7 +116,7 @@ fun FoodDialog(
                             items(filteredList) { food ->
                                 Card(
                                     onClick = { selectedFood = food },
-                                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                     elevation = CardDefaults.cardElevation(0.dp)
                                 ) {
                                     Row(
@@ -125,7 +127,7 @@ fun FoodDialog(
                                         Spacer(modifier = Modifier.width(16.dp))
                                         Column {
                                             Text(food.name, fontWeight = FontWeight.Bold)
-                                            Text("${food.kcalPerPortion.toInt()} kcal / ${food.portionDescription}", fontSize = 12.sp, color = Color.Gray)
+                                            Text("${food.kcalPerPortion.toInt()} kcal / ${food.portionDescription}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         }
                                     }
                                 }
@@ -140,7 +142,7 @@ fun FoodDialog(
                             WellioIcon(selectedFood!!.iconKey, size = 48.sp)
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(selectedFood!!.name, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                            Text("Base: ${selectedFood!!.portionDescription}", color = Color.Gray)
+                            Text("Base: ${selectedFood!!.portionDescription}", color = MaterialTheme.colorScheme.onSurfaceVariant)
 
                             Spacer(modifier = Modifier.height(24.dp))
 
@@ -152,7 +154,7 @@ fun FoodDialog(
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true
                             )
-                            Text("Ex: 1 para uma porção inteira, 0.5 para meia", fontSize = 12.sp, color = Color.Gray)
+                            Text("Ex: 1 para uma porção inteira, 0.5 para meia", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
                             Spacer(modifier = Modifier.height(24.dp))
 
@@ -164,14 +166,14 @@ fun FoodDialog(
                                     }
                                 },
                                 modifier = Modifier.fillMaxWidth().height(50.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF6C00)),
+                                colors = ButtonDefaults.buttonColors(containerColor = colors.accent, contentColor = colors.onAccent),
                                 enabled = quantityText.isNotEmpty()
                             ) {
                                 Text("ADICIONAR AO PRATO")
                             }
 
                             TextButton(onClick = { selectedFood = null }) {
-                                Text("Voltar para lista", color = Color.Gray)
+                                Text("Voltar para lista", color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                     }

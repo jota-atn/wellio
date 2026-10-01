@@ -28,7 +28,7 @@ fun GoalSettingDialog(
     Dialog(onDismissRequest = onDismiss) {
         Surface(
             shape = RoundedCornerShape(24.dp),
-            color = Color.White,
+            color = MaterialTheme.colorScheme.surface,
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(24.dp)) {
@@ -36,7 +36,7 @@ fun GoalSettingDialog(
                     text = "Definir Meta: ${type.title}",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = type.color
+                    color = type.colors.onContainer
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -70,7 +70,7 @@ fun GoalSettingDialog(
                     horizontalArrangement = Arrangement.End
                 ) {
                     TextButton(onClick = onDismiss) {
-                        Text("Cancelar", color = Color.Gray)
+                        Text("Cancelar", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Button(
                         onClick = {
@@ -79,7 +79,7 @@ fun GoalSettingDialog(
 
                             onConfirm(newDaily, newWeekly)
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = type.color)
+                        colors = ButtonDefaults.buttonColors(containerColor = type.colors.accent, contentColor = type.colors.onAccent)
                     ) {
                         Text("Salvar")
                     }

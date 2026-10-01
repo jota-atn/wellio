@@ -251,7 +251,7 @@ Cada trilha tem uma mensagem por nível e um **título** liberado no nível Deus
 | Objetivo Alcançado | Peso alvo atingido. Você chegou lá. |
 | Madrugador (secreto) | Água antes das 6h. Nem o galo acordou ainda. |
 | Coruja (secreta) | Treino depois das 23h. A noite é a sua academia. |
-| Mais um Ano (sugestão, aniversário) | Feliz aniversário! Mais um ano de vida, e de progresso. |
+| Mais um Ano (secreto, aniversário) | Feliz aniversário! Mais um ano de vida, e de progresso. |
 
 ## Parabenizações (toasts)
 

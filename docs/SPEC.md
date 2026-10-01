@@ -1,6 +1,6 @@
 # Wellio — Especificação
 
-> Documento vivo. Itens marcados com **(sugestão)** não foram pedidos diretamente; são propostas para discutir.
+> Documento vivo. Decisões tomadas na §14; pontos em aberto na §15.
 > Itens em **Decisões em aberto** precisam de resposta antes da implementação da parte correspondente.
 
 ## 1. Visão geral
@@ -67,6 +67,11 @@ O pacote declarado nos arquivos deve bater com a pasta (hoje `ui/components` dec
 ```
 Sidebar (drawer)
 ├── Cabeçalho: foto + nome + rank + informações  → modal de Perfil
+├── Registros
+│   ├── Água
+│   ├── Alimentação
+│   ├── Exercício
+│   └── Peso
 ├── Estatísticas   (abas: Dia a dia | Visão geral)
 ├── Conquistas
 ├── Anotações
@@ -74,11 +79,11 @@ Sidebar (drawer)
 ├── Metas
 └── Configurações
 
-Home → Água (detalhes/histórico)
-     → Alimentação (diário do dia, cadastro de alimento)
-     → Exercício (treinos do dia, cadastro de exercício)
-     → Dashboard (detalhes)
+Home → cards (atalhos para as mesmas telas)
+     → FAB "+" (registro rápido)
 ```
+
+**A Home é um atalho, não a única porta.** Toda funcionalidade é acessível pela sidebar (seção Registros e demais itens) ou pelo FAB, mesmo que nenhum card dela esteja na Home. Ocultar um card nunca tira acesso a nada.
 
 O registro de alimento e de exercício abre num **bottom sheet em tela cheia** (busca, favoritos/recentes, código de barras, quantidade); arrastar para baixo fecha. Dialogs ficam só para interações pequenas (definir meta, confirmações). As telas de detalhe servem para histórico, edição e cadastro.
 
@@ -102,6 +107,52 @@ Só **pt-BR** por enquanto, mas todos os textos de interface ficam em `res/value
 - `GoalType` deixa de carregar `Color`: a cor é resolvida pelo tema a partir do tipo.
 - Contraste mínimo WCAG AA para texto sobre os containers nos dois temas.
 
+### 2.6 Domínio funcional
+
+Toda regra de negócio fica em `domain/` como **funções puras**: recebem dados e devolvem resultados, sem acessar banco, DataStore, relógio ou Android.
+
+- O "agora" e o "hoje" entram como **parâmetro** (`today: LocalDate`, `now: Instant`), nunca lidos com `LocalDate.now()` dentro do domínio.
+- Entradas e saídas são `data class` imutáveis. Ex.: `closeDay(day: DayRecords, goals: Goals, freezes: Int): DayResult`, `evaluateAchievements(history: History, unlocked: Set<Unlock>): List<Unlock>`, `homeRows(availableHeightDp, fontScale): RowLayout`.
+- ViewModels e repositórios só buscam os dados, chamam essas funções e gravam o resultado.
+
+### 2.7 Testes
+
+Testes **modulares e puros**: cada teste tem uma responsabilidade só, monta o mínimo de estado possível e verifica "esta entrada → esta saída".
+
+| Tipo | O que cobre | Onde roda |
+|---|---|---|
+| **Unitários do domínio** (JUnit, Kotlin puro) | cálculo de kcal (METs, porções, gramas), meta calórica sugerida, fechamento do dia, metas diárias/semanais/de período, sequências e folgas, conquistas, XP e nível, cálculo de linhas da Home, parsing de números com vírgula | JVM, rápido |
+| **Migração do banco** (Room `MigrationTestHelper`) | um teste por migração: cria dados na versão antiga, migra, valida o schema novo e confere que os dados sobreviveram | emulador |
+| **UI (Compose)** | fluxos principais: registrar água e desfazer, registrar alimento por medida caseira, registrar treino, editar o layout da Home, onboarding; cada card nas versões inteiro/metade/mini com fonte em 100% e 130% | emulador |
+
+Regras:
+- Toda função nova em `domain/` entra **com testes no mesmo commit**. Sem meta de % de cobertura.
+- Cada card novo entra com seus testes de UI nos tamanhos que oferece.
+- Toda mudança de versão do banco entra com sua migração e o teste dela. Os schemas do Room são exportados em `app/schemas/` e versionados no git.
+- Sem mocks no domínio: como as funções são puras, os testes passam dados de verdade.
+- Dados de teste montados por pequenas funções construtoras (ex.: `waterEntry(ml = 300, at = "08:00")`), com valores padrão para tudo que não importa ao teste.
+- Nomes de teste descrevem o comportamento: `` `folga cobre o dia perdido e mantém a sequência` ``.
+
+**CI (GitHub Actions)**:
+- A cada push e PR: build, lint e testes unitários.
+- Em PRs para a `main`: também os testes de UI num emulador.
+
+### 2.8 Acessibilidade
+
+- **Fonte do sistema até 200%** é suportada. Nada é cortado: o conteúdo dos cards se adapta, e a Home rola quando precisa.
+  - A altura base da linha cresce com a fonte (§5.1); com fonte muito grande cabem poucas linhas, e a regra de "mínimo de 3 linhas" deixa de valer.
+  - Acima de ~150%, cards "metade" são exibidos como "inteiro" (empilhados), sem perder a configuração salva.
+  - As versões "metade" e "mini" podem esconder detalhes secundários para caber, mas a informação principal (valor e meta) sempre aparece.
+- **Animações**: com "Remover animações" ligado no Android, o app desliga confetes, a tremidinha do modo de edição e as transições; toasts aparecem sem deslizar.
+- **TalkBack completo**:
+  - todo card tem uma descrição-resumo falada (ex.: "Água: 1.400 de 2.000 mililitros, 70 por cento"), usando a descrição falada do resumo (§5.3);
+  - todo botão e ícone tem descrição com contexto ("Apagar registro das 14h", não só "Apagar");
+  - **reorganizar sem arrastar**: cards da Home e itens de listas oferecem as ações "Mover para cima", "Mover para baixo" e "Trocar tamanho" no menu de ações do TalkBack;
+  - áreas de toque de no mínimo 48dp;
+  - toasts de parabenização são anunciados pelo leitor de tela.
+- **Cor nunca é a única informação**: estados como "acima da meta" também aparecem em texto (ex.: `+320 kcal`).
+- Contraste mínimo WCAG AA nos dois temas (§2.5).
+
 ## 3. Regras gerais
 
 - **Dia** = data local do aparelho (`LocalDate`), virando à **meia-noite**. Todo registro guarda `date` (dia a que pertence) e `timestamp` (momento exato).
@@ -117,19 +168,21 @@ Só **pt-BR** por enquanto, mas todos os textos de interface ficam em `res/value
 | Tabela | Campos principais |
 |---|---|
 | `water_entry` | id, date, timestamp, amountMl |
-| `food_item` | id, name, category, kcalPerPortion, portionDescription, proteinG?, carbsG?, fatG?, barcode?, iconKey, isCustom, isFavorite |
-| `food_entry` | id, date, timestamp, foodItemId, meal?, quantity, kcalTotal |
-| `exercise_type` | id, name, category, mets, iconKey, isCustom |
+| `food_item` | id, name, category, kcalPer100g, proteinPer100g?, carbsPer100g?, fatPer100g?, source (taco / extra / custom / barcode), sourceRef?, barcode?, iconKey, isFavorite |
+| `food_portion` | id, foodItemId, name (ex.: "1 concha média"), grams, isDefault |
+| `food_entry` | id, date, timestamp, foodItemId, meal?, portionId?, quantity, grams, kcalTotal, proteinG?, carbsG?, fatG? |
+| `exercise_type` | id, name, category, mets, compendiumCode?, iconKey, isCustom |
 | `exercise_entry` | id, date, timestamp, exerciseTypeId, minutes, kcal, kcalIsManual, source (manual / template / health_connect), externalId? |
 | `workout_template` | id, name, iconKey |
 | `workout_template_item` | id, templateId, exerciseTypeId, minutes, position |
 | `weight_entry` | id, date, weightKg |
 | `goal` | id, title, metric, period, target, startDate, endDate, status |
 | `achievement_unlock` | achievementId, tier, unlockedAt, xp |
+| `streak_freeze` | id, earnedAt, usedOn? (data coberta) |
 | `note` | id, type, title, body, tags, pinned, color?, date?, reminderAt?, archived |
 | `checklist_item` | id, noteId, text, done, position |
 
-- `food_item` e `exercise_type` são populados (seed) a partir dos atuais `FoodRepository` e `ExerciseRepository`. Os cadastrados pelo usuário têm `isCustom = true`.
+- `food_item`, `food_portion` e `exercise_type` são populados (seed) a partir das bases de dados (§7.5 e §8.1). Os cadastrados pelo usuário têm `source = custom` / `isCustom = true`.
 - `food_entry.kcalTotal` e `exercise_entry.kcal` são **gravados no momento do registro**. Editar um alimento ou o peso depois não reescreve o histórico.
 - Definições de conquistas ficam em código; o banco só guarda o desbloqueio.
 
@@ -138,7 +191,7 @@ Só **pt-BR** por enquanto, mas todos os textos de interface ficam em `res/value
 - **Perfil**: nome, fotoUri?, dataNascimento?, sexo?, alturaCm?, nivelAtividade?, biotipo?, objetivo?, pesoAlvoKg?, tituloExibido?, onboardingConcluido
 - **Metas diárias e semanais**: água (ml), kcal consumidas, exercício (unidade: kcal ou minutos); para cada uma, semanal automática (×7) ou valor próprio
 - **Configurações**: ver §9.3
-- **Layout da Home**: lista ordenada de `{cardId, size, visible}`
+- **Layout da Home e do painel rápido**: listas ordenadas de instâncias de card `{instanceId, cardType, size, config}`; `config` guarda o que é próprio da instância (ex.: lista do Checklist, linhas e nome do Combinado)
 
 ### 4.3 Preparação para sync futuro
 
@@ -163,23 +216,63 @@ Na primeira abertura, um onboarding curto em etapas, com indicador de progresso:
 
 Tudo que é preenchido aqui vai para o perfil e pode ser editado depois pelo modal de Perfil. O onboarding não aparece de novo depois de concluído.
 
-### 5.1 Layout
+### 5.1 Layout e catálogo de cards
 
-Grid de **2 colunas** com cards. Cada card ocupa **meia largura** ou **largura inteira**.
+Grid de **2 colunas** com cards, montado pelo usuário a partir de um **catálogo**. A Home começa com um layout padrão, e o usuário adiciona, remove, reordena e redimensiona cards como quiser.
 
-Cards disponíveis:
+#### Tamanhos
 
-| Card | Tamanho padrão | Conteúdo |
+| Tamanho | Onde | Regra |
 |---|---|---|
-| Dashboard | inteiro | progresso das 3 metas do dia + mini-gráfico dos últimos 7 dias (uma barra por dia = média do % atingido das 3 metas, limitado a 100% por meta; hoje destacado) + atalho para detalhes |
-| Água | inteiro | botões rápidos, barra de progresso, total/meta |
-| Alimentação | meio | kcal consumidas/meta, atalho para registrar |
-| Exercício | meio | progresso na unidade da meta (kcal ou minutos) e o outro valor em destaque menor; atalho para registrar |
-| Saldo calórico **(sugestão)** | meio | consumidas − queimadas vs. meta |
-| Anotações | inteiro | **oculto por padrão**; notas fixadas e itens pendentes da lista fixada |
-| Sequência **(sugestão)** | meio | dias seguidos batendo metas |
+| **Inteiro** | Home | largura toda; versão completa do card. Obrigatório. |
+| **Metade** | Home | meia largura; versão compacta. Obrigatório. **Não precisa ter tudo** que a versão inteira tem: mostra o essencial e pode perder ações e detalhes. |
+| **Mini** | painel rápido da sidebar (§9.0) | versão de consulta rápida. Opcional: só os cards que fazem sentido em mini oferecem. |
 
-Layout padrão: Dashboard, Água, Alimentação + Exercício lado a lado.
+Card novo só entra no catálogo se passar no critério: **mostra algo útil num relance e/ou permite uma ação rápida**. Card que seria só um link para uma tela não entra.
+
+#### Altura das linhas e scroll
+
+A Home é pensada para **caber na tela sem rolar**. O número de linhas que cabem é calculado para cada aparelho:
+
+- **Altura base da linha** (`baseRow`): valor de referência (proposta: 128dp), multiplicado pela escala de fonte do sistema (fonte em 130% → linhas mais altas).
+- **Linhas por tela**: `N = floor(alturaDisponível ÷ baseRow)`, com mínimo de 3. Altura disponível = altura da tela menos barras do sistema e cabeçalho da Home.
+- **Altura real da linha** = `alturaDisponível ÷ N` (descontando os espaçamentos). Assim as `N` linhas preenchem a tela exatamente, e cada linha fica entre `baseRow` e pouco mais que isso: os cards se ajustam, mas nunca encolhem abaixo da base nem esticam demais.
+- Exemplo: num celular com ~700dp úteis, `N = 5` e cada linha tem ~140dp; num com ~520dp, `N = 4` e ~130dp.
+- Todo card tem **1 linha de altura**. Um card inteiro ocupa uma linha; dois cards metade dividem uma linha.
+- **Scroll natural**: com até `N` linhas a Home não rola; com mais, passa a rolar sozinha. Não existe opção ou botão para isso.
+- **Linhas vazias**: com menos de `N` linhas, o espaço livre mostra uma sugestão discreta ("+ Adicionar card") que pode ser **dispensada**. Dispensada, não volta (pode ser reativada em Configurações → Home). Ter poucos cards é uma escolha válida.
+- O conteúdo de cada card é **responsivo** à altura real da linha: com mais espaço, mostra mais detalhes; com menos, esconde os secundários.
+- Rotação, mudança de fonte ou janela dividida recalculam `N`.
+- Tablets: a definir.
+
+#### Regras do grid
+
+- Os cards seguem exatamente a ordem definida pelo usuário. Um card "metade" sem vizinho fica na metade esquerda e **o espaço à direita fica vazio**; o app não reorganiza nada sozinho.
+- Dois cards "metade" na mesma linha têm **a mesma altura**: o mais baixo estica para igualar o mais alto.
+- Alguns cards podem aparecer **mais de uma vez** com configurações diferentes (Checklist, Combinado).
+
+#### Catálogo
+
+| Card | Na Home por padrão | Inteiro | Metade | Mini |
+|---|---|---|---|---|
+| Dashboard | ✅ inteiro | progresso das 3 metas + mini-gráfico dos últimos 7 dias (barra por dia = média do % atingido das 3 metas, limitado a 100% por meta; hoje destacado) + atalho para detalhes | 3 anéis de progresso + % do dia | — |
+| Água | ✅ inteiro | botões rápidos, barra de progresso, total/meta, "Desfazer último" | total/meta + barra + um botão rápido | total/meta + botão rápido |
+| Alimentação | ✅ metade | kcal/meta com barra, últimas refeições do dia, atalho para registrar | kcal/meta + atalho para registrar | kcal/meta |
+| Exercício | ✅ metade | progresso na unidade da meta, o outro valor menor, treinos do dia, atalho para registrar | progresso na unidade da meta + atalho | progresso |
+| Peso | | peso atual, tendência (média móvel de 7 dias), variação na semana, mini-gráfico de 30 dias, botão registrar | peso atual + seta de tendência | peso + seta |
+| Saldo calórico | | consumidas, queimadas, saldo e meta, com barra | saldo vs. meta | saldo |
+| Macros do dia | | proteína, carboidrato e gordura em barras (só alimentos com macros contam; mostra a % de kcal coberta) | 3 anéis | — |
+| Notas fixadas | | até 3 notas fixadas com prévia | a primeira nota fixada | — |
+| Checklist | | itens pendentes da lista escolhida, marcáveis | nº de pendentes + o primeiro item, marcável | os 3 primeiros pendentes, marcáveis |
+| Próximo lembrete | | os próximos 3 lembretes | o próximo lembrete | o próximo lembrete |
+| Progresso | | nível, barra de XP, título, sequência atual, folgas guardadas | nível + sequência | nível + 🔥 sequência |
+| Combinado | | até 3 resumos em colunas com anel (§5.3) | resumos em linhas compactas | ícone + valor de cada resumo |
+
+- **Checklist**: a lista exibida é escolhida no modo de edição; podem existir vários cards de Checklist com listas diferentes.
+- **Painel rápido padrão**: Checklist (se houver lista), Próximo lembrete, Progresso.
+- Cards do M8 (Planejado hoje, Jejum): a definir no M8.
+
+Layout padrão da Home: Dashboard, Água, Alimentação + Exercício lado a lado.
 
 Um **botão flutuante "+" (FAB)** fica fixo no canto da Home e abre um menu: Água, Alimento, Exercício, Anotação, Peso. Ele leva para os mesmos fluxos dos cards, então dá para registrar algo mesmo que o card esteja oculto ou fora da tela. O FAB some no modo de edição do layout.
 
@@ -188,13 +281,73 @@ Um **botão flutuante "+" (FAB)** fica fixo no canto da Home e abre um menu: Ág
 - **Pressionar e segurar** um card entra no **modo de edição** da Home.
 - No modo de edição:
   - arrastar um card move sua posição; os outros se reorganizam com animação;
-  - cada card mostra controles para **alternar tamanho** (meio/inteiro) e **ocultar**;
-  - um botão **"+ Adicionar card"** lista os cards ocultos;
+  - cada card mostra controles para **alternar tamanho** (inteiro/metade) e **ocultar**; a troca de tamanho é animada e mostra a outra versão na hora;
+  - um botão **"+ Adicionar card"** abre o catálogo (§5.1), incluindo a criação de um card Combinado;
+  - cards configuráveis (Checklist, Combinado) mostram um botão de configurar;
   - botão **Concluir** sai do modo (tocar fora ou voltar também sai).
 - Vibração curta (haptic) ao pegar e soltar um card.
 - O layout é salvo no DataStore ao sair do modo de edição.
 - Em Configurações: **Restaurar layout padrão**.
 - Fora do modo de edição, cards se comportam normalmente (toques e botões funcionam).
+
+### 5.3 Resumos e card Combinado
+
+#### Resumo
+
+Cada funcionalidade com card define um **resumo**: só os dados, sem layout.
+
+| Campo | Exemplo (Água) |
+|---|---|
+| ícone (`iconKey`) e cor do módulo | gota, azul |
+| valor principal | `1,4 L` |
+| meta ou valor secundário (opcional) | `de 2 L` |
+| progresso 0–1 (opcional) | `0,7` |
+| descrição falada (TalkBack) | "Água: 1,4 de 2 litros, 70 por cento" |
+| ação rápida (opcional) | `+300 ml` |
+
+- Têm resumo: Água, Alimentação, Exercício, Peso, Saldo calórico, Macros do dia, Checklist (pendentes), Próximo lembrete, Progresso.
+- O Dashboard usa os mesmos resumos para as 3 metas do dia.
+- Os resumos são criados junto de cada funcionalidade (M1/M2), para estarem prontos quando o Combinado chegar (M4).
+
+#### Card Combinado
+
+Junta **até 3 resumos** escolhidos pelo usuário num card só, com visual caprichado e não uma lista de informações soltas. Pode haver vários combinados.
+
+**Inteiro: colunas com anel.**
+
+```
+╭─ Meu resumo ─────────────────────────╮
+│    ╭───╮     │    ╭───╮     │   ╭───╮  │
+│   │ 💧 │    │   │ 🍎 │    │  │ 🔥 │ │
+│    ╰───╯     │    ╰───╯     │   ╰───╯  │
+│    1,4 L     │    1.250     │    320   │
+│   de 2 L     │  de 2.000    │  de 500  │
+╰───────────────────────────────────────╯
+```
+- Uma coluna por resumo, com a mesma largura e divisores finos entre elas.
+- Cada coluna: **anel de progresso** na cor do módulo com o **ícone no centro**; embaixo, o valor em destaque e a meta em texto secundário.
+- Resumo sem progresso (ex.: Peso sem peso alvo): anel completo em tom suave da cor do módulo, e a meta é trocada pelo valor secundário (ex.: `↓ 0,3 kg`).
+- Com 2 resumos, 2 colunas; com 1, a coluna fica centralizada.
+- O anel anima ao mudar o valor (respeitando "Remover animações").
+
+**Metade: linhas compactas.**
+
+```
+╭─ Meu resumo ──────╮
+│ (💧) 1,4 L  ▓▓▓░ │
+│ (🍎) 1.250  ▓▓░░ │
+│ (🔥) 320    ▓░░░ │
+╰───────────────────╯
+```
+- Uma linha por resumo: ícone num círculo na cor do módulo, valor e mini-barra de progresso. Sem a meta.
+
+**Mini**: ícone + valor de cada resumo, lado a lado.
+
+**Comportamento:**
+- **Nome opcional**: com nome, aparece como título; sem nome, as colunas ganham a altura do título.
+- Tocar numa coluna ou linha abre a tela daquela funcionalidade. O Combinado não mostra botões de ação rápida, para manter o visual limpo.
+- Criado e editado no modo de edição da Home: escolher os resumos, a ordem e o nome.
+- TalkBack lê o card como a sequência das descrições faladas dos resumos.
 
 ## 6. Água
 
@@ -203,7 +356,7 @@ Um **botão flutuante "+" (FAB)** fica fixo no canto da Home e abre um menu: Ág
 - **Sem limite na meta**: dá para beber mais do que a meta; a barra fica cheia e mostra o excedente (ex.: `2.300 / 2.000 ml`).
 - Os botões negativos (−200, −300, −500) saem. Para corrigir: **Desfazer último** no card, ou editar/remover registros na tela de detalhes.
 - **Tela de detalhes**: lista dos registros do dia com horário, edição e remoção; navegação entre dias; gráfico dos últimos 7/30 dias.
-- Tamanhos de recipiente **(sugestão)**: atalhos nomeados ("Copo 200 ml", "Garrafa 500 ml") configuráveis.
+- **Recipientes nomeados**: além dos botões de ml, atalhos com nome e volume (ex.: "Copo 200 ml", "Garrafa 500 ml", "Squeeze 750 ml"), criados e editados em Configurações. Os botões rápidos do card podem ser recipientes.
 
 ## 7. Alimentação
 
@@ -213,13 +366,14 @@ Abre em bottom sheet de tela cheia (§2.2).
 
 - Busca por nome + filtro por categoria (como hoje).
 - Seções **Favoritos** e **Recentes** no topo da busca.
-- Ao escolher o alimento: quantidade em porções (aceita vírgula), com prévia da kcal calculada antes de confirmar.
+- Ao escolher o alimento: escolher a **medida** (gramas ou uma medida caseira, ex.: "1 concha média") e a **quantidade** (aceita vírgula), com prévia da kcal (e macros, se houver) antes de confirmar.
+- A última medida usada para cada alimento fica pré-selecionada na próxima vez.
 - **Refeição** opcional: café da manhã, almoço, lanche, jantar, ceia. Sugerida automaticamente pelo horário.
-- **Repetir refeição** **(sugestão)**: copiar todos os itens de uma refeição de outro dia.
+- **Repetir refeição**: copiar todos os itens de uma refeição de outro dia (ex.: "mesmo café da manhã de ontem"), com revisão antes de confirmar. Os itens copiados recalculam kcal com os valores atuais do alimento.
 
 ### 7.2 Cadastro de alimentos próprios
 
-- Campos: nome, categoria, descrição da porção, kcal por porção, ícone; proteína/carboidrato/gordura opcionais.
+- Campos: nome, categoria, ícone, e os valores nutricionais **por 100 g** ou **por porção** (o app converte para 100 g); proteína/carboidrato/gordura opcionais; medidas caseiras opcionais (nome + gramas).
 - Alimentos próprios podem ser editados e removidos; os da base, só favoritados.
 - Remover um alimento não apaga os registros antigos (a kcal já está gravada).
 
@@ -236,15 +390,31 @@ Quando as kcal consumidas passam da faixa da meta (+10%), o card de Alimentaçã
 - Total do dia vs. meta; macros do dia se houver dados.
 - Navegação entre dias.
 
+### 7.5 Base de alimentos
+
+- **TACO** (Tabela Brasileira de Composição de Alimentos, NEPA/Unicamp): todos os alimentos da tabela, com kcal e macros por 100 g. Nomes simplificados para busca (ex.: "Arroz, tipo 1, cozido" fica pesquisável por "arroz cozido").
+- **Extras**: alimentos que a TACO não cobre (pizza, hambúrguer, açaí na tigela, refrigerante zero...), mantidos a partir da lista atual do `FoodRepository`, com valores revisados.
+- **Medidas caseiras curadas**: os alimentos mais comuns ganham medidas com gramas (ex.: 1 concha média de feijão, 1 pão francês, 1 colher de sopa de arroz, 1 fatia de queijo). Todo alimento aceita gramas.
+- **Marcas e industrializados**: pelo leitor de código de barras (§13.1).
+- A tela "Sobre" cita a TACO como fonte.
+
 ## 8. Exercício
 
 - Registro em bottom sheet de tela cheia (§2.2).
-- Escolha por categoria (como hoje) + busca + favoritos/recentes.
+- Escolha por categoria + busca + favoritos/recentes.
 - Duração em minutos; kcal estimada = `METs × peso (kg) × horas`, usando o **peso atual do perfil** (hoje está fixo em 70 kg).
 - Prévia da kcal antes de salvar; o usuário pode **sobrescrever** a kcal manualmente (ex.: valor do relógio).
 - Se o perfil não tiver peso (onboarding pulado), pedir o peso no primeiro registro.
+- **Base de exercícios** (§8.1).
 - **Cadastro de exercícios próprios**: nome, categoria, METs (com ajuda: leve ≈ 3, moderado ≈ 5, intenso ≈ 8) ou kcal/minuto, ícone.
 - **Tela de detalhes**: treinos do dia, edição e remoção, navegação entre dias.
+
+### 8.1 Base de exercícios
+
+- Fonte: **Compendium of Physical Activities** (versão adulta de 2024), referência oficial dos valores de METs.
+- Uma seleção curada de **~100 atividades**, traduzidas e agrupadas nas categorias do app (Cardio, Musculação, Lutas, Esportes, Aquáticos, Zen/Dança, Outros). Cada uma guarda o código do Compendium (`compendiumCode`).
+- Substitui a lista atual do `ExerciseRepository`, revisando os METs e os ícones.
+- A tela "Sobre" cita o Compendium como fonte.
 
 ## 9. Sidebar
 
@@ -276,16 +446,7 @@ Baseado no esboço em papel do usuário.
 
 #### Painel rápido
 
-A Home fica **embaçada** atrás da sidebar, e à direita aparece uma coluna de **mini-cards** para consulta rápida:
-
-| Mini-card | Conteúdo |
-|---|---|
-| Checklist | itens pendentes de uma lista fixada; dá para marcar ali mesmo |
-| Próximo lembrete | título e horário do próximo lembrete |
-| Sequência | dias seguidos usando o app / batendo metas |
-| Jejum | tempo restante do jejum em andamento (M8) |
-| Planejado hoje | treinos e refeições planejados (M8) |
-| Nível | barra de XP até o próximo nível |
+A Home fica **embaçada** atrás da sidebar, e à direita aparece uma coluna com os cards em **tamanho mini** (§5.1). O painel usa o mesmo catálogo da Home: só aparecem como opção os cards que têm versão mini.
 
 - Quais mini-cards aparecem, e em que ordem, é configurável (como os cards da Home).
 - Mini-cards vazios (ex.: sem jejum ativo) ficam ocultos.
@@ -343,7 +504,7 @@ Dois níveis:
 - **Sons e vibração**: som ao registrar, vibração.
 - **Registro**: botões rápidos de água, início da semana, unidades (ml/L, kg).
 - **Home**: restaurar layout padrão.
-- **Dados**: exportar e importar backup (JSON); exportar CSV **(sugestão)**; apagar todos os dados (com confirmação).
+- **Dados**: exportar e importar backup (JSON); exportar CSV (um arquivo por tipo de registro: água, alimentação, exercício, peso); apagar todos os dados (com confirmação).
   - Além disso, o **backup automático do Android** fica ativo (banco Room, DataStore e foto de perfil), configurado em `backup_rules.xml` / `data_extraction_rules.xml`. Ele restaura os dados ao reinstalar ou trocar de celular com a mesma conta Google.
   - A importação de JSON pergunta se deve **substituir** ou **mesclar** os dados atuais (mesclar usa os UUIDs para evitar duplicatas).
 - **Sobre**: versão.
@@ -403,6 +564,17 @@ A maioria das conquistas é uma **trilha** com **7 níveis**, para dar sensaçã
 - O nível do usuário aparece no cabeçalho da sidebar, com uma barra de progresso até o próximo nível.
 - Curva proposta: XP para chegar ao nível `n` = `100 × n^1,5` (arredondado). A curva fica em código para ser ajustada fácil.
 - Subir de nível mostra um toast de parabenização (§9.6).
+
+#### Folgas de sequência
+
+Protegem as sequências de um dia perdido (doença, viagem, esquecimento):
+
+- **Ganho**: 1 folga a cada 7 dias seguidos de Presença. Guarda no máximo **2**.
+- **Uso**: automático. No fechamento de um dia (§9.6), se alguma sequência diária seria quebrada e há folga guardada, **uma folga cobre todas** as sequências quebradas naquele dia.
+- Valem para as sequências **diárias**: Presença, Fonte Constante, Fiel da Balança. **Não** valem para Ritmo, que é semanal e já é flexível.
+- Um dia coberto por folga **mantém** a sequência, mas **não conta** como dia cumprido: não soma em trilhas de total (Copo Cheio, Dia Perfeito...) nem dá XP.
+- Dois dias perdidos seguidos com só uma folga: a folga cobre o primeiro e a sequência quebra no segundo.
+- O usuário vê as folgas guardadas no card Progresso e no cabeçalho de Conquistas. Ao usar uma, aparece um toast no dia seguinte ("Ontem você perdeu a meta de água, mas uma folga salvou sua sequência de 23 dias").
 
 #### Comportamento
 
@@ -484,10 +656,12 @@ Sempre que algo bom acontece, o app parabeniza **sem interromper**:
 - Som e vibração curtos, respeitando as Configurações.
 - Com o app fechado (ex.: treino importado pelo Health Connect), a parabenização vira uma notificação, se esse tipo de notificação estiver ligado.
 
-**Aniversário (sugestão)**: no dia do aniversário (data de nascimento do perfil), algo especial e leve, por exemplo:
-- saudação personalizada no topo da Home e confetes na primeira abertura do dia;
-- marco secreto "Mais um ano" (+XP);
+**Aniversário**: no dia do aniversário (data de nascimento do perfil), algo especial e leve:
+- saudação personalizada no topo da Home e confetes na primeira abertura do dia (sem confetes com "Remover animações");
+- marco secreto "Mais um Ano" (+100 XP), que pode ser ganho de novo a cada ano;
 - o cabeçalho da sidebar ganha um enfeite durante o dia.
+
+Sem data de nascimento no perfil, nada acontece.
 
 ## 10. Anotações
 
@@ -515,20 +689,18 @@ O tipo define o editor, mas todas compartilham a mesma tela de listagem.
 - Arquivar e remover (com desfazer).
 - Itens de lista concluídos vão para o final, com opção de ocultar.
 - Qualquer nota pode ganhar um lembrete.
-- **Receita → alimento** **(sugestão)**: botão "Salvar como alimento" cria um `food_item` próprio com a kcal por porção da receita, para registrar no diário.
-- **Diário no histórico do dia** **(sugestão)**: a entrada de diário aparece na tela de detalhes daquele dia, junto de água/comida/treino.
 
 ## 11. Roadmap
 
 | Fase | Entrega |
 |---|---|
 | **M0 — Base** | Atualizar dependências; corrigir pacotes; Room + DataStore + `AppContainer`; Navigation + drawer vazio; Home montada com os cards atuais; abstração `iconKey`; persistência de água/comida/treino |
-| **M1 — Registros completos** | Telas de detalhe com editar/remover/desfazer; navegação entre dias; favoritos/recentes; cadastro de alimentos e exercícios próprios; **leitor de código de barras**; **modelos de treino**; peso do perfil no cálculo; correções da §12 |
+| **M1 — Registros completos** | Telas de detalhe com editar/remover/desfazer; navegação entre dias; favoritos/recentes; bases TACO + extras e Compendium curado; medidas caseiras; resumos de cada funcionalidade; cadastro de alimentos e exercícios próprios; **leitor de código de barras**; **modelos de treino**; peso do perfil no cálculo; correções da §12 |
 | **M2 — Perfil e Metas** | Modal de perfil (foto, nome, peso); metas diárias, semanais e de período; Dashboard com dados reais; **widget na tela inicial** |
 | **M3 — Configurações e integrações** | Tema; notificações e lembretes; sons; backup/exportação; **Health Connect** |
-| **M4 — Home personalizável** | Grid com cards arrastáveis, tamanhos, ocultar/mostrar, restaurar padrão |
+| **M4 — Home personalizável** | Catálogo de cards (inteiro/metade/mini), grid arrastável, painel rápido configurável, card Combinado, restaurar padrão |
 | **M5 — Anotações** | Notas, listas, receitas, lembretes, diário, tags, fixadas |
-| **M6 — Estatísticas e Conquistas** | Gráficos, heatmap, recordes; motor de conquistas, trilhas, marcos, XP e nível |
+| **M6 — Estatísticas e Conquistas** | Gráficos, heatmap, recordes; motor de conquistas, trilhas, marcos, XP, nível e folgas de sequência |
 | **M7 — Ícones** | Substituir emojis por SVGs (pode andar em paralelo a partir do M0) |
 | **M8 — Planejamento e cozinha** | Planejamento da semana, lista de compras, jejum intermitente (§13.2) |
 | **Futuro** | Login, sincronização em nuvem, itens da §13.3 |
@@ -607,7 +779,7 @@ Modelo de dados adicional: `plan_item` (id, date, time?, kind: exercise/template
 
 ## 14. Decisões tomadas
 
-- **Home**: grid de 2 colunas, cards de meia largura ou largura inteira (§5).
+- **Home**: grid de 2 colunas; **todo card tem versão inteira e metade**, à escolha do usuário; espaço vazio é mantido e cards da mesma linha têm a mesma altura (§5.1).
 - **Água**: botões negativos substituídos por "Desfazer último" + edição na tela de detalhes (§6).
 - **Macros**: opcionais no cadastro, exibidas quando existem, sem metas próprias (§7).
 - **Perfil**: modal a partir do cabeçalho da sidebar; histórico de peso em Estatísticas (§9.1).
@@ -629,15 +801,33 @@ Modelo de dados adicional: `plan_item` (id, date, time?, kind: exercise/template
 - **Meta de exercício**: em kcal ou minutos, à escolha do usuário (§9.2).
 - **Anotações**: formatação básica com barra de ferramentas, guardada em Markdown; diário com uma entrada por dia (§10).
 - **Health Connect**: importação automática com aviso; kcal do dispositivo quando houver (§13.1).
-- **Parabenizações**: toast discreto, nunca modal (§9.6). Aniversário fica como sugestão.
+- **Parabenizações**: toast discreto, nunca modal (§9.6).
+- **Aprovados das sugestões**: recipientes nomeados (§6), repetir refeição (§7.1), exportar CSV (§9.3), aniversário (§9.6).
+- **Recusados**: receita → alimento; diário no histórico do dia.
+- **Combinado sem ação rápida**: tocar abre a funcionalidade (§5.3).
 - **Sidebar**: layout do esboço com painel rápido à direita; rodapé (autor, avaliação, contato) para o futuro (§9.0, §11.1).
 - **Histórico + Estatísticas**: um item só, com abas "Dia a dia" e "Visão geral" (§9.4).
 - **Receitas**: atalho no menu para Anotações filtrada em receitas (§2.2).
 - **Card de anotações na Home**: existe, mas começa oculto (§5.1).
 - **Meta de alimentação**: avaliada ao fechar o dia; parabenização no dia seguinte (§9.6).
 - **Acima da meta calórica**: barra âmbar + excedente + mensagem leve no card (§7.3).
+- **Catálogo de cards**: Home montada pelo usuário a partir de um catálogo; tamanhos inteiro, metade (pode perder funções) e mini (painel rápido) (§5.1).
+- **Acesso**: toda funcionalidade acessível sem card, pela seção Registros da sidebar e pelo FAB (§2.2).
+- **Organização**: cards separados (Notas fixadas, Checklist, Próximo lembrete), sem agregador próprio; Checklist escolhe a lista (§5.1).
+- **Progresso**: nível e sequência num card só (§5.1).
+- **Card Combinado**: até 3 resumos; inteiro em colunas com anel, metade em linhas compactas; nome opcional; chega no M4 (§5.3).
+- **Folgas**: 1 a cada 7 dias de presença, máx. 2, compartilhadas entre as sequências diárias; não valem para Ritmo (§9.5).
+- **Bases de dados**: TACO completa + extras, com gramas e medidas caseiras; Compendium curado (~100) (§7.5, §8.1).
+- **Home sem scroll**: número de linhas calculado por aparelho (`N`), linhas de altura fixa que preenchem a tela; scroll só aparece naturalmente com mais de `N` linhas; todo card tem 1 linha de altura (§5.1).
+- **Linhas vazias da Home**: sugestão discreta e dispensável de adicionar card (§5.1).
+- **Domínio funcional e testes**: regras como funções puras; testes unitários do domínio e de UI; CI no GitHub Actions; testes junto do código (§2.6, §2.7).
+- **Acessibilidade**: fonte até 200% com adaptação; respeitar "Remover animações"; TalkBack completo, com reorganização sem arrastar (§2.8).
+- **Testes de migração do banco**: um por migração, com schemas versionados (§2.7).
 - **Tom dos textos**: zoeiro e épico, sem ser brega; trilhas com nomes evocativos (Caudal, Fornalha...) (§9.5, `TEXTOS.md`).
 
 ## 15. Decisões em aberto
 
-- **Textos** ([`TEXTOS.md`](TEXTOS.md)): revisão do primeiro rascunho completo.
+- **Textos** ([`TEXTOS.md`](TEXTOS.md)): revisão do primeiro rascunho; faltam textos de folga usada, linhas vazias da Home, notificações e onboarding.
+- **Cards do M8** (Planejado hoje, Jejum).
+- **Calibrar na implementação**: altura base da linha (128dp) e curva de XP.
+- **Layout para tablets**.

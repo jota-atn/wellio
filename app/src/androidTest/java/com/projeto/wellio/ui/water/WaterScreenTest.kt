@@ -68,7 +68,7 @@ class WaterScreenTest {
         var added: Pair<Int, String?>? = null
         show(onAdd = { ml, name, _ -> added = ml to name })
 
-        compose.onNodeWithText("Adicionar").performClick()
+        compose.onNodeWithText("Adicionar", useUnmergedTree = true).performClick()
         compose.onNodeWithText("Copo 200 ml").performClick()
         compose.onNodeWithText("Salvar").performClick()
 

@@ -39,7 +39,14 @@ fun WellioNavHost() {
             })
         }
     ) {
-        NavHost(navController = navController, startDestination = HomeDestination) {
+        NavHost(
+            navController = navController,
+            startDestination = HomeDestination,
+            enterTransition = enterFromRight,
+            exitTransition = exitToLeft,
+            popEnterTransition = popEnterFromLeft,
+            popExitTransition = popExitToRight
+        ) {
             composable<HomeDestination> {
                 HomeRoute(
                     onMenuClick = { scope.launch { drawerState.open() } },

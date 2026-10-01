@@ -78,41 +78,25 @@ fun DashboardCard(
                     modifier = Modifier.padding(bottom = 6.dp)
                 )
 
-                Row(
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.Top
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    horizontalAlignment = Alignment.End
                 ) {
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        MetaItem("ÁGUA", GoalType.WATER.color) { onAddMetaClick(GoalType.WATER) }
-                        MetaItem("SONO", GoalType.SLEEP.color) { onAddMetaClick(GoalType.SLEEP) }
-                        MetaItem("EXERCÍCIOS", GoalType.EXERCISE.color) { onAddMetaClick(GoalType.EXERCISE) }
-                    }
+                    MetaItem("ÁGUA", GoalType.WATER.color) { onAddMetaClick(GoalType.WATER) }
+                    MetaItem("ALIMENTAÇÃO", GoalType.FOOD.color) { onAddMetaClick(GoalType.FOOD) }
+                    MetaItem("EXERCÍCIOS", GoalType.EXERCISE.color) { onAddMetaClick(GoalType.EXERCISE) }
 
-                    Spacer(modifier = Modifier.width(12.dp))
-
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                        horizontalAlignment = Alignment.End
-                    ) {
-                        MetaItem("ALIMENTAÇÃO", GoalType.FOOD.color) { onAddMetaClick(GoalType.FOOD) }
-                        MetaItem("ESTUDO", GoalType.STUDY.color) { onAddMetaClick(GoalType.STUDY) }
-
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "DETALHES",
-                            color = Color.White,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.End,
-                            modifier = Modifier
-                                .clickable { onDetailsClick() }
-                        )
-                    }
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "DETALHES",
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.End,
+                        modifier = Modifier
+                            .clickable { onDetailsClick() }
+                    )
                 }
             }
         }

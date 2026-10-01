@@ -21,6 +21,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.projeto.wellio.ui.home.HomeRoute
+import com.projeto.wellio.ui.water.WaterRoute
 import kotlinx.coroutines.launch
 
 @Composable
@@ -34,13 +35,19 @@ fun WellioNavHost() {
         drawerContent = {
             WellioDrawerContent(onItemClick = { title ->
                 scope.launch { drawerState.close() }
-                navController.navigate(ComingSoonDestination(title))
+                navController.navigate(destinationFor(title))
             })
         }
     ) {
         NavHost(navController = navController, startDestination = HomeDestination) {
             composable<HomeDestination> {
-                HomeRoute(onMenuClick = { scope.launch { drawerState.open() } })
+                HomeRoute(
+                    onMenuClick = { scope.launch { drawerState.open() } },
+                    onOpenWater = { navController.navigate(WaterDestination) }
+                )
+            }
+            composable<WaterDestination> {
+                WaterRoute(onBack = { navController.popBackStack() })
             }
             composable<ComingSoonDestination> { entry ->
                 ComingSoonScreen(
@@ -50,6 +57,12 @@ fun WellioNavHost() {
             }
         }
     }
+}
+
+/** Item da sidebar → destino; o que ainda não existe cai em "Em breve". */
+private fun destinationFor(title: String): Any = when (title) {
+    "Água" -> WaterDestination
+    else -> ComingSoonDestination(title)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

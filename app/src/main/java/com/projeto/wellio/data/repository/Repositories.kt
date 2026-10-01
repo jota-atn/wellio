@@ -6,8 +6,6 @@ import com.projeto.wellio.data.db.ExerciseTypeEntity
 import com.projeto.wellio.data.db.FoodDao
 import com.projeto.wellio.data.db.FoodEntryEntity
 import com.projeto.wellio.data.db.FoodItemEntity
-import com.projeto.wellio.data.db.WaterDao
-import com.projeto.wellio.data.db.WaterEntryEntity
 import com.projeto.wellio.data.prefs.GoalsStore
 import com.projeto.wellio.data.seed.exerciseSeed
 import com.projeto.wellio.data.seed.foodSeed
@@ -22,25 +20,6 @@ import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
 import java.util.UUID
-
-class WaterRepository(private val dao: WaterDao, private val clock: Clock) {
-
-    fun totalMl(days: ClosedRange<LocalDate>): Flow<Int> = dao.totalBetween(days.start, days.endInclusive)
-
-    suspend fun add(amountMl: Int) {
-        val now = Instant.now(clock)
-        dao.insert(
-            WaterEntryEntity(
-                id = UUID.randomUUID().toString(),
-                date = LocalDate.now(clock),
-                timestamp = now,
-                amountMl = amountMl,
-                createdAt = now,
-                updatedAt = now
-            )
-        )
-    }
-}
 
 class FoodRepository(private val dao: FoodDao, private val clock: Clock) {
 

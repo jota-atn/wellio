@@ -12,9 +12,19 @@ data class WaterEntryEntity(
     val date: LocalDate,
     val timestamp: Instant,
     val amountMl: Int,
+    val containerName: String? = null,
     val createdAt: Instant,
     val updatedAt: Instant,
     val deletedAt: Instant? = null
+)
+
+@Entity(tableName = "water_container")
+data class WaterContainerEntity(
+    @PrimaryKey val id: String,
+    val name: String,
+    val amountMl: Int,
+    val isQuick: Boolean,
+    val position: Int
 )
 
 @Entity(tableName = "food_item")

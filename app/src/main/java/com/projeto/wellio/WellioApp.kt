@@ -39,6 +39,7 @@ class AppContainer(context: Context) {
 
     fun seedDatabase() {
         scope.launch {
+            waterRepository.seedIfEmpty()
             foodRepository.seedIfEmpty()
             exerciseRepository.seedIfEmpty()
         }

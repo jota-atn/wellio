@@ -4,7 +4,10 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
+import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
+import java.time.Instant
 import java.time.LocalDate
 
 @Dao
@@ -12,8 +15,35 @@ interface WaterDao {
     @Query("SELECT COALESCE(SUM(amountMl), 0) FROM water_entry WHERE date BETWEEN :from AND :to AND deletedAt IS NULL")
     fun totalBetween(from: LocalDate, to: LocalDate): Flow<Int>
 
+    @Query("SELECT * FROM water_entry WHERE date = :day AND deletedAt IS NULL ORDER BY timestamp")
+    fun entriesOn(day: LocalDate): Flow<List<WaterEntryEntity>>
+
+    @Query("SELECT * FROM water_entry WHERE id = :id")
+    suspend fun byId(id: String): WaterEntryEntity?
+
     @Insert
     suspend fun insert(entry: WaterEntryEntity)
+
+    @Update
+    suspend fun update(entry: WaterEntryEntity)
+
+    @Query("UPDATE water_entry SET deletedAt = :at, updatedAt = :at WHERE id = :id")
+    suspend fun softDelete(id: String, at: Instant)
+
+    @Query("UPDATE water_entry SET deletedAt = NULL, updatedAt = :at WHERE id = :id")
+    suspend fun restore(id: String, at: Instant)
+
+    @Query("SELECT * FROM water_container ORDER BY position")
+    fun containers(): Flow<List<WaterContainerEntity>>
+
+    @Query("SELECT COUNT(*) FROM water_container")
+    suspend fun containerCount(): Int
+
+    @Upsert
+    suspend fun upsertContainers(containers: List<WaterContainerEntity>)
+
+    @Query("DELETE FROM water_container WHERE id = :id")
+    suspend fun deleteContainer(id: String)
 }
 
 @Dao

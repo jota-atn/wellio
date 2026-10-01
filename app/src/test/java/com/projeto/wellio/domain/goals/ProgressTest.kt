@@ -19,19 +19,4 @@ class ProgressTest {
     fun `meta zero nao divide por zero`() {
         assertEquals(0f, progress(current = 500, goal = 0), 0f)
     }
-
-    @Test
-    fun `adicionar agua e permitido mesmo acima da meta`() {
-        assertEquals(500, waterAdjustment(currentTotalMl = 2400, deltaMl = 500))
-    }
-
-    @Test
-    fun `remover agua nunca deixa o total negativo`() {
-        assertEquals(-200, waterAdjustment(currentTotalMl = 200, deltaMl = -500))
-    }
-
-    @Test
-    fun `remover agua dentro do total remove o valor pedido`() {
-        assertEquals(-300, waterAdjustment(currentTotalMl = 1000, deltaMl = -300))
-    }
 }

@@ -4,137 +4,124 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import com.projeto.wellio.ui.icons.WellioIcons
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.projeto.wellio.domain.goals.progress
+import com.projeto.wellio.domain.model.WaterContainer
+import com.projeto.wellio.ui.format.formatMl
+import com.projeto.wellio.ui.icons.WellioIcon
 import com.projeto.wellio.ui.theme.WellioTheme
 
 @Composable
 fun WaterCard(
     modifier: Modifier = Modifier,
-    currentMl: Int = 0,
-    goalMl: Int = 2000,
-    onAddWater: (Int) -> Unit = {}
+    currentMl: Int,
+    goalMl: Int,
+    quickButtons: List<WaterContainer>,
+    canUndo: Boolean,
+    onQuickAdd: (WaterContainer) -> Unit,
+    onUndo: () -> Unit,
+    onDetailsClick: () -> Unit
 ) {
     val colors = WellioTheme.colors.water
+    val fraction = progress(currentMl, goalMl)
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = colors.container),
+        colors = CardDefaults.cardColors(containerColor = colors.container, contentColor = colors.onContainer),
         elevation = CardDefaults.cardElevation(0.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .padding(12.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(text = "\uD83D\uDCA7", fontSize = 32.sp)
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-
+        Column(Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                WellioIcon("water", size = 28.sp)
+                Spacer(Modifier.width(12.dp))
+                Text("ÁGUA", fontWeight = FontWeight.Bold, fontSize = 16.sp, modifier = Modifier.weight(1f))
                 Text(
-                    text = "ÁGUA",
-                    color = colors.onContainer,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                    modifier = Modifier.padding(bottom = 0.dp)
-                )
-
-                Row(
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    CompactTextButton(text = "-500", onClick = { onAddWater(-500) })
-                    CompactTextButton(text = "-300", onClick = { onAddWater(-300) })
-                    CompactTextButton(text = "-200", onClick = { onAddWater(-200) })
-
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    CompactTextButton(text = "+200", onClick = { onAddWater(200) })
-                    Spacer(modifier = Modifier.width(8.dp))
-                    CompactTextButton(text = "+300", onClick = { onAddWater(300) })
-                    Spacer(modifier = Modifier.width(8.dp))
-                    CompactTextButton(text = "+500", onClick = { onAddWater(500) })
-                }
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                // 3. BARRA DE PROGRESSO
-                val progress = progress(currentMl, goalMl)
-                Box(
-                    contentAlignment = Alignment.CenterStart,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(20.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(colors.track)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(progress)
-                            .fillMaxHeight()
-                            .background(colors.accent)
-                    )
-                    Text(
-                        text = "${(progress * 100).toInt()}%",
-                        color = if (progress > 0.5f) colors.onAccent else colors.onContainer,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(start = 8.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                // 4. DETALHES
-                Text(
-                    text = "DETALHES",
-                    color = colors.onContainer,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.End,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { /* Ação futura */ }
+                    "${formatMl(currentMl)} / ${formatMl(goalMl)}",
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.semantics {
+                        contentDescription = "${formatMl(currentMl)} de ${formatMl(goalMl)}, ${(fraction * 100).toInt()} por cento"
+                    }
                 )
             }
-        }
-    }
-}
 
-@Composable
-fun CompactTextButton(text: String, onClick: () -> Unit) {
-    TextButton(
-        onClick = onClick,
-        contentPadding = PaddingValues(0.dp),
-        modifier = Modifier
-            .height(20.dp)
-            .defaultMinSize(minWidth = 1.dp, minHeight = 1.dp)
-    ) {
-        Text(
-            text = text,
-            color = WellioTheme.colors.water.onContainer,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold
-        )
+            Spacer(Modifier.height(10.dp))
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(12.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(colors.track)
+            ) {
+                Box(Modifier.fillMaxWidth(fraction).fillMaxHeight().background(colors.accent))
+            }
+
+            Spacer(Modifier.height(8.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                quickButtons.forEach { container ->
+                    FilledTonalButton(
+                        onClick = { onQuickAdd(container) },
+                        contentPadding = PaddingValues(horizontal = 12.dp),
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = colors.accent,
+                            contentColor = colors.onAccent
+                        ),
+                        modifier = Modifier
+                            .heightIn(min = 48.dp)
+                            .semantics { contentDescription = "Adicionar ${container.name}, ${formatMl(container.amountMl)}" }
+                    ) {
+                        Text("+${container.amountMl}", fontWeight = FontWeight.Bold)
+                    }
+                }
+                Spacer(Modifier.weight(1f))
+                IconButton(onClick = onUndo, enabled = canUndo) {
+                    Icon(WellioIcons.Undo, contentDescription = "Desfazer último registro de água")
+                }
+            }
+
+            Text(
+                text = "DETALHES",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier
+                    .align(Alignment.End)
+                    .clickable(onClickLabel = "Abrir detalhes de água") { onDetailsClick() }
+                    .padding(vertical = 12.dp, horizontal = 4.dp)
+            )
+        }
     }
 }
 
 @Preview
 @Composable
 fun PreviewWaterCard() {
-    WaterCard(currentMl = 800, goalMl = 2000)
+    WellioTheme {
+        WaterCard(
+            currentMl = 1400,
+            goalMl = 2000,
+            quickButtons = listOf(
+                WaterContainer("copo", "Copo", 200, true, 0),
+                WaterContainer("caneca", "Caneca", 300, true, 1),
+                WaterContainer("garrafa", "Garrafa", 500, true, 2)
+            ),
+            canUndo = true,
+            onQuickAdd = {},
+            onUndo = {},
+            onDetailsClick = {}
+        )
+    }
 }

@@ -177,7 +177,8 @@ Regras:
 
 | Tabela | Campos principais |
 |---|---|
-| `water_entry` | id, date, timestamp, amountMl |
+| `water_entry` | id, date, timestamp, amountMl, containerName? |
+| `water_container` | id, name, amountMl, isQuick, position |
 | `food_item` | id, name, category, kcalPer100g, proteinPer100g?, carbsPer100g?, fatPer100g?, source (taco / extra / custom / barcode), sourceRef?, barcode?, iconKey, isFavorite |
 | `food_portion` | id, foodItemId, name (ex.: "1 concha média"), grams, isDefault |
 | `food_entry` | id, date, timestamp, foodItemId, meal?, portionId?, quantity, grams, kcalTotal, proteinG?, carbsG?, fatG? |
@@ -739,7 +740,7 @@ Seção no fim da sidebar, do esboço original:
 - [ ] Quantidade de comida não aceita vírgula e falha em silêncio com entrada inválida.
 - [ ] Barras do gráfico do Dashboard são fixas.
 - [x] Barra "semanal" do Dashboard usa o valor do dia.
-- [ ] "DETALHES" do card de água sem ação.
+- [x] "DETALHES" do card de água sem ação.
 - [ ] `FoodCard`/`TrainCard` com valores padrão fictícios (1500/1200, 2000/2500).
 - [ ] Título do `ExerciseDialog` usa o verde da alimentação; cor de Exercício no `GoalType` é cinza-claro e some no fundo.
 - [x] Pacote `com.projeto.wellio.components` em pasta `ui/components`.

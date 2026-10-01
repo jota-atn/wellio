@@ -17,6 +17,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.projeto.wellio.domain.model.ExerciseType
 import com.projeto.wellio.domain.model.Food
 import com.projeto.wellio.domain.model.GoalType
+import com.projeto.wellio.domain.model.WaterContainer
 import com.projeto.wellio.ui.components.DashboardCard
 import com.projeto.wellio.ui.components.DashboardDetailsDialog
 import com.projeto.wellio.ui.components.ExerciseDialog
@@ -29,13 +30,16 @@ import com.projeto.wellio.ui.components.WaterCard
 @Composable
 fun HomeRoute(
     onMenuClick: () -> Unit,
+    onOpenWater: () -> Unit,
     viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory)
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     HomeScreen(
         state = state,
         onMenuClick = onMenuClick,
+        onOpenWater = onOpenWater,
         onAddWater = viewModel::addWater,
+        onUndoWater = viewModel::undoLastWater,
         onAddFood = viewModel::addFood,
         onAddExercise = viewModel::addExercise,
         onUpdateGoal = viewModel::updateGoal
@@ -46,7 +50,9 @@ fun HomeRoute(
 fun HomeScreen(
     state: HomeUiState,
     onMenuClick: () -> Unit,
-    onAddWater: (Int) -> Unit,
+    onOpenWater: () -> Unit,
+    onAddWater: (WaterContainer) -> Unit,
+    onUndoWater: () -> Unit,
     onAddFood: (Food, Double) -> Unit,
     onAddExercise: (ExerciseType, Int) -> Unit,
     onUpdateGoal: (GoalType, Int, Int) -> Unit
@@ -76,7 +82,11 @@ fun HomeScreen(
             WaterCard(
                 currentMl = state.today.waterMl,
                 goalMl = state.goals.water.daily,
-                onAddWater = onAddWater
+                quickButtons = state.waterQuickButtons,
+                canUndo = state.lastWaterToday != null,
+                onQuickAdd = onAddWater,
+                onUndo = onUndoWater,
+                onDetailsClick = onOpenWater
             )
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {

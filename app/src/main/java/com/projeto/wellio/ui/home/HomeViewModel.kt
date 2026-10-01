@@ -11,13 +11,16 @@ import com.projeto.wellio.data.repository.ExerciseRepository
 import com.projeto.wellio.data.repository.FoodRepository
 import com.projeto.wellio.data.repository.WaterRepository
 import com.projeto.wellio.data.time.todayFlow
-import com.projeto.wellio.domain.goals.waterAdjustment
 import com.projeto.wellio.domain.model.ExerciseType
 import com.projeto.wellio.domain.model.Food
 import com.projeto.wellio.domain.model.Goal
 import com.projeto.wellio.domain.model.GoalType
 import com.projeto.wellio.domain.model.Goals
 import com.projeto.wellio.domain.model.Totals
+import com.projeto.wellio.domain.model.WaterContainer
+import com.projeto.wellio.domain.model.WaterEntry
+import com.projeto.wellio.domain.water.lastEntry
+import com.projeto.wellio.domain.water.quickButtons
 import com.projeto.wellio.domain.time.weekOf
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -35,7 +38,9 @@ data class HomeUiState(
     val today: Totals = Totals(),
     val week: Totals = Totals(),
     val foods: List<Food> = emptyList(),
-    val exerciseTypes: List<ExerciseType> = emptyList()
+    val exerciseTypes: List<ExerciseType> = emptyList(),
+    val waterQuickButtons: List<WaterContainer> = emptyList(),
+    val lastWaterToday: WaterEntry? = null
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -49,14 +54,19 @@ class HomeViewModel(
 
     private val today = todayFlow(clock)
 
+    private val water = combine(
+        waterRepository.containers,
+        today.flatMapLatest { waterRepository.entries(it) }
+    ) { containers, entries -> quickButtons(containers) to lastEntry(entries) }
+
     val uiState: StateFlow<HomeUiState> = combine(
         goalsStore.goals,
         today.flatMapLatest { day -> totals(day..day) },
         today.flatMapLatest { day -> totals(weekOf(day)) },
-        foodRepository.foods,
-        exerciseRepository.types
-    ) { goals, todayTotals, weekTotals, foods, types ->
-        HomeUiState(goals, todayTotals, weekTotals, foods, types)
+        combine(foodRepository.foods, exerciseRepository.types, ::Pair),
+        water
+    ) { goals, todayTotals, weekTotals, (foods, types), (quick, last) ->
+        HomeUiState(goals, todayTotals, weekTotals, foods, types, quick, last)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
 
     private fun totals(days: ClosedRange<LocalDate>): Flow<Totals> = combine(
@@ -65,10 +75,13 @@ class HomeViewModel(
         exerciseRepository.kcal(days)
     ) { water, consumed, burned -> Totals(water, consumed, burned) }
 
-    fun addWater(deltaMl: Int) {
-        val amount = waterAdjustment(uiState.value.today.waterMl, deltaMl)
-        if (amount == 0) return
-        viewModelScope.launch { waterRepository.add(amount) }
+    fun addWater(container: WaterContainer) {
+        viewModelScope.launch { waterRepository.add(container.amountMl, container.name) }
+    }
+
+    fun undoLastWater() {
+        val last = uiState.value.lastWaterToday ?: return
+        viewModelScope.launch { waterRepository.delete(last.id) }
     }
 
     fun addFood(food: Food, portions: Double) {

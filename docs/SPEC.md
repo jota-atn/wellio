@@ -709,7 +709,10 @@ O tipo define o editor, mas todas compartilham a mesma tela de listagem.
 | Fase | Entrega |
 |---|---|
 | **M0 — Base** | Atualizar dependências; corrigir pacotes; Room + DataStore + `AppContainer`; Navigation + drawer vazio; Home montada com os cards atuais; abstração `iconKey`; persistência de água/comida/treino |
-| **M1 — Registros completos** | Telas de detalhe com editar/remover/desfazer; navegação entre dias; favoritos/recentes; bases TACO + extras e Compendium curado; medidas caseiras; resumos de cada funcionalidade; cadastro de alimentos e exercícios próprios; **leitor de código de barras**; **modelos de treino**; peso do perfil no cálculo; correções da §12 |
+| **M1a — Água, Exercício e Peso** | Telas de Água, Exercício e Peso (simples); editar (toque abre bottom sheet), apagar (deslizar ou lixeira) e desfazer; navegação entre dias (setas, deslizar e calendário, nunca depois de hoje); recipientes nomeados gerenciados na tela de Água; base de exercícios do Compendium curada (lista revisada pelo usuário antes de entrar); peso mais recente no cálculo de kcal |
+| **M1b — Alimentação** | Tela de Alimentação com refeições (sugeridas pelo horário: café até 10h, almoço 10–15h, lanche 15–18h, jantar 18–22h, ceia depois das 22h); TACO + extras; medidas caseiras; favoritos/recentes; cadastro de alimentos próprios; repetir refeição; acima da meta |
+| **M1c — Extras do registro** | Leitor de código de barras (Open Food Facts); modelos de treino |
+| **M1 — Registros completos (visão geral)** | Telas de detalhe com editar/remover/desfazer; navegação entre dias; favoritos/recentes; bases TACO + extras e Compendium curado; medidas caseiras; resumos de cada funcionalidade; cadastro de alimentos e exercícios próprios; **leitor de código de barras**; **modelos de treino**; peso do perfil no cálculo; correções da §12 |
 | **M2 — Perfil e Metas** | Modal de perfil (foto, nome, peso); metas diárias, semanais e de período; Dashboard com dados reais; **widget na tela inicial** |
 | **M3 — Configurações e integrações** | Tema; notificações e lembretes; sons; backup/exportação; **Health Connect** |
 | **M4 — Home personalizável** | Catálogo de cards (inteiro/metade/mini), grid arrastável, painel rápido configurável, card Combinado, restaurar padrão |
@@ -837,6 +840,7 @@ Modelo de dados adicional: `plan_item` (id, date, time?, kind: exercise/template
 - **Domínio funcional e testes**: regras como funções puras; testes unitários do domínio e de UI; CI no GitHub Actions; testes junto do código (§2.6, §2.7).
 - **Acessibilidade**: fonte até 200% com adaptação; respeitar "Remover animações"; TalkBack completo, com reorganização sem arrastar (§2.8).
 - **Testes de migração do banco**: um por migração, com schemas versionados (§2.7).
+- **M1 dividido em M1a/M1b/M1c**; uma tela por módulo; navegação entre dias por setas, deslizar e calendário (§11).
 - **Tom dos textos**: zoeiro e épico, sem ser brega; trilhas com nomes evocativos (Caudal, Fornalha...) (§9.5, `TEXTOS.md`).
 
 ## 15. Decisões em aberto

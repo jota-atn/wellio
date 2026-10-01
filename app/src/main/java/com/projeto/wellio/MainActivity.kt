@@ -5,7 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import com.projeto.wellio.model.HomeViewModel
+import com.projeto.wellio.ui.home.HomeViewModel
 import com.projeto.wellio.ui.home.HomeScreen
 import com.projeto.wellio.ui.theme.WellioTheme
 

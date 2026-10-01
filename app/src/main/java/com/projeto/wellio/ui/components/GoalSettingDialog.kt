@@ -1,4 +1,4 @@
-package com.projeto.wellio.components
+package com.projeto.wellio.ui.components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape

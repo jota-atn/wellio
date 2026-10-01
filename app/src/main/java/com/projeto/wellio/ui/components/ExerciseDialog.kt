@@ -1,4 +1,4 @@
-package com.projeto.wellio.components
+package com.projeto.wellio.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable

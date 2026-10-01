@@ -8,16 +8,15 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.projeto.wellio.components.DashboardCard
-import com.projeto.wellio.components.DashboardDetailsDialog
-import com.projeto.wellio.components.ExerciseDialog
-import com.projeto.wellio.components.FoodCard
-import com.projeto.wellio.components.FoodDialog
-import com.projeto.wellio.components.GoalSettingDialog
-import com.projeto.wellio.components.TrainCard
-import com.projeto.wellio.components.WaterCard
+import com.projeto.wellio.ui.components.DashboardCard
+import com.projeto.wellio.ui.components.DashboardDetailsDialog
+import com.projeto.wellio.ui.components.ExerciseDialog
+import com.projeto.wellio.ui.components.FoodCard
+import com.projeto.wellio.ui.components.FoodDialog
+import com.projeto.wellio.ui.components.GoalSettingDialog
+import com.projeto.wellio.ui.components.TrainCard
+import com.projeto.wellio.ui.components.WaterCard
 import com.projeto.wellio.model.GoalType
-import com.projeto.wellio.model.HomeViewModel
 
 @Composable
 fun HomeScreen(viewModel: HomeViewModel) {

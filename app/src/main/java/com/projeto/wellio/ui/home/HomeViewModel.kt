@@ -1,4 +1,4 @@
-package com.projeto.wellio.model
+package com.projeto.wellio.ui.home
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -6,6 +6,11 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
+import com.projeto.wellio.model.EatenFood
+import com.projeto.wellio.model.ExerciseBlueprint
+import com.projeto.wellio.model.FoodBlueprint
+import com.projeto.wellio.model.GoalType
+import com.projeto.wellio.model.RegisteredExercise
 
 class HomeViewModel : ViewModel() {
 

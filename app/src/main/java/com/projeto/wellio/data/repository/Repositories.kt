@@ -6,7 +6,6 @@ import com.projeto.wellio.data.db.ExerciseTypeEntity
 import com.projeto.wellio.data.db.FoodDao
 import com.projeto.wellio.data.db.FoodEntryEntity
 import com.projeto.wellio.data.db.FoodItemEntity
-import com.projeto.wellio.data.prefs.GoalsStore
 import com.projeto.wellio.data.seed.exerciseSeed
 import com.projeto.wellio.data.seed.foodSeed
 import com.projeto.wellio.domain.calories.exerciseKcal
@@ -50,7 +49,7 @@ class FoodRepository(private val dao: FoodDao, private val clock: Clock) {
 
 class ExerciseRepository(
     private val dao: ExerciseDao,
-    private val goalsStore: GoalsStore,
+    private val weightRepository: WeightRepository,
     private val clock: Clock
 ) {
 
@@ -60,7 +59,7 @@ class ExerciseRepository(
 
     suspend fun add(type: ExerciseType, minutes: Int) {
         val now = Instant.now(clock)
-        val weightKg = goalsStore.weightKg.first()
+        val weightKg = weightRepository.currentWeightKg.first()
         dao.insertEntry(
             ExerciseEntryEntity(
                 id = UUID.randomUUID().toString(),

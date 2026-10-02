@@ -81,3 +81,28 @@ interface ExerciseDao {
     @Insert
     suspend fun insertEntry(entry: ExerciseEntryEntity)
 }
+
+@Dao
+interface WeightDao {
+    @Query("SELECT * FROM weight_entry WHERE deletedAt IS NULL ORDER BY date DESC")
+    fun entries(): Flow<List<WeightEntryEntity>>
+
+    /** Inclui pesagens apagadas: registrar de novo no mesmo dia reaproveita a linha. */
+    @Query("SELECT * FROM weight_entry WHERE date = :day")
+    suspend fun onDate(day: LocalDate): WeightEntryEntity?
+
+    @Query("SELECT * FROM weight_entry WHERE id = :id")
+    suspend fun byId(id: String): WeightEntryEntity?
+
+    @Insert
+    suspend fun insert(entry: WeightEntryEntity)
+
+    @Update
+    suspend fun update(entry: WeightEntryEntity)
+
+    @Query("UPDATE weight_entry SET deletedAt = :at, updatedAt = :at WHERE id = :id")
+    suspend fun softDelete(id: String, at: Instant)
+
+    @Query("UPDATE weight_entry SET deletedAt = NULL, updatedAt = :at WHERE id = :id")
+    suspend fun restore(id: String, at: Instant)
+}

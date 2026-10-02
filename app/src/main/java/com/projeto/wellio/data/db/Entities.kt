@@ -27,6 +27,17 @@ data class WaterContainerEntity(
     val position: Int
 )
 
+/** Uma pesagem por dia (índice único em `date`). */
+@Entity(tableName = "weight_entry", indices = [Index("date", unique = true)])
+data class WeightEntryEntity(
+    @PrimaryKey val id: String,
+    val date: LocalDate,
+    val weightKg: Double,
+    val createdAt: Instant,
+    val updatedAt: Instant,
+    val deletedAt: Instant? = null
+)
+
 @Entity(tableName = "food_item")
 data class FoodItemEntity(
     @PrimaryKey val id: String,

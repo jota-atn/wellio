@@ -8,6 +8,7 @@ import com.projeto.wellio.data.prefs.GoalsStore
 import com.projeto.wellio.data.repository.ExerciseRepository
 import com.projeto.wellio.data.repository.FoodRepository
 import com.projeto.wellio.data.repository.WaterRepository
+import com.projeto.wellio.data.repository.WeightRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
@@ -35,7 +36,8 @@ class AppContainer(context: Context) {
     val goalsStore = GoalsStore(context.preferences)
     val waterRepository = WaterRepository(database.waterDao(), clock)
     val foodRepository = FoodRepository(database.foodDao(), clock)
-    val exerciseRepository = ExerciseRepository(database.exerciseDao(), goalsStore, clock)
+    val weightRepository = WeightRepository(database.weightDao(), clock)
+    val exerciseRepository = ExerciseRepository(database.exerciseDao(), weightRepository, clock)
 
     fun seedDatabase() {
         scope.launch {

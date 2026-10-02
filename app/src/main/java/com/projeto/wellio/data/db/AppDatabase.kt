@@ -13,15 +13,17 @@ import androidx.room.TypeConverters
         FoodItemEntity::class,
         FoodEntryEntity::class,
         ExerciseTypeEntity::class,
-        ExerciseEntryEntity::class
+        ExerciseEntryEntity::class,
+        WeightEntryEntity::class
     ],
-    version = 2
+    version = 3
 )
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun waterDao(): WaterDao
     abstract fun foodDao(): FoodDao
     abstract fun exerciseDao(): ExerciseDao
+    abstract fun weightDao(): WeightDao
 
     companion object {
         fun build(context: Context): AppDatabase =

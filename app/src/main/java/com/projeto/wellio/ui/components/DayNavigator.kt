@@ -92,7 +92,7 @@ fun Modifier.swipeBetweenDays(day: LocalDate, today: LocalDate, onDayChange: (Lo
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DayPickerDialog(
+fun DayPickerDialog(
     day: LocalDate,
     today: LocalDate,
     onDismiss: () -> Unit,

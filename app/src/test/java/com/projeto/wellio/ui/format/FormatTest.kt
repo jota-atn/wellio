@@ -37,4 +37,17 @@ class FormatTest {
     fun `dias de outro ano mostram o ano`() {
         assertEquals("Qua, 31 dez 2025", dayLabel(LocalDate.of(2025, 12, 31), today))
     }
+
+    @Test
+    fun `peso com uma casa e virgula`() {
+        assertEquals("72,4 kg", formatKg(72.4))
+        assertEquals("80,0 kg", formatKg(80.0))
+    }
+
+    @Test
+    fun `variacao de peso tem sinal`() {
+        assertEquals("+0,3 kg", formatKgChange(0.3))
+        assertEquals("−0,7 kg", formatKgChange(-0.7))
+        assertEquals("0,0 kg", formatKgChange(0.0))
+    }
 }

@@ -14,6 +14,22 @@ private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 /** "1.400 ml" */
 fun formatMl(ml: Int): String = "${NumberFormat.getIntegerInstance(ptBR).format(ml)} ml"
 
+/** "72,4 kg" */
+fun formatKg(kg: Double): String = "${decimal(kg)} kg"
+
+/** "+0,3 kg", "−0,7 kg" ou "0,0 kg" */
+fun formatKgChange(kg: Double): String = when {
+    kg > 0 -> "+${decimal(kg)} kg"
+    kg < 0 -> "−${decimal(-kg)} kg"
+    else -> "0,0 kg"
+}
+
+private fun decimal(value: Double): String =
+    NumberFormat.getNumberInstance(ptBR).apply {
+        minimumFractionDigits = 1
+        maximumFractionDigits = 1
+    }.format(value)
+
 /** "08:10" */
 fun formatTime(instant: Instant, zone: ZoneId): String = timeFormatter.format(instant.atZone(zone))
 

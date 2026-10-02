@@ -24,6 +24,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.projeto.wellio.ui.home.HomeRoute
 import com.projeto.wellio.ui.water.WaterRoute
+import com.projeto.wellio.ui.weight.WeightRoute
 import kotlinx.coroutines.launch
 
 @Composable
@@ -63,6 +64,9 @@ fun WellioNavHost() {
             composable<WaterDestination> {
                 WaterRoute(onBack = { navController.popBackStack() })
             }
+            composable<WeightDestination> {
+                WeightRoute(onBack = { navController.popBackStack() })
+            }
             composable<ComingSoonDestination> { entry ->
                 ComingSoonScreen(
                     title = entry.toRoute<ComingSoonDestination>().title,
@@ -76,6 +80,7 @@ fun WellioNavHost() {
 /** Item da sidebar → destino; o que ainda não existe cai em "Em breve". */
 private fun destinationFor(title: String): Any = when (title) {
     "Água" -> WaterDestination
+    "Peso" -> WeightDestination
     else -> ComingSoonDestination(title)
 }
 

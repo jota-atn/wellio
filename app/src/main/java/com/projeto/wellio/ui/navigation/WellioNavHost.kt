@@ -1,11 +1,13 @@
 package com.projeto.wellio.ui.navigation
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -40,12 +42,17 @@ fun WellioNavHost() {
         }
     ) {
         NavHost(
+            modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
             navController = navController,
             startDestination = HomeDestination,
             enterTransition = enterFromRight,
             exitTransition = exitToLeft,
             popEnterTransition = popEnterFromLeft,
-            popExitTransition = popExitToRight
+            popExitTransition = popExitToRight,
+            // Gesto de voltar (voltar preditivo): mesma animação do voltar, acompanhando o dedo,
+            // em vez do padrão da biblioteca, que encolhe a tela num cartão
+            predictivePopEnterTransition = { _ -> popEnterFromLeft() },
+            predictivePopExitTransition = { _ -> popExitToRight() }
         ) {
             composable<HomeDestination> {
                 HomeRoute(

@@ -312,6 +312,7 @@ Um **botão flutuante "+" (FAB)** fica fixo no canto da Home e abre um menu: Ág
 
 - Abre **em leque com mola**: o "+" gira para "×", os itens sobem um a um em pílulas com ícone e cor do módulo, e a Home escurece atrás.
 - Cada módulo entra no FAB pelo seu contrato; só aparece o que existe (Anotação entra no M5).
+- **Ações de 1 toque**: segurar uma pílula do leque abre, ao lado dela, as ações diretas daquele módulo, que registram sem abrir nada: na Água, os recipientes rápidos (+200 Copo, +300 Caneca); no Exercício, os modelos de treino (M1c); na Alimentação, repetir a última refeição (M1b). Cada módulo declara as suas no contrato; módulo sem ações não reage ao segurar.
 - **No máximo 4 itens visíveis** no leque. Com mais módulos, o leque rola **de 4 em 4** (rolagem que encaixa em grupos de 4), mantendo o mesmo visual.
 - Tocar num item abre o **registro rápido por cima da Home**, sem trocar de tela: o mesmo sheet de registro da tela do módulo (Água com recipientes e horário, Peso com a régua); Alimento e Exercício usam os registros antigos até serem refeitos.
 

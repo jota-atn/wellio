@@ -169,13 +169,13 @@ Regras:
 
 Cada tela de funcionalidade tem **personalidade própria**, com um elemento ilustrativo animado no topo, em vez de só cards e listas:
 
-- **Água**: uma gota grande que enche até a % do dia, com onda suave contínua; ao registrar, o nível sobe com um "chacoalhão" elástico.
-- **Peso**: curva de evolução no topo (ponto atual em destaque) e registro por **régua deslizante** com marcas de 0,1 kg e vibração leve a cada marca.
+- **Água**: uma gota grande que enche até a % do dia, com onda suave contínua; ao registrar, o nível sobe com um "chacoalhão" elástico. Ao registrar com a meta já batida (ou ao batê-la), a gota **transborda**: gotinhas pulam para fora e escorrem pela lateral.
+- **Peso**: uma **balança de banheiro** vista de cima; no visor, uma fita numerada gira com mola até o peso atual ao abrir a tela (a balança "afunda" de leve, como se alguém subisse). Registro por **régua deslizante** de 0,1 kg, com vibração a cada 0,5 kg (mais forte a cada 1 kg), botões −/+ e opção de digitar.
 - Exercício e Alimentação seguem a mesma ideia quando chegarem.
 
 Com "Remover animações" ligado, os elementos ficam parados (§2.8).
 
-**Transições entre telas**: deslize com mola solta ("gelatina"): passa do ponto, volta e assenta devagar.
+**Transições entre telas**: deslize com mola solta ("gelatina"): passa do ponto, volta e assenta devagar. O **gesto de voltar** dispara a mesma animação ao ser concluído; durante o arrasto a tela não acompanha o dedo (sem a prévia do voltar preditivo), porque a prévia comprime a mola e a volta fica rápida demais.
 
 ## 3. Regras gerais
 
@@ -384,12 +384,21 @@ Junta **até 3 resumos** escolhidos pelo usuário num card só, com visual capri
 - Quantidade personalizada (campo numérico).
 - **Sem limite na meta**: dá para beber mais do que a meta; a barra fica cheia e mostra o excedente (ex.: `2.300 / 2.000 ml`).
 - Os botões negativos (−200, −300, −500) saem. Para corrigir: **Desfazer último** no card, ou editar/remover registros na tela de detalhes.
-- **Tela de detalhes**: lista dos registros do dia com horário, edição e remoção; navegação entre dias; gráfico dos últimos 7/30 dias.
+- **Tela de detalhes**: lista dos registros do dia com horário, edição e remoção; botão **"Desfazer último"** (como no card); navegação entre dias; gráfico dos últimos 7/30 dias.
+- **Meta diária editável na própria tela** (tocar na meta abre um sheet), com sugestão de 35 ml por kg do peso atual. O Dashboard continua editando também; os dois gravam no mesmo lugar.
 - **Recipientes nomeados**: atalhos com nome, volume e ícone (ex.: "Copo 200 ml", "Garrafa 500 ml", "Squeeze 750 ml"), gerenciados **na própria tela de Água**, sem engrenagem:
   - uma fileira de botões de recipiente: **tocar registra** na hora, **segurar abre a edição** daquele recipiente, e o último botão **"+"** cria um novo;
   - **"Editar"** ao lado da fileira transforma ela na grade **"Meus recipientes"**, com lápis em cada um, "+ Novo" e apagar; "Pronto" volta ao normal;
   - cada recipiente tem um **ícone escolhido pelo usuário** num conjunto desenhado para o Wellio (copo, caneca, xícara, garrafa, squeeze, taça, garrafa térmica, galão); um recipiente novo já vem com um ícone sugerido pelo volume. Nada de emoji (§2.3);
   - os marcados como rápidos (até 3) também viram botões no card da Home.
+
+## 6.1 Peso
+
+- Tela própria, com a balança de banheiro no topo (§2.9).
+- **Peso alvo** definido na própria tela: barra de progresso desde o peso do momento em que o alvo foi definido, quanto falta e linha tracejada na curva. No M2 o peso alvo aparece também no perfil (mesmo dado).
+- **Curva de evolução** por período (30 dias, 90 dias, tudo); segurar o dedo e arrastar mostra o peso e o dia de cada pesagem.
+- **Resumo do período**: menor, maior e média.
+- **Ritmo** médio em kg por semana (com pelo menos 7 dias entre a primeira e a última pesagem do período) e, com peso alvo, a **data estimada** para chegar lá, se o ritmo for na direção certa.
 
 ## 7. Alimentação
 
@@ -860,6 +869,7 @@ Modelo de dados adicional: `plan_item` (id, date, time?, kind: exercise/template
 - **Acessibilidade**: fonte até 200% com adaptação; respeitar "Remover animações"; TalkBack completo, com reorganização sem arrastar (§2.8).
 - **Testes de migração do banco**: um por migração, com schemas versionados (§2.7).
 - **M1 dividido em M1a/M1b/M1c**; uma tela por módulo; navegação entre dias por setas, deslizar e calendário (§11).
+- **Metas editáveis na tela de cada módulo e no Dashboard**, gravando no mesmo lugar (§6, §6.1).
 - **Telas próprias para tudo** e personalidade visual por tela (gota na Água, curva + régua no Peso); transição "gelatina"; recipientes na tela de Água com fileira + modo edição e ícones desenhados (§2.2, §2.9, §6).
 - **Tom dos textos**: zoeiro e épico, sem ser brega; trilhas com nomes evocativos (Caudal, Fornalha...) (§9.5, `TEXTOS.md`).
 

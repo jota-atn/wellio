@@ -8,6 +8,7 @@ pontas arredondadas, sem preenchimento; a cor vem do tint no app.
 Grupos:
 - container: recipientes de água (SPEC §6)
 - module: ícone de cada funcionalidade (sidebar, FAB, resumos)
+- exercise: categoria de exercício (SPEC §8.0); cada atividade usa o da sua categoria
 
 Uso: python3 tools/icons/icones.py
 """
@@ -86,7 +87,56 @@ MODULE = {
     ],
 }
 
-GROUPS = {"container": CONTAINER, "module": MODULE}
+EXERCISE = {
+    # Tênis de corrida, de lado
+    "cardio": [
+        "M3,16.5 H20.5 A1.5,1.5 0 0 1 22,18 A1.5,1.5 0 0 1 20.5,19.5 H4.5 A1.5,1.5 0 0 1 3,18 Z",
+        "M3,16.5 V8.5 A1.5,1.5 0 0 1 4.5,7 H7.5 L10,10.5 L13.5,11.2 C17.5,12 20.8,13.6 21.3,16.5",
+        "M9.2,9.6 L10.8,8.4",
+        "M11.6,10.9 L13.2,9.7",
+    ],
+    # Halter
+    "strength": [
+        "M6,6.5 H8.5 V17.5 H6 Z",
+        "M3.5,9 H6 V15 H3.5 Z",
+        "M15.5,6.5 H18 V17.5 H15.5 Z",
+        "M18,9 H20.5 V15 H18 Z",
+        "M8.5,12 H15.5",
+    ],
+    # Luva de boxe
+    "fight": [
+        "M7,12.5 V8.5 A4.5,4.5 0 0 1 11.5,4 H13.5 A4.5,4.5 0 0 1 18,8.5 V13 A4,4 0 0 1 14,17 H11 A4,4 0 0 1 7,13",
+        "M7,12.5 C5.3,12.5 4.5,11 5,9.8 C5.5,8.8 6.5,8.6 7,9",
+        "M7,12.5 C8.5,11.3 10.5,11.3 11.5,12.5",
+        "M9,17 V20.5 H16 V17",
+    ],
+    # Bola (vôlei)
+    "sports": [
+        "M12,3 A9,9 0 1 1 11.99,3 Z",
+        "M12,3 C12.5,8 10.5,12 4.5,16.5",
+        "M12,12 C16.5,11 20.5,12.5 20.8,14",
+        "M12,12 C9.5,14.5 9.5,18 11,21",
+    ],
+    # Ondas
+    "water": [
+        "M3,8 C5,6.5 7,6.5 9,8 C11,9.5 13,9.5 15,8 C17,6.5 19,6.5 21,8",
+        "M3,13 C5,11.5 7,11.5 9,13 C11,14.5 13,14.5 15,13 C17,11.5 19,11.5 21,13",
+        "M3,18 C5,16.5 7,16.5 9,18 C11,19.5 13,19.5 15,18 C17,16.5 19,16.5 21,18",
+    ],
+    # Flor de lótus
+    "zen": [
+        "M12,5.5 C14.5,8 14.5,12.5 12,16 C9.5,12.5 9.5,8 12,5.5 Z",
+        "M12,16 C8.5,16 5,13.5 4.5,10 C7.5,10 10.5,12 12,16",
+        "M12,16 C15.5,16 19,13.5 19.5,10 C16.5,10 13.5,12 12,16",
+        "M6,19 C9,18 15,18 18,19",
+    ],
+    # Estrela
+    "other": [
+        "M12,3.5 L14.5,9 L20.5,9.6 L16,13.6 L17.3,19.5 L12,16.5 L6.7,19.5 L8,13.6 L3.5,9.6 L9.5,9 Z",
+    ],
+}
+
+GROUPS = {"container": CONTAINER, "module": MODULE, "exercise": EXERCISE}
 
 
 def vector_drawable(paths: list[str]) -> str:

@@ -93,12 +93,12 @@ object ExerciseModule : WellioModule {
 
     override fun summary(container: AppContainer): Flow<Summary> = combine(
         todayFlow(container.clock).flatMapLatest { container.exerciseRepository.kcal(it..it) },
+        todayFlow(container.clock).flatMapLatest { container.exerciseRepository.minutes(it..it) },
         container.goalsStore.goals
-    ) { kcal, goals -> exerciseSummary(kcal, goals.exercise.daily) }
+    ) { kcal, minutes, goals -> exerciseSummary(kcal, minutes, goals.exercise.daily, goals.exerciseUnit) }
 
-    // Sem tela ainda: tocar no card registra
     @Composable
-    override fun HomeCard(size: CardSize, onOpen: () -> Unit, modifier: Modifier) = ExerciseHomeCard(size, modifier)
+    override fun HomeCard(size: CardSize, onOpen: () -> Unit, modifier: Modifier) = ExerciseHomeCard(size, onOpen, modifier)
 
     override val registerLabel = "Exercício"
 

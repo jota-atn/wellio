@@ -1,5 +1,6 @@
 package com.projeto.wellio.ui.module
 
+import com.projeto.wellio.domain.model.ExerciseUnit
 import com.projeto.wellio.domain.weight.WeightGoal
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -47,5 +48,14 @@ class SummaryTest {
     @Test
     fun `peso sem pesagens avisa`() {
         assertEquals("—", weightSummary(null, null, null).value)
+    }
+
+    @Test
+    fun `exercicio com meta em minutos mostra os minutos`() {
+        val summary = exerciseSummary(burnedKcal = 320, minutes = 45, goal = 30, unit = ExerciseUnit.Minutes)
+
+        assertEquals("45 min", summary.value)
+        assertEquals("de 30", summary.secondary)
+        assertEquals(1f, summary.progress!!, 0f)
     }
 }

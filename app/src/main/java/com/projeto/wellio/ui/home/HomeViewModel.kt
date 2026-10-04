@@ -79,11 +79,11 @@ class HomeViewModel(container: AppContainer) : ViewModel() {
         combine(
             waterRepository.totalsByDay(range),
             foodRepository.kcalByDay(range),
-            exerciseRepository.kcalByDay(range),
+            combine(exerciseRepository.kcalByDay(range), exerciseRepository.minutesByDay(range), ::Pair),
             goalsStore.goals
-        ) { water, food, exercise, goals ->
+        ) { water, food, (burned, minutes), goals ->
             days.map { date ->
-                DayScore(date, dayScore(Totals(water[date] ?: 0, food[date] ?: 0, exercise[date] ?: 0), goals))
+                DayScore(date, dayScore(Totals(water[date] ?: 0, food[date] ?: 0, burned[date] ?: 0, minutes[date] ?: 0), goals))
             }
         }
     }

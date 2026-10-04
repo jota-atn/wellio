@@ -1,6 +1,7 @@
 package com.projeto.wellio.ui.module
 
 import com.projeto.wellio.domain.goals.progress
+import com.projeto.wellio.domain.model.ExerciseUnit
 import com.projeto.wellio.domain.weight.WeightGoal
 import com.projeto.wellio.domain.weight.goalProgress
 import com.projeto.wellio.ui.format.formatInt
@@ -48,14 +49,25 @@ fun foodSummary(consumedKcal: Int, goalKcal: Int): Summary {
     )
 }
 
-fun exerciseSummary(burnedKcal: Int, goalKcal: Int): Summary {
-    val fraction = progress(burnedKcal, goalKcal)
+/** Exercício na unidade da meta (SPEC §8.0): kcal queimadas ou minutos ativos. */
+fun exerciseSummary(burnedKcal: Int, minutes: Int, goal: Int, unit: ExerciseUnit = ExerciseUnit.Kcal): Summary {
+    if (unit == ExerciseUnit.Minutes) {
+        val fraction = progress(minutes, goal)
+        return Summary(
+            module = ModuleId.Exercise,
+            value = "$minutes min",
+            secondary = "de $goal",
+            progress = fraction,
+            spoken = "Exercício: $minutes de $goal minutos ativos, ${percent(fraction)} por cento"
+        )
+    }
+    val fraction = progress(burnedKcal, goal)
     return Summary(
         module = ModuleId.Exercise,
         value = formatInt(burnedKcal),
-        secondary = "de ${formatInt(goalKcal)}",
+        secondary = "de ${formatInt(goal)}",
         progress = fraction,
-        spoken = "Exercício: ${formatInt(burnedKcal)} de ${formatInt(goalKcal)} quilocalorias queimadas, ${percent(fraction)} por cento"
+        spoken = "Exercício: ${formatInt(burnedKcal)} de ${formatInt(goal)} quilocalorias queimadas, ${percent(fraction)} por cento"
     )
 }
 

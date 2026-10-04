@@ -13,13 +13,13 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.navigation.NavBackStackEntry
 
 /*
- * Transições com "bounce": a tela desliza da lateral, passa um pouco do ponto
- * e assenta (mola pouco amortecida). Com "Remover animações" ligado no Android,
- * o Compose zera a duração das animações sozinho (SPEC §2.8).
+ * Transições "gelatina" (SPEC §2.9): a tela desliza da lateral, passa do ponto
+ * (~10% da largura), volta e assenta devagar (mola solta e lenta). Com "Remover
+ * animações" ligado no Android, o Compose zera a duração das animações sozinho (SPEC §2.8).
  */
 private val bouncySlide = spring<IntOffset>(
-    dampingRatio = 0.72f,
-    stiffness = Spring.StiffnessMediumLow
+    dampingRatio = 0.6f,
+    stiffness = Spring.StiffnessLow
 )
 private val quickFade = spring<Float>(stiffness = Spring.StiffnessMedium)
 

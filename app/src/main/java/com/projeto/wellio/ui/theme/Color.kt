@@ -43,3 +43,6 @@ internal val DarkWellioColors = WellioColors(
     food = ModuleColors(Color(0xFF13311A), Color(0xFFC8E6C9), Color(0xFF6FCF7A), Color(0xFF0B2410), Color(0xFF234A2B)),
     exercise = ModuleColors(Color(0xFF3F1A0E), Color(0xFFFFD9CB), Color(0xFFFF8A62), Color(0xFF3A1206), Color(0xFF5E2A18))
 )
+
+// Agulha da balança do Peso: o detalhe vermelho clássico (SPEC §2.9), igual nos dois temas
+val NeedleRed = Color(0xFFFF4B4B)

@@ -2,6 +2,7 @@ package com.projeto.wellio.domain.water
 
 import com.projeto.wellio.domain.model.WaterContainer
 import com.projeto.wellio.domain.model.WaterEntry
+import kotlin.math.roundToInt
 
 const val MAX_QUICK_BUTTONS = 3
 const val MAX_WATER_AMOUNT_ML = 5000
@@ -56,3 +57,14 @@ fun suggestedIcon(amountMl: Int): ContainerIcon = when {
     amountMl <= 1000 -> ContainerIcon.Garrafa
     else -> ContainerIcon.Galao
 }
+
+const val MIN_WATER_GOAL_ML = 500
+const val MAX_WATER_GOAL_ML = 8000
+
+/** Meta diária sugerida: 35 ml por kg, arredondada para 50 ml e dentro dos limites. */
+fun suggestedWaterGoal(weightKg: Double): Int =
+    ((weightKg * 35 / 50).roundToInt() * 50).coerceIn(MIN_WATER_GOAL_ML, MAX_WATER_GOAL_ML)
+
+/** Meta diária digitada em ml, entre os limites. */
+fun parseWaterGoal(text: String): Int? =
+    text.trim().toIntOrNull()?.takeIf { it in MIN_WATER_GOAL_ML..MAX_WATER_GOAL_ML }

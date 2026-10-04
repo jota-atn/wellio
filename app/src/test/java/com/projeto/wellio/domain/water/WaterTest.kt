@@ -93,4 +93,20 @@ class WaterTest {
     fun `chave de icone desconhecida cai no copo`() {
         assertEquals(ContainerIcon.Copo, ContainerIcon.fromKey("water.balde"))
     }
+
+    @Test
+    fun `meta sugerida e 35 ml por kg arredondada para 50`() {
+        assertEquals(2750, suggestedWaterGoal(78.4))
+    }
+
+    @Test
+    fun `meta sugerida respeita os limites`() {
+        assertEquals(MAX_WATER_GOAL_ML, suggestedWaterGoal(400.0))
+    }
+
+    @Test
+    fun `meta digitada fora dos limites e recusada`() {
+        assertNull(parseWaterGoal("100"))
+        assertEquals(2500, parseWaterGoal("2500"))
+    }
 }

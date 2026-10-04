@@ -286,10 +286,10 @@ A Home é pensada para **caber na tela sem rolar**. O número de linhas que cabe
 | Card | Na Home por padrão | Inteiro | Metade | Mini |
 |---|---|---|---|---|
 | Dashboard | ✅ inteiro | progresso das 3 metas + mini-gráfico dos últimos 7 dias (barra por dia = média do % atingido das 3 metas, limitado a 100% por meta; hoje destacado) + atalho para detalhes | 3 anéis de progresso + % do dia | — |
-| Água | ✅ inteiro | botões rápidos, barra de progresso, total/meta, "Desfazer último" | total/meta + barra + um botão rápido | total/meta + botão rápido |
+| Água | ✅ inteiro | gota pequena à esquerda (com onda e transbordar), total/meta, barra e %, recipientes rápidos com ícone e "Desfazer último" | gota + total/meta + o primeiro recipiente rápido | total/meta + botão rápido |
 | Alimentação | ✅ metade | kcal/meta com barra, últimas refeições do dia, atalho para registrar | kcal/meta + atalho para registrar | kcal/meta |
 | Exercício | ✅ metade | progresso na unidade da meta, o outro valor menor, treinos do dia, atalho para registrar | progresso na unidade da meta + atalho | progresso |
-| Peso | | peso atual, tendência (média móvel de 7 dias), variação na semana, mini-gráfico de 30 dias, botão registrar | peso atual + seta de tendência | peso + seta |
+| Peso | ✅ metade | visor da balança (fita com agulha vermelha) e peso atual à esquerda; à direita, mini-curva de 30 dias, variação na semana e o alvo | visor pequeno + peso + seta de tendência | peso + seta |
 | Saldo calórico | | consumidas, queimadas, saldo e meta, com barra | saldo vs. meta | saldo |
 | Macros do dia | | proteína, carboidrato e gordura em barras (só alimentos com macros contam; mostra a % de kcal coberta) | 3 anéis | — |
 | Notas fixadas | | até 3 notas fixadas com prévia | a primeira nota fixada | — |
@@ -302,22 +302,28 @@ A Home é pensada para **caber na tela sem rolar**. O número de linhas que cabe
 - **Painel rápido padrão**: Checklist (se houver lista), Próximo lembrete, Progresso.
 - Cards do M8 (Planejado hoje, Jejum): a definir no M8.
 
-Layout padrão da Home: Dashboard, Água, Alimentação + Exercício lado a lado.
+Layout padrão da Home: Dashboard, Água, Alimentação + Exercício lado a lado, Peso (metade, com o espaço ao lado livre).
+
+**Tocar em qualquer parte de um card abre a tela da funcionalidade**; os botões dentro dele (recipientes, desfazer, registrar) fazem só a própria ação. Não há botão "Detalhes".
 
 Um **botão flutuante "+" (FAB)** fica fixo no canto da Home e abre um menu: Água, Alimento, Exercício, Anotação, Peso. Ele leva para os mesmos fluxos dos cards, então dá para registrar algo mesmo que o card esteja oculto ou fora da tela. O FAB some no modo de edição do layout.
+
+- Abre **em leque com mola**: o "+" gira para "×", os itens sobem um a um em pílulas com ícone e cor do módulo, e a Home escurece atrás.
+- Cada módulo entra no FAB pelo seu contrato; só aparece o que existe (Anotação entra no M5).
 
 ### 5.2 Cards arrastáveis
 
 - **Pressionar e segurar** um card entra no **modo de edição** da Home.
 - No modo de edição:
-  - arrastar um card move sua posição; os outros se reorganizam com animação;
-  - cada card mostra controles para **alternar tamanho** (inteiro/metade) e **ocultar**; a troca de tamanho é animada e mostra a outra versão na hora;
-  - um botão **"+ Adicionar card"** abre o catálogo (§5.1), incluindo a criação de um card Combinado;
+  - todos os cards **tremem de leve** e ganham **selos**: ⊖ para ocultar e ⇔ para alternar tamanho (inteiro/metade); a troca de tamanho é animada e mostra a outra versão na hora;
+  - arrastar um card (de qualquer ponto) move sua posição; os outros se reorganizam com animação;
+  - uma barra no topo tem **"+ Adicionar card"** e **Concluir**;
+  - "+ Adicionar card" abre o **catálogo com prévia ao vivo**: um bottom sheet com cada card renderizado com os dados reais e um seletor Inteiro/Metade; tocar adiciona no fim da Home no tamanho escolhido. Cards já na Home aparecem marcados. Inclui a criação de um card Combinado (M4);
   - cards configuráveis (Checklist, Combinado) mostram um botão de configurar;
   - botão **Concluir** sai do modo (tocar fora ou voltar também sai).
 - Vibração curta (haptic) ao pegar e soltar um card.
 - O layout é salvo no DataStore ao sair do modo de edição.
-- Em Configurações: **Restaurar layout padrão**.
+- Em Configurações: **Restaurar layout padrão** (M3; até lá não há como restaurar).
 - Fora do modo de edição, cards se comportam normalmente (toques e botões funcionam).
 
 ### 5.3 Resumos e card Combinado
@@ -739,6 +745,7 @@ O tipo define o editor, mas todas compartilham a mesma tela de listagem.
 |---|---|
 | **M0 — Base** | Atualizar dependências; corrigir pacotes; Room + DataStore + `AppContainer`; Navigation + drawer vazio; Home montada com os cards atuais; abstração `iconKey`; persistência de água/comida/treino |
 | **M1a — Água, Exercício e Peso** | Telas de Água, Exercício e Peso (simples); editar (toque abre bottom sheet), apagar (deslizar ou lixeira) e desfazer; navegação entre dias (setas, deslizar e calendário, nunca depois de hoje); recipientes nomeados gerenciados na tela de Água; base de exercícios do Compendium curada (lista revisada pelo usuário antes de entrar); peso mais recente no cálculo de kcal |
+| **M1.5 — Home e módulos** | Contrato de módulo (tela, item da sidebar, cards, resumo e ação do FAB declarados num lugar só); resumos de Água e Peso; cards inteiro/metade de Água (gota) e Peso (visor + mini-curva); grid com linhas calculadas por aparelho; modo de edição (selos, arrastar, alternar tamanho, ocultar, catálogo com prévia ao vivo); layout salvo; FAB em leque; Dashboard com dados reais (3 metas do dia + 7 dias) e versão metade. Cards antigos de Alimentação e Exercício só adaptados aos tamanhos até serem refeitos. Antecipa parte do M4 para que cada módulo novo chegue completo (tela + card + resumo + FAB) |
 | **M1b — Alimentação** | Tela de Alimentação com refeições (sugeridas pelo horário: café até 10h, almoço 10–15h, lanche 15–18h, jantar 18–22h, ceia depois das 22h); TACO + extras; medidas caseiras; favoritos/recentes; cadastro de alimentos próprios; repetir refeição; acima da meta |
 | **M1c — Extras do registro** | Leitor de código de barras (Open Food Facts); modelos de treino |
 | **M1 — Registros completos (visão geral)** | Telas de detalhe com editar/remover/desfazer; navegação entre dias; favoritos/recentes; bases TACO + extras e Compendium curado; medidas caseiras; resumos de cada funcionalidade; cadastro de alimentos e exercícios próprios; **leitor de código de barras**; **modelos de treino**; peso do perfil no cálculo; correções da §12 |
@@ -871,6 +878,7 @@ Modelo de dados adicional: `plan_item` (id, date, time?, kind: exercise/template
 - **Testes de migração do banco**: um por migração, com schemas versionados (§2.7).
 - **M1 dividido em M1a/M1b/M1c**; uma tela por módulo; navegação entre dias por setas, deslizar e calendário (§11).
 - **Metas editáveis na tela de cada módulo e no Dashboard**, gravando no mesmo lugar (§6, §6.1).
+- **M1.5 antes de Exercício**: a estrutura da Home (contrato de módulo, catálogo, grid, modo de edição, FAB) vem antes, para cada módulo novo chegar completo (§11).
 - **Telas próprias para tudo** e personalidade visual por tela (gota na Água, curva + régua no Peso); transição "gelatina"; recipientes na tela de Água com fileira + modo edição e ícones desenhados (§2.2, §2.9, §6).
 - **Tom dos textos**: zoeiro e épico, sem ser brega; trilhas com nomes evocativos (Caudal, Fornalha...) (§9.5, `TEXTOS.md`).
 

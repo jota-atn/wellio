@@ -4,9 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -26,6 +24,8 @@ import com.projeto.wellio.domain.home.DASHBOARD_KEY
 import com.projeto.wellio.domain.home.HomeCard
 import com.projeto.wellio.domain.home.addCard
 import com.projeto.wellio.domain.home.freeRows
+import com.projeto.wellio.domain.home.hideCard
+import com.projeto.wellio.domain.home.toggleSize
 import com.projeto.wellio.domain.home.rowLayout
 import com.projeto.wellio.domain.model.GoalType
 import com.projeto.wellio.ui.components.DashboardCard
@@ -39,6 +39,7 @@ import com.projeto.wellio.ui.module.WellioModule
 fun HomeRoute(
     onMenuClick: () -> Unit,
     onOpenModule: (WellioModule) -> Unit,
+    onEditingChange: (Boolean) -> Unit,
     viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory)
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -47,7 +48,8 @@ fun HomeRoute(
         onMenuClick = onMenuClick,
         onUpdateGoal = viewModel::updateGoal,
         onSaveLayout = viewModel::saveLayout,
-        onDismissSuggestion = viewModel::dismissSuggestion
+        onDismissSuggestion = viewModel::dismissSuggestion,
+        onEditingChange = onEditingChange
     ) { module, size, modifier ->
         module.HomeCard(size, onOpen = { onOpenModule(module) }, modifier = modifier)
     }
@@ -78,6 +80,7 @@ fun HomeScreen(
     onUpdateGoal: (GoalType, Int, Int) -> Unit,
     onSaveLayout: (List<HomeCard>) -> Unit,
     onDismissSuggestion: () -> Unit,
+    onEditingChange: (Boolean) -> Unit = {},
     moduleCard: @Composable (WellioModule, CardSize, Modifier) -> Unit
 ) {
     var goalBeingEdited by remember { mutableStateOf<GoalType?>(null) }
@@ -85,7 +88,6 @@ fun HomeScreen(
     // Modo de edição: o layout sendo mexido (null = fora da edição)
     var draft by remember { mutableStateOf<List<HomeCard>?>(null) }
     var showCatalog by remember { mutableStateOf(false) }
-    val haptics = LocalHapticFeedback.current
     val fontScale = LocalDensity.current.fontScale
     val cards = draft ?: state.layout
     val editing = draft != null
@@ -95,6 +97,8 @@ fun HomeScreen(
         draft = null
     }
     BackHandler(enabled = editing) { finishEditing() }
+    // A sidebar não abre pelo gesto enquanto os cards estão sendo arrastados
+    LaunchedEffect(editing) { onEditingChange(editing) }
 
     val slot: @Composable (HomeCard, Modifier) -> Unit = { card, modifier ->
         HomeCardSlot(card, state, moduleCard, onDashboardClick = { showDetails = true }, onGoalClick = { goalBeingEdited = it }, modifier)
@@ -133,11 +137,16 @@ fun HomeScreen(
                         editing = editing,
                         rowHeight = rowHeight,
                         gutter = Gutter,
-                        onLongPress = {
-                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                            draft = state.layout
-                        },
+                        onStartEditing = { if (draft == null) draft = state.layout },
                         onChange = { draft = it },
+                        onQuickAction = { card, action ->
+                            val index = state.layout.indexOf(card)
+                            when (action) {
+                                QuickAction.Hide -> onSaveLayout(hideCard(state.layout, index))
+                                QuickAction.ToggleSize -> onSaveLayout(toggleSize(state.layout, index))
+                                QuickAction.EditHome -> draft = state.layout
+                            }
+                        },
                         cardTitle = ::titleOf,
                         modifier = Modifier.fillMaxWidth(),
                         card = slot

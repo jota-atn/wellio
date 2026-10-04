@@ -1,5 +1,8 @@
 package com.projeto.wellio.ui.home
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -9,10 +12,21 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupPositionProvider
+import androidx.compose.ui.window.PopupProperties
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -21,6 +35,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.projeto.wellio.domain.home.CardSize
 import com.projeto.wellio.domain.home.HomeCard
+import com.projeto.wellio.ui.icons.WellioIcons
+import kotlinx.coroutines.delay
 
 /** Barra do modo de edição (SPEC §5.2): "+ Adicionar card" e "Concluir". */
 @Composable
@@ -144,6 +160,75 @@ fun CatalogSheet(
                             Spacer(Modifier.width(4.dp))
                             Text("Adicionar ${entry.title}")
                         }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Abre abaixo do card, alinhado à esquerda dele; se não couber, acima. */
+private class QuickMenuPosition(private val gapPx: Int) : PopupPositionProvider {
+    override fun calculatePosition(
+        anchorBounds: IntRect,
+        windowSize: IntSize,
+        layoutDirection: LayoutDirection,
+        popupContentSize: IntSize
+    ): IntOffset {
+        val x = anchorBounds.left.coerceIn(0, (windowSize.width - popupContentSize.width).coerceAtLeast(0))
+        val below = anchorBounds.bottom + gapPx
+        val y = if (below + popupContentSize.height <= windowSize.height) below
+        else (anchorBounds.top - gapPx - popupContentSize.height).coerceAtLeast(0)
+        return IntOffset(x, y)
+    }
+}
+
+/**
+ * Leque de ações de um card (SPEC §5.2): segurar e soltar abre; as pílulas saem do card
+ * uma de cada vez, com mola. Tocar fora fecha.
+ */
+@Composable
+fun QuickMenu(size: CardSize, onDismiss: () -> Unit, onAction: (QuickAction) -> Unit) {
+    val gap = with(LocalDensity.current) { 8.dp.roundToPx() }
+    val scheme = MaterialTheme.colorScheme
+    val items = listOf(
+        Triple(QuickAction.Hide, "Ocultar", WellioIcons.Minus),
+        Triple(QuickAction.ToggleSize, if (size == CardSize.Full) "Deixar metade" else "Deixar inteiro", WellioIcons.SwapHoriz),
+        Triple(QuickAction.EditHome, "Editar Home", Icons.Default.Edit)
+    )
+    Popup(
+        popupPositionProvider = remember(gap) { QuickMenuPosition(gap) },
+        onDismissRequest = onDismiss,
+        properties = PopupProperties(focusable = true)
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            items.forEachIndexed { index, (action, label, icon) ->
+                val shown = remember { Animatable(0f) }
+                LaunchedEffect(Unit) {
+                    delay(index * 50L)
+                    shown.animateTo(1f, spring(dampingRatio = 0.55f, stiffness = Spring.StiffnessMedium))
+                }
+                Surface(
+                    onClick = { onAction(action) },
+                    shape = RoundedCornerShape(50),
+                    color = if (action == QuickAction.Hide) scheme.errorContainer else scheme.inverseSurface,
+                    contentColor = if (action == QuickAction.Hide) scheme.onErrorContainer else scheme.inverseOnSurface,
+                    shadowElevation = 6.dp,
+                    modifier = Modifier
+                        .padding(start = (index * 18).dp)
+                        .graphicsLayer {
+                            val t = shown.value
+                            alpha = t.coerceIn(0f, 1f)
+                            scaleX = 0.6f + 0.4f * t
+                            scaleY = 0.6f + 0.4f * t
+                            translationY = (1 - t) * -24.dp.toPx()
+                            transformOrigin = TransformOrigin(0f, 0f)
+                        }
+                ) {
+                    Row(Modifier.padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(label, style = MaterialTheme.typography.labelLarge)
                     }
                 }
             }

@@ -16,7 +16,11 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
@@ -35,8 +39,12 @@ fun WellioNavHost() {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
+    // Na edição da Home, arrastar card para o lado não pode abrir a sidebar
+    var homeEditing by remember { mutableStateOf(false) }
+
     ModalNavigationDrawer(
         drawerState = drawerState,
+        gesturesEnabled = !homeEditing || drawerState.isOpen,
         drawerContent = {
             WellioDrawerContent(
                 onModuleClick = { module ->
@@ -64,7 +72,8 @@ fun WellioNavHost() {
                     onMenuClick = { scope.launch { drawerState.open() } },
                     onOpenModule = { module ->
                         navController.navigate(module.destination ?: ComingSoonDestination(module.title))
-                    }
+                    },
+                    onEditingChange = { homeEditing = it }
                 )
             }
             composable<WaterDestination> {

@@ -16,7 +16,7 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
@@ -46,6 +46,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
@@ -84,12 +85,16 @@ internal fun gridHeight(cards: List<HomeCard>, rowHeight: Float, gutter: Float):
     return if (rows == 0) 0f else rows * rowHeight + (rows - 1) * gutter
 }
 
+/** O que o leque de um card pode fazer (SPEC §5.2). */
+enum class QuickAction { Hide, ToggleSize, EditHome }
+
 /**
  * Cards da Home num layout único, para a troca de posição e de tamanho animar (SPEC §5.2).
  *
- * Fora da edição, segurar um card chama [onLongPress]. Na edição ([editing]), os cards
- * tremem, ganham os selos ⊖ (ocultar) e ⇔ (tamanho), e arrastar de qualquer ponto move o
- * card; [onChange] recebe o layout novo a cada mudança.
+ * Fora da edição, segurar um card e soltar abre o leque de ações ([onQuickAction]);
+ * segurar e arrastar entra na edição ([onStartEditing]) já levando o card. Na edição
+ * ([editing]), os cards tremem, ganham os selos ⊖ e ⇔, e arrastar de qualquer ponto move
+ * o card; [onChange] recebe o layout novo a cada mudança.
  */
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -98,8 +103,9 @@ fun HomeGrid(
     editing: Boolean,
     rowHeight: Dp,
     gutter: Dp,
-    onLongPress: () -> Unit,
+    onStartEditing: () -> Unit,
     onChange: (List<HomeCard>) -> Unit,
+    onQuickAction: (HomeCard, QuickAction) -> Unit,
     cardTitle: (HomeCard) -> String,
     modifier: Modifier = Modifier,
     card: @Composable (HomeCard, Modifier) -> Unit
@@ -114,17 +120,29 @@ fun HomeGrid(
     // Card solto voltando para o lugar com mola
     var settling by remember { mutableStateOf<String?>(null) }
     val drop = remember { Animatable(Offset.Zero, Offset.VectorConverter) }
+    // Card com o leque aberto
+    var menuFor by remember { mutableStateOf<String?>(null) }
     val latestCards by rememberUpdatedState(cards)
+    val latestOnChange by rememberUpdatedState(onChange)
+    val latestEditing by rememberUpdatedState(editing)
     var gridWidth by remember { mutableFloatStateOf(0f) }
     val density = LocalDensity.current
     val rowPx = with(density) { rowHeight.toPx() }
     val gutterPx = with(density) { gutter.toPx() }
 
-    /** Dedo em [finger] (relativo ao lugar do card arrastado): troca com o card que estiver embaixo. */
-    fun swapUnderFinger() {
+    fun startDrag(key: String, offsetInCard: Offset) {
+        dragging = key
+        grabOffset = offsetInCard
+        dragPosition = Offset.Zero
+        lastSwap = null
+    }
+
+    /** Leva o card junto do dedo e troca de lugar com o card que estiver embaixo dele. */
+    fun dragBy(amount: Offset) {
+        dragPosition += amount
         val current = latestCards
         val from = current.indexOfFirst { it.key == dragging }
-        if (from < 0) return
+        if (from < 0 || gridWidth <= 0f) return
         val rects = cardRects(current, gridWidth, rowPx, gutterPx)
         val finger = rects[from].topLeft + grabOffset + dragPosition
         val under = rects.indices.firstOrNull { it != from && rects[it].contains(finger) }
@@ -138,7 +156,21 @@ fun HomeGrid(
         // O deslocamento é relativo ao lugar do card; o lugar mudou, o dedo não
         dragPosition += rects[from].topLeft - cardRects(moved, gridWidth, rowPx, gutterPx)[under].topLeft
         haptics.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick)
-        onChange(moved)
+        latestOnChange(moved)
+    }
+
+    fun endDrag() {
+        if (dragging == null) return
+        settling = dragging
+        dragging = null
+        haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+        scope.launch {
+            drop.snapTo(dragPosition)
+            drop.animateTo(Offset.Zero, spring(dampingRatio = 0.6f, stiffness = Spring.StiffnessMediumLow)) {
+                dragPosition = value
+            }
+            settling = null
+        }
     }
 
     val wiggle by rememberInfiniteTransition(label = "tremer").animateFloat(
@@ -172,8 +204,29 @@ fun HomeGrid(
                                         shadowElevation = 12.dp.toPx()
                                     }
                                 }
+                                // Fica ligado mesmo quando a edição começa no meio do gesto (segurar e arrastar)
+                                .holdToEdit(
+                                    enabled = { !latestEditing },
+                                    onHold = {
+                                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        menuFor = null
+                                    },
+                                    onHoldReleased = { menuFor = homeCard.key },
+                                    onHoldDragStart = { offset ->
+                                        onStartEditing()
+                                        startDrag(homeCard.key, offset)
+                                    },
+                                    onHoldDrag = ::dragBy,
+                                    onHoldDragEnd = ::endDrag
+                                )
+                                .then(
+                                    if (editing) Modifier
+                                    else Modifier.semantics {
+                                        onLongClick("Opções do card") { menuFor = homeCard.key; true }
+                                    }
+                                )
                         ) {
-                            card(homeCard, Modifier.matchParentSize().then(if (editing) Modifier else Modifier.longPressToEdit(onLongPress)))
+                            card(homeCard, Modifier.matchParentSize())
                             if (editing) {
                                 EditOverlay(
                                     title = cardTitle(homeCard),
@@ -191,36 +244,28 @@ fun HomeGrid(
                                         // Toque no card durante a edição não faz nada (nem sai da edição)
                                         .pointerInput(Unit) { detectTapGestures { } }
                                         .pointerInput(homeCard.key) {
-                                        detectDragGestures(
-                                            onDragStart = { offset ->
-                                                dragging = homeCard.key
-                                                grabOffset = offset
-                                                dragPosition = Offset.Zero
-                                                lastSwap = null
-                                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                            },
-                                            onDrag = { change, amount ->
-                                                change.consume()
-                                                dragPosition += amount
-                                                swapUnderFinger()
-                                            },
-                                            onDragEnd = {
-                                                settling = dragging
-                                                dragging = null
-                                                haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                                                scope.launch {
-                                                    drop.snapTo(dragPosition)
-                                                    drop.animateTo(Offset.Zero, spring(dampingRatio = 0.6f, stiffness = Spring.StiffnessMediumLow)) {
-                                                        dragPosition = value
-                                                    }
-                                                    settling = null
-                                                }
-                                            },
-                                            onDragCancel = {
-                                                dragging = null
-                                                settling = null
-                                            }
-                                        )
+                                            detectDragGestures(
+                                                onDragStart = {
+                                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                    startDrag(homeCard.key, it)
+                                                },
+                                                onDrag = { change, amount ->
+                                                    change.consume()
+                                                    dragBy(amount)
+                                                },
+                                                onDragEnd = ::endDrag,
+                                                onDragCancel = ::endDrag
+                                            )
+                                        }
+                                )
+                            }
+                            if (menuFor == homeCard.key && !editing) {
+                                QuickMenu(
+                                    size = homeCard.size,
+                                    onDismiss = { menuFor = null },
+                                    onAction = { action ->
+                                        menuFor = null
+                                        onQuickAction(homeCard, action)
                                     }
                                 )
                             }
@@ -234,7 +279,6 @@ fun HomeGrid(
             val rects = cardRects(cards, width, rowPx, gutterPx)
             // O card arrastado (ou voltando ao lugar) fica deslocado até onde está o dedo
             val shiftedIndex = cards.indexOfFirst { it.key == (dragging ?: settling) }
-
             val placeables = measurables.mapIndexed { index, measurable ->
                 val rect = rects[index]
                 measurable.measure(Constraints.fixed(rect.width.toInt(), rect.height.toInt()))
@@ -252,7 +296,8 @@ fun HomeGrid(
 
 /**
  * Por cima do card na edição: segura os toques (o card não abre nem registra), mostra os
- * selos ⊖ e ⇔ e oferece ao TalkBack mover, mudar o tamanho e ocultar sem arrastar (SPEC §2.8).
+ * selos ⊖ e ⇔ por dentro dos cantos e oferece ao TalkBack mover, mudar o tamanho e
+ * ocultar sem arrastar (SPEC §2.8).
  */
 @Composable
 private fun EditOverlay(
@@ -280,15 +325,15 @@ private fun EditOverlay(
         Badge(
             onClick = onHide,
             description = "Ocultar $title",
-            modifier = Modifier.align(Alignment.TopStart).offset((-6).dp, (-6).dp),
+            modifier = Modifier.align(Alignment.TopStart).padding(8.dp),
             error = true
-        ) { Icon(WellioIcons.Minus, contentDescription = null, modifier = Modifier.size(16.dp)) }
+        ) { Icon(WellioIcons.Minus, contentDescription = null, modifier = Modifier.size(14.dp)) }
         Badge(
             onClick = onToggleSize,
             description = if (size == CardSize.Full) "Deixar $title metade" else "Deixar $title inteiro",
-            modifier = Modifier.align(Alignment.TopEnd).offset(6.dp, (-6).dp),
+            modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
             error = false
-        ) { Icon(WellioIcons.SwapHoriz, contentDescription = null, modifier = Modifier.size(16.dp)) }
+        ) { Icon(WellioIcons.SwapHoriz, contentDescription = null, modifier = Modifier.size(14.dp)) }
     }
 }
 
@@ -302,7 +347,7 @@ private fun Badge(onClick: () -> Unit, description: String, modifier: Modifier, 
         contentColor = if (error) scheme.onError else scheme.inverseOnSurface,
         shadowElevation = 3.dp,
         modifier = modifier
-            .size(28.dp)
+            .size(26.dp)
             .semantics { contentDescription = description }
     ) {
         Box(contentAlignment = Alignment.Center) { icon() }
@@ -310,13 +355,23 @@ private fun Badge(onClick: () -> Unit, description: String, modifier: Modifier, 
 }
 
 /**
- * Segurar o card entra no modo de edição (SPEC §5.2). Olha os toques antes do card
- * (passe Initial): depois do toque longo, consome o resto do gesto para o card não abrir
- * a tela ao soltar. Mover o dedo (rolar a Home) cancela.
+ * Segurar o card (SPEC §5.2), olhando os toques antes do card (passe Initial) para ele não
+ * abrir a tela ao soltar. Mover o dedo antes do tempo (rolar a Home) cancela. Depois do
+ * toque longo: soltar sem mexer chama [onHoldReleased]; arrastar chama [onHoldDragStart]
+ * e segue o dedo no mesmo gesto, sem precisar soltar e tocar de novo. Só começa um gesto
+ * novo quando [enabled].
  */
-private fun Modifier.longPressToEdit(onLongPress: () -> Unit): Modifier = pointerInput(Unit) {
+private fun Modifier.holdToEdit(
+    enabled: () -> Boolean,
+    onHold: () -> Unit,
+    onHoldReleased: () -> Unit,
+    onHoldDragStart: (Offset) -> Unit,
+    onHoldDrag: (Offset) -> Unit,
+    onHoldDragEnd: () -> Unit
+): Modifier = pointerInput(Unit) {
     awaitEachGesture {
         val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+        if (!enabled()) return@awaitEachGesture
         // Termina antes do tempo (soltou ou moveu): não é toque longo
         val endedEarly = withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
             var ended = false
@@ -327,12 +382,23 @@ private fun Modifier.longPressToEdit(onLongPress: () -> Unit): Modifier = pointe
             }
             true
         }
-        if (endedEarly == null) {
-            onLongPress()
-            do {
-                val event = awaitPointerEvent(PointerEventPass.Initial)
-                event.changes.forEach { it.consume() }
-            } while (event.changes.any { it.pressed })
+        if (endedEarly != null) return@awaitEachGesture
+
+        onHold()
+        var last = down.position
+        var dragging = false
+        while (true) {
+            val event = awaitPointerEvent(PointerEventPass.Initial)
+            val change = event.changes.firstOrNull { it.id == down.id }
+            event.changes.forEach { it.consume() }
+            if (change == null || !change.pressed) break
+            if (!dragging && (change.position - down.position).getDistance() > viewConfiguration.touchSlop) {
+                dragging = true
+                onHoldDragStart(down.position)
+            }
+            if (dragging) onHoldDrag(change.position - last)
+            last = change.position
         }
+        if (dragging) onHoldDragEnd() else onHoldReleased()
     }
 }

@@ -7,6 +7,7 @@ import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -77,20 +78,52 @@ class HomeScreenTest {
     private val agua = HomeCard("water", CardSize.Full)
     private val peso = HomeCard("weight", CardSize.Half)
 
+    private fun enterEditing() {
+        compose.onNodeWithTag("card-water").performTouchInput { longClick() }
+        compose.onNodeWithText("Editar Home").performClick()
+    }
+
     @Test
-    fun segurarUmCardEntraNaEdicao() {
+    fun segurarESoltarAbreOLeque() {
         show(listOf(agua))
 
         compose.onNodeWithTag("card-water").performTouchInput { longClick() }
 
-        compose.onNodeWithText("Concluir").assertIsDisplayed()
+        compose.onNodeWithText("Ocultar").assertIsDisplayed()
+        compose.onNodeWithText("Deixar metade").assertIsDisplayed()
+        compose.onNodeWithText("Editar Home").assertIsDisplayed()
+    }
+
+    @Test
+    fun lequeOcultaNaHora() {
+        show(listOf(agua, peso))
+
+        compose.onNodeWithTag("card-water").performTouchInput { longClick() }
+        compose.onNodeWithText("Ocultar").performClick()
+
+        assertEquals(listOf(peso), saved)
+    }
+
+    @Test
+    fun segurarEArrastarEntraNaEdicaoLevandoOCard() {
+        show(listOf(agua, peso))
+
+        compose.onNodeWithTag("card-water").performTouchInput {
+            down(center)
+            advanceEventTime(1000)
+            moveBy(Offset(-width * 0.25f, height * 1.2f))
+            up()
+        }
+        compose.onNodeWithText("Concluir").performClick()
+
+        assertEquals(listOf(peso, agua), saved)
     }
 
     @Test
     fun ocultarEAlternarTamanhoSalvamAoConcluir() {
         show(listOf(agua, peso))
 
-        compose.onNodeWithTag("card-water").performTouchInput { longClick() }
+        enterEditing()
         compose.onNodeWithContentDescription("Ocultar Água").performClick()
         compose.onNodeWithContentDescription("Deixar Peso inteiro").performClick()
         compose.onNodeWithText("Concluir").performClick()
@@ -102,7 +135,7 @@ class HomeScreenTest {
     fun talkBackMoveSemArrastar() {
         show(listOf(agua, peso))
 
-        compose.onNodeWithTag("card-water").performTouchInput { longClick() }
+        enterEditing()
         val actions = compose.onNodeWithContentDescription("Água, inteiro").fetchSemanticsNode().config[SemanticsActions.CustomActions]
         compose.runOnUiThread { actions.first { it.label == "Mover para depois" }.action() }
         compose.onNodeWithText("Concluir").performClick()

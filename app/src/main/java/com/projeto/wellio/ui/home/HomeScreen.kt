@@ -75,8 +75,10 @@ fun HomeScreen(
             }
 
             DashboardCard(
-                onAddMetaClick = { goalBeingEdited = it },
-                onDetailsClick = { showDetails = true }
+                summaries = state.summaries,
+                lastWeek = state.lastWeek,
+                onClick = { showDetails = true },
+                onGoalClick = { goalBeingEdited = it }
             )
 
             WaterCard(

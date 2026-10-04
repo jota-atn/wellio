@@ -1,6 +1,8 @@
 package com.projeto.wellio.ui.module
 
 import androidx.annotation.DrawableRes
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import com.projeto.wellio.AppContainer
 import com.projeto.wellio.domain.model.GoalType
 import com.projeto.wellio.ui.theme.ModuleColors
@@ -11,7 +13,7 @@ enum class ModuleId { Water, Food, Exercise, Weight }
 
 /**
  * Tudo o que uma funcionalidade oferece ao resto do app, declarado num lugar só (SPEC §11,
- * M1.5): item da sidebar, tela, resumo e, nas próximas etapas, cards e ação do FAB. Um
+ * M1.5): item da sidebar, tela, resumo, card da Home e, numa próxima etapa, ação do FAB. Um
  * módulo novo implementa este contrato e aparece em todos esses lugares.
  */
 interface WellioModule {
@@ -32,4 +34,11 @@ interface WellioModule {
 
     /** Resumo de hoje, atualizado sozinho. */
     fun summary(container: AppContainer): Flow<Summary>
+
+    /**
+     * Card da Home nos dois tamanhos (SPEC §5.1). Busca os próprios dados; [onOpen] abre a
+     * tela do módulo. Ocupa o espaço que o grid der ([modifier] traz o tamanho).
+     */
+    @Composable
+    fun HomeCard(size: CardSize, onOpen: () -> Unit, modifier: Modifier)
 }

@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -29,6 +30,8 @@ import com.projeto.wellio.domain.goals.progress
 import com.projeto.wellio.domain.model.WaterContainer
 import com.projeto.wellio.domain.model.WaterEntry
 import com.projeto.wellio.domain.water.ContainerIcon
+import com.projeto.wellio.domain.water.lastEntry
+import com.projeto.wellio.ui.components.RecordsHeader
 import com.projeto.wellio.ui.components.DayNavigator
 import com.projeto.wellio.ui.components.swipeBetweenDays
 import com.projeto.wellio.ui.format.formatMl
@@ -57,6 +60,7 @@ fun WaterRoute(
         onUpdate = viewModel::update,
         onDelete = viewModel::delete,
         onRestore = viewModel::restore,
+        onSetGoal = viewModel::setGoal,
         onSaveContainer = viewModel::saveContainer,
         onDeleteContainer = viewModel::deleteContainer
     )
@@ -81,6 +85,7 @@ fun WaterScreen(
     onUpdate: (WaterEntry, Int, String?, LocalTime) -> Unit,
     onDelete: (WaterEntry) -> Unit,
     onRestore: (WaterEntry) -> Unit,
+    onSetGoal: (Int) -> Unit,
     onSaveContainer: (id: String?, name: String, amountMl: Int, isQuick: Boolean, iconKey: String) -> Unit,
     onDeleteContainer: (WaterContainer) -> Unit
 ) {
@@ -90,6 +95,10 @@ fun WaterScreen(
     var editingEntry by remember { mutableStateOf<Editing<WaterEntry>?>(null) }
     var editingContainer by remember { mutableStateOf<Editing<WaterContainer>?>(null) }
     var managingContainers by rememberSaveable { mutableStateOf(false) }
+    var showingEntries by rememberSaveable { mutableStateOf(false) }
+    var editingGoal by remember { mutableStateOf(false) }
+    // Registros feitos aqui; a gota só transborda com eles (e não ao abrir a tela)
+    var additions by rememberSaveable { mutableIntStateOf(0) }
 
     fun showUndo(message: String, onUndo: () -> Unit) {
         scope.launch {
@@ -105,6 +114,7 @@ fun WaterScreen(
     }
 
     fun drink(container: WaterContainer) {
+        additions++
         onQuickAdd(container)
         showUndo("${container.name} ${formatMl(container.amountMl)} registrado", onUndoQuickAdd)
     }
@@ -143,7 +153,7 @@ fun WaterScreen(
                 DayNavigator(state.day, state.today, onDayChange, Modifier.padding(horizontal = 8.dp))
             }
             item(key = "gota") {
-                WaterHero(state.totalMl, state.goalMl, Modifier.padding(horizontal = 16.dp))
+                WaterHero(state.totalMl, state.goalMl, additions, onEditGoal = { editingGoal = true }, Modifier.padding(horizontal = 16.dp))
             }
             item(key = "recipientes") {
                 ContainersSection(
@@ -153,18 +163,21 @@ fun WaterScreen(
                     onDrink = ::drink,
                     onEdit = { editingContainer = Editing.Existing(it) },
                     onNew = { editingContainer = Editing.New },
+                    onUndoLast = lastEntry(state.entries)?.let { last -> { deleteWithUndo(last) } },
                     modifier = Modifier.padding(top = 20.dp)
                 )
             }
             item(key = "titulo-registros") {
-                Text(
-                    "Registros",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(start = 20.dp, top = 24.dp, bottom = 8.dp)
+                RecordsHeader(
+                    title = "Registros",
+                    count = state.entries.size,
+                    expanded = showingEntries,
+                    onToggle = { showingEntries = !showingEntries },
+                    modifier = Modifier.padding(top = 12.dp)
                 )
             }
-            if (state.entries.isEmpty()) {
+            // Recolhida (SPEC §6), a lista mostra só o título com a contagem
+            if (showingEntries && state.entries.isEmpty()) {
                 item(key = "vazio") {
                     Text(
                         "Nenhum registro neste dia",
@@ -173,7 +186,7 @@ fun WaterScreen(
                         textAlign = TextAlign.Center
                     )
                 }
-            } else {
+            } else if (showingEntries) {
                 items(state.entries.sortedByDescending { it.timestamp }, key = { it.id }) { entry ->
                     WaterEntryRow(
                         entry = entry,
@@ -196,7 +209,12 @@ fun WaterScreen(
             zone = zone,
             onDismiss = { editingEntry = null },
             onSave = { amount, name, time ->
-                if (existing == null) onAdd(amount, name, time) else onUpdate(existing, amount, name, time)
+                if (existing == null) {
+                    additions++
+                    onAdd(amount, name, time)
+                } else {
+                    onUpdate(existing, amount, name, time)
+                }
                 editingEntry = null
             },
             onDelete = existing?.let { entry ->
@@ -204,6 +222,18 @@ fun WaterScreen(
                     editingEntry = null
                     deleteWithUndo(entry)
                 }
+            }
+        )
+    }
+
+    if (editingGoal) {
+        WaterGoalSheet(
+            currentMl = state.goalMl,
+            weightKg = state.weightKg,
+            onDismiss = { editingGoal = false },
+            onSave = {
+                onSetGoal(it)
+                editingGoal = false
             }
         )
     }
@@ -229,7 +259,7 @@ fun WaterScreen(
 
 /** Topo da tela: a gota enchendo e os números do dia. */
 @Composable
-private fun WaterHero(totalMl: Int, goalMl: Int, modifier: Modifier = Modifier) {
+private fun WaterHero(totalMl: Int, goalMl: Int, additions: Int, onEditGoal: () -> Unit, modifier: Modifier = Modifier) {
     val colors = WellioTheme.colors.water
     val fraction = progress(totalMl, goalMl)
     Surface(
@@ -242,16 +272,25 @@ private fun WaterHero(totalMl: Int, goalMl: Int, modifier: Modifier = Modifier) 
                 contentDescription = "Água: ${formatMl(totalMl)} de ${formatMl(goalMl)}, ${(fraction * 100).toInt()} por cento"
             }
     ) {
-        Row(Modifier.padding(24.dp), verticalAlignment = Alignment.CenterVertically) {
-            WaterDrop(fraction, Modifier.size(width = 120.dp, height = 156.dp))
-            Spacer(Modifier.width(24.dp))
+        Row(Modifier.padding(start = 8.dp, end = 20.dp, top = 12.dp, bottom = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+            WaterDrop(totalMl, goalMl, additions, Modifier.size(width = 136.dp, height = 176.dp))
+            Spacer(Modifier.width(12.dp))
             Column {
                 Text(
                     formatMl(totalMl),
                     style = MaterialTheme.typography.displaySmall,
                     fontWeight = FontWeight.Bold
                 )
-                Text("de ${formatMl(goalMl)}", style = MaterialTheme.typography.bodyLarge)
+                Row(
+                    Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable(onClickLabel = "Mudar a meta", onClick = onEditGoal),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("de ${formatMl(goalMl)}", style = MaterialTheme.typography.bodyLarge)
+                    Spacer(Modifier.width(4.dp))
+                    Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
+                }
                 Spacer(Modifier.height(12.dp))
                 Surface(shape = RoundedCornerShape(50), color = colors.accent, contentColor = colors.onAccent) {
                     Text(

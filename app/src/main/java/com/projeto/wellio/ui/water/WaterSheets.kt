@@ -23,6 +23,11 @@ import com.projeto.wellio.domain.water.ContainerIcon
 import com.projeto.wellio.domain.water.ContainerValidation
 import com.projeto.wellio.domain.water.MAX_QUICK_BUTTONS
 import com.projeto.wellio.domain.water.MAX_WATER_AMOUNT_ML
+import com.projeto.wellio.domain.water.MAX_WATER_GOAL_ML
+import com.projeto.wellio.domain.water.MIN_WATER_GOAL_ML
+import com.projeto.wellio.domain.water.parseWaterGoal
+import com.projeto.wellio.domain.water.suggestedWaterGoal
+import com.projeto.wellio.ui.format.formatKg
 import com.projeto.wellio.domain.water.parseWaterAmount
 import com.projeto.wellio.domain.water.suggestedIcon
 import com.projeto.wellio.domain.water.validateContainer
@@ -260,6 +265,60 @@ fun ContainerSheet(
                     colors = ButtonDefaults.buttonColors(containerColor = colors.accent, contentColor = colors.onAccent)
                 ) { Text("Salvar") }
             }
+        }
+    }
+}
+
+/** Meta diária de água, com sugestão de 35 ml por kg do peso atual. */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+fun WaterGoalSheet(
+    currentMl: Int,
+    weightKg: Double,
+    onDismiss: () -> Unit,
+    onSave: (Int) -> Unit
+) {
+    val colors = WellioTheme.colors.water
+    val suggested = suggestedWaterGoal(weightKg)
+    var text by remember { mutableStateOf(currentMl.toString()) }
+    val goal = parseWaterGoal(text)
+
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(Modifier.padding(horizontal = 24.dp).padding(bottom = 24.dp)) {
+            Text("Meta diária de água", style = MaterialTheme.typography.titleLarge)
+            Spacer(Modifier.height(16.dp))
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it.filter(Char::isDigit).take(4) },
+                label = { Text("Meta (ml)") },
+                isError = goal == null,
+                supportingText = {
+                    if (goal == null) Text("Entre ${formatMl(MIN_WATER_GOAL_ML)} e ${formatMl(MAX_WATER_GOAL_ML)}")
+                },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                SuggestionChip(
+                    onClick = { text = suggested.toString() },
+                    label = { Text("Sugestão para ${formatKg(weightKg)}: ${formatMl(suggested)}") },
+                    colors = SuggestionChipDefaults.suggestionChipColors(
+                        containerColor = colors.container,
+                        labelColor = colors.onContainer
+                    )
+                )
+                listOf(1500, 2000, 2500, 3000).filter { it != suggested }.forEach { ml ->
+                    SuggestionChip(onClick = { text = ml.toString() }, label = { Text(formatMl(ml)) })
+                }
+            }
+            Spacer(Modifier.height(16.dp))
+            Button(
+                onClick = { goal?.let(onSave) },
+                enabled = goal != null,
+                colors = ButtonDefaults.buttonColors(containerColor = colors.accent, contentColor = colors.onAccent),
+                modifier = Modifier.align(Alignment.End)
+            ) { Text("Salvar") }
         }
     }
 }

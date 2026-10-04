@@ -28,6 +28,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.projeto.wellio.domain.model.WaterContainer
 import com.projeto.wellio.ui.format.formatMl
+import com.projeto.wellio.ui.icons.WellioIcons
 import com.projeto.wellio.ui.icons.containerIconRes
 import com.projeto.wellio.ui.theme.WellioTheme
 
@@ -43,6 +44,7 @@ fun ContainersSection(
     onDrink: (WaterContainer) -> Unit,
     onEdit: (WaterContainer) -> Unit,
     onNew: () -> Unit,
+    onUndoLast: (() -> Unit)?,
     modifier: Modifier = Modifier
 ) {
     val colors = WellioTheme.colors.water
@@ -54,6 +56,11 @@ fun ContainersSection(
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.weight(1f)
             )
+            if (!editing) {
+                IconButton(onClick = { onUndoLast?.invoke() }, enabled = onUndoLast != null) {
+                    Icon(WellioIcons.Undo, contentDescription = "Desfazer último", tint = if (onUndoLast != null) colors.accent else LocalContentColor.current.copy(alpha = 0.38f))
+                }
+            }
             TextButton(onClick = { onEditingChange(!editing) }) {
                 Text(if (editing) "Pronto" else "Editar", color = colors.accent)
             }

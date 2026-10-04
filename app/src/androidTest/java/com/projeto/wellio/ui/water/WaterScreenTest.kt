@@ -6,6 +6,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.performTouchInput
 import com.projeto.wellio.domain.model.WaterContainer
 import com.projeto.wellio.domain.model.WaterEntry
@@ -34,7 +35,8 @@ class WaterScreenTest {
         onQuickAdd: (WaterContainer) -> Unit = {},
         onUndoQuickAdd: () -> Unit = {},
         onDelete: (WaterEntry) -> Unit = {},
-        onRestore: (WaterEntry) -> Unit = {}
+        onRestore: (WaterEntry) -> Unit = {},
+        onSetGoal: (Int) -> Unit = {}
     ) {
         compose.setContent {
             WellioTheme {
@@ -49,6 +51,7 @@ class WaterScreenTest {
                     onUpdate = { _, _, _, _ -> },
                     onDelete = onDelete,
                     onRestore = onRestore,
+                    onSetGoal = onSetGoal,
                     onSaveContainer = { _, _, _, _, _ -> },
                     onDeleteContainer = {}
                 )
@@ -66,6 +69,7 @@ class WaterScreenTest {
     @Test
     fun diaSemRegistrosAvisa() {
         show()
+        compose.onNodeWithText("Registros").performClick()
 
         compose.onNodeWithText("Nenhum registro neste dia").assertIsDisplayed()
     }
@@ -88,6 +92,7 @@ class WaterScreenTest {
         var restored: WaterEntry? = null
         show(entries = listOf(manha), onDelete = { deleted = it }, onRestore = { restored = it })
 
+        compose.onNodeWithText("Registros").performClick()
         compose.onNodeWithContentDescription("Apagar registro das 08:10").performClick()
         compose.onNodeWithText("Desfazer").performClick()
 
@@ -125,5 +130,37 @@ class WaterScreenTest {
 
         compose.onNodeWithText("Meus recipientes").assertIsDisplayed()
         compose.onNodeWithContentDescription("Editar Copo, 200 ml").assertIsDisplayed()
+    }
+
+    @Test
+    fun registrosComecamRecolhidos() {
+        show(entries = listOf(manha))
+
+        compose.onNodeWithContentDescription("Apagar registro das 08:10").assertDoesNotExist()
+        compose.onNodeWithText("Registros").performClick()
+        compose.onNodeWithContentDescription("Apagar registro das 08:10").assertIsDisplayed()
+    }
+
+    @Test
+    fun desfazerUltimoApagaORegistroMaisRecente() {
+        val tarde = WaterEntry("e2", today, Instant.parse("2026-10-01T15:00:00Z"), 200, "Copo")
+        var deleted: WaterEntry? = null
+        show(entries = listOf(manha, tarde), onDelete = { deleted = it })
+
+        compose.onNodeWithContentDescription("Desfazer último").performClick()
+
+        assertEquals(tarde, deleted)
+    }
+
+    @Test
+    fun metaPodeSerMudadaNaTela() {
+        var goal: Int? = null
+        show(onSetGoal = { goal = it })
+
+        compose.onNodeWithText("de 2.000 ml").performClick()
+        compose.onNodeWithText("Meta (ml)").performTextReplacement("2500")
+        compose.onNodeWithText("Salvar").performClick()
+
+        assertEquals(2500, goal)
     }
 }

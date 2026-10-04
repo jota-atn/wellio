@@ -8,6 +8,10 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.projeto.wellio.WellioApp
 import com.projeto.wellio.data.prefs.GoalsStore
 import com.projeto.wellio.data.repository.WaterRepository
+import com.projeto.wellio.data.repository.WeightRepository
+import com.projeto.wellio.domain.model.GoalType
+import com.projeto.wellio.domain.weight.DEFAULT_WEIGHT_KG
+import kotlinx.coroutines.flow.first
 import com.projeto.wellio.data.time.todayFlow
 import com.projeto.wellio.domain.model.WaterContainer
 import com.projeto.wellio.domain.model.WaterEntry
@@ -33,7 +37,9 @@ data class WaterUiState(
     val today: LocalDate,
     val goalMl: Int = 0,
     val entries: List<WaterEntry> = emptyList(),
-    val containers: List<WaterContainer> = emptyList()
+    val containers: List<WaterContainer> = emptyList(),
+    /** Peso atual, para sugerir a meta diária. */
+    val weightKg: Double = DEFAULT_WEIGHT_KG
 ) {
     val totalMl: Int get() = totalMl(entries)
 }
@@ -41,7 +47,8 @@ data class WaterUiState(
 @OptIn(ExperimentalCoroutinesApi::class)
 class WaterViewModel(
     private val repository: WaterRepository,
-    goalsStore: GoalsStore,
+    private val goalsStore: GoalsStore,
+    weightRepository: WeightRepository,
     private val clock: Clock
 ) : ViewModel() {
 
@@ -54,9 +61,9 @@ class WaterViewModel(
         todayFlow(clock),
         goalsStore.goals,
         selectedDay.flatMapLatest { repository.entries(it) },
-        repository.containers
-    ) { day, today, goals, entries, containers ->
-        WaterUiState(day, today, goals.water.daily, entries, containers)
+        combine(repository.containers, weightRepository.currentWeightKg, ::Pair)
+    ) { day, today, goals, entries, (containers, weightKg) ->
+        WaterUiState(day, today, goals.water.daily, entries, containers, weightKg)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), WaterUiState(initialDay, initialDay))
 
     fun selectDay(day: LocalDate) {
@@ -123,6 +130,14 @@ class WaterViewModel(
         viewModelScope.launch { repository.saveContainers(listOf(container)) }
     }
 
+    /** Muda só a meta diária; a semanal personalizada, se houver, continua. */
+    fun setGoal(dailyMl: Int) {
+        viewModelScope.launch {
+            val current = goalsStore.goals.first().water
+            goalsStore.setGoal(GoalType.WATER, current.copy(daily = dailyMl))
+        }
+    }
+
     fun deleteContainer(container: WaterContainer) {
         viewModelScope.launch { repository.deleteContainer(container.id) }
     }
@@ -131,7 +146,7 @@ class WaterViewModel(
         val Factory = viewModelFactory {
             initializer {
                 val container = (this[APPLICATION_KEY] as WellioApp).container
-                WaterViewModel(container.waterRepository, container.goalsStore, container.clock)
+                WaterViewModel(container.waterRepository, container.goalsStore, container.weightRepository, container.clock)
             }
         }
     }

@@ -5,9 +5,15 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextReplacement
 import com.projeto.wellio.domain.model.WeightEntry
+import com.projeto.wellio.domain.weight.WeightGoal
 import com.projeto.wellio.ui.theme.WellioTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -25,17 +31,21 @@ class WeightScreenTest {
 
     private fun show(
         entries: List<Pair<WeightEntry, Double?>> = emptyList(),
-        onSave: (LocalDate, Double) -> Unit = { _, _ -> }
+        onSave: (LocalDate, Double) -> Unit = { _, _ -> },
+        goal: WeightGoal? = null,
+        onSetTarget: (Double) -> Unit = {}
     ) {
         compose.setContent {
             WellioTheme {
                 WeightScreen(
-                    state = WeightUiState(today, entries),
+                    state = WeightUiState(today, entries, goal),
                     onBack = {},
                     onSave = onSave,
                     onUpdate = { _, _, _ -> },
                     onDelete = {},
-                    onRestore = {}
+                    onRestore = {},
+                    onSetTarget = onSetTarget,
+                    onClearTarget = {}
                 )
             }
         }
@@ -45,13 +55,16 @@ class WeightScreenTest {
     fun semPesagensAvisaQueOCalculoUsaOPadrao() {
         show()
 
-        compose.onNodeWithText("Sem pesagens: o cálculo usa 70,0 kg").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Sem pesagens: o cálculo usa 70,0 kg", substring = true).assertIsDisplayed()
     }
 
     @Test
     fun mostraVariacaoEmRelacaoAPesagemAnterior() {
         show(entries = listOf(ontem to -0.7, semanaPassada to null))
 
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Histórico"))
+        compose.onNodeWithText("Histórico").performClick()
+        compose.onNode(hasScrollAction()).performScrollToNode(hasContentDescription("Ontem, 72,4 kg, −0,7 kg"))
         compose.onNodeWithContentDescription("Ontem, 72,4 kg, −0,7 kg").assertIsDisplayed()
     }
 
@@ -63,7 +76,7 @@ class WeightScreenTest {
         compose.onNodeWithText("Registrar peso", useUnmergedTree = true).performClick()
         compose.onNodeWithText("Digitar o peso").performClick()
         compose.onNodeWithText("Peso (kg)").performTextReplacement("71,8")
-        compose.onNodeWithText("Salvar").performClick()
+        compose.onNodeWithText("Salvar").performScrollTo().performClick()
 
         assertEquals(today to 71.8, saved)
     }
@@ -98,5 +111,25 @@ class WeightScreenTest {
 
         compose.onNodeWithContentDescription("Curva de peso: de 73,1 kg a 72,4 kg em 30 dias").assertIsDisplayed()
         compose.onNodeWithText("−0,7 kg em 30 dias").assertIsDisplayed()
+        compose.onNodeWithContentDescription("−0,7 kg desde a anterior", substring = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun alvoMostraQuantoFalta() {
+        show(entries = listOf(ontem to null), goal = WeightGoal(targetKg = 70.0, startKg = 75.0))
+
+        compose.onNodeWithText("faltam 2,4 kg").assertIsDisplayed()
+    }
+
+    @Test
+    fun definirAlvoPeloCard() {
+        var target: Double? = null
+        show(entries = listOf(ontem to null), onSetTarget = { target = it })
+
+        compose.onNodeWithText("Peso alvo").performClick()
+        compose.onNodeWithContentDescription("Diminuir 0,1 kg").performClick()
+        compose.onNodeWithText("Salvar").performClick()
+
+        assertEquals(72.3, target!!, 0.0)
     }
 }

@@ -50,4 +50,12 @@ class FormatTest {
         assertEquals("−0,7 kg", formatKgChange(-0.7))
         assertEquals("0,0 kg", formatKgChange(0.0))
     }
+
+    @Test
+    fun `data curta mostra o ano so se for outro`() {
+        val today = LocalDate.of(2026, 10, 1)
+
+        assertEquals("28 set", shortDate(LocalDate.of(2026, 9, 28), today))
+        assertEquals("28 set 2025", shortDate(LocalDate.of(2025, 9, 28), today))
+    }
 }

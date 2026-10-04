@@ -44,3 +44,10 @@ fun dayLabel(day: LocalDate, today: LocalDate): String = when (day) {
         "$weekday, ${day.dayOfMonth} $month$year"
     }
 }
+
+/** "28 set", ou "28 set 2025" se não for do ano atual de [today]. */
+fun shortDate(day: LocalDate, today: LocalDate): String {
+    val month = day.month.getDisplayName(TextStyle.SHORT, ptBR).trimEnd('.')
+    val year = if (day.year != today.year) " ${day.year}" else ""
+    return "${day.dayOfMonth} $month$year"
+}

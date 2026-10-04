@@ -17,6 +17,10 @@ class WaterRepository(private val dao: WaterDao, private val clock: Clock) {
 
     fun totalMl(days: ClosedRange<LocalDate>): Flow<Int> = dao.totalBetween(days.start, days.endInclusive)
 
+    /** Total de cada dia do intervalo (dias sem registro ficam de fora). */
+    fun totalsByDay(days: ClosedRange<LocalDate>): Flow<Map<LocalDate, Int>> =
+        dao.totalsByDay(days.start, days.endInclusive).map { rows -> rows.associate { it.date to it.total } }
+
     fun entries(day: LocalDate): Flow<List<WaterEntry>> =
         dao.entriesOn(day).map { entries -> entries.map { it.toDomain() } }
 

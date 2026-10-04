@@ -10,10 +10,16 @@ import kotlinx.coroutines.flow.Flow
 import java.time.Instant
 import java.time.LocalDate
 
+/** Soma de um dia (consultas agrupadas por data). */
+data class DayTotal(val date: LocalDate, val total: Int)
+
 @Dao
 interface WaterDao {
     @Query("SELECT COALESCE(SUM(amountMl), 0) FROM water_entry WHERE date BETWEEN :from AND :to AND deletedAt IS NULL")
     fun totalBetween(from: LocalDate, to: LocalDate): Flow<Int>
+
+    @Query("SELECT date, SUM(amountMl) AS total FROM water_entry WHERE date BETWEEN :from AND :to AND deletedAt IS NULL GROUP BY date")
+    fun totalsByDay(from: LocalDate, to: LocalDate): Flow<List<DayTotal>>
 
     @Query("SELECT * FROM water_entry WHERE date = :day AND deletedAt IS NULL ORDER BY timestamp")
     fun entriesOn(day: LocalDate): Flow<List<WaterEntryEntity>>
@@ -60,6 +66,9 @@ interface FoodDao {
     @Query("SELECT COALESCE(SUM(kcalTotal), 0) FROM food_entry WHERE date BETWEEN :from AND :to AND deletedAt IS NULL")
     fun kcalBetween(from: LocalDate, to: LocalDate): Flow<Int>
 
+    @Query("SELECT date, SUM(kcalTotal) AS total FROM food_entry WHERE date BETWEEN :from AND :to AND deletedAt IS NULL GROUP BY date")
+    fun kcalByDay(from: LocalDate, to: LocalDate): Flow<List<DayTotal>>
+
     @Insert
     suspend fun insertEntry(entry: FoodEntryEntity)
 }
@@ -77,6 +86,9 @@ interface ExerciseDao {
 
     @Query("SELECT COALESCE(SUM(kcal), 0) FROM exercise_entry WHERE date BETWEEN :from AND :to AND deletedAt IS NULL")
     fun kcalBetween(from: LocalDate, to: LocalDate): Flow<Int>
+
+    @Query("SELECT date, SUM(kcal) AS total FROM exercise_entry WHERE date BETWEEN :from AND :to AND deletedAt IS NULL GROUP BY date")
+    fun kcalByDay(from: LocalDate, to: LocalDate): Flow<List<DayTotal>>
 
     @Insert
     suspend fun insertEntry(entry: ExerciseEntryEntity)

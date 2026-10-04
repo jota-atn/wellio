@@ -829,6 +829,7 @@ Modelo de dados adicional: `plan_item` (id, date, time?, kind: exercise/template
 7. **Resumo semanal**: tela ou notificação no domingo comparando com a semana anterior.
 8. **Bloqueio por biometria** para abrir o app.
 9. **Tile para Wear OS** com água e progresso do dia.
+10. **Modo canhoto (espelhamento dos cards)**: opção em Configurações → Home que espelha o layout horizontalmente: o card "metade" sem vizinho passa para a direita, os elementos internos dos cards trocam de lado (ex.: a gota e o visor da balança à direita, botões de ação à esquerda) e o FAB vai para o canto esquerdo, para ficar ao alcance do polegar esquerdo.
 
 ## 14. Decisões tomadas
 

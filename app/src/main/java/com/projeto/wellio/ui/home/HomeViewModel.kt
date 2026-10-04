@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.AP
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.projeto.wellio.AppContainer
 import com.projeto.wellio.WellioApp
 import com.projeto.wellio.data.prefs.GoalsStore
 import com.projeto.wellio.data.repository.ExerciseRepository
@@ -22,6 +23,11 @@ import com.projeto.wellio.domain.model.WaterEntry
 import com.projeto.wellio.domain.water.lastEntry
 import com.projeto.wellio.domain.water.quickButtons
 import com.projeto.wellio.domain.time.weekOf
+import com.projeto.wellio.domain.goals.DayScore
+import com.projeto.wellio.domain.goals.dayScore
+import com.projeto.wellio.domain.goals.lastDays
+import com.projeto.wellio.ui.module.Modules
+import com.projeto.wellio.ui.module.Summary
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
@@ -30,7 +36,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import java.time.Clock
 import java.time.LocalDate
 
 data class HomeUiState(
@@ -40,19 +45,40 @@ data class HomeUiState(
     val foods: List<Food> = emptyList(),
     val exerciseTypes: List<ExerciseType> = emptyList(),
     val waterQuickButtons: List<WaterContainer> = emptyList(),
-    val lastWaterToday: WaterEntry? = null
+    val lastWaterToday: WaterEntry? = null,
+    /** Resumo de hoje de cada módulo, na ordem de [Modules.all]. */
+    val summaries: List<Summary> = emptyList(),
+    /** % do dia nos últimos 7 dias, do mais antigo para hoje. */
+    val lastWeek: List<DayScore> = emptyList()
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class HomeViewModel(
-    private val waterRepository: WaterRepository,
-    private val foodRepository: FoodRepository,
-    private val exerciseRepository: ExerciseRepository,
-    private val goalsStore: GoalsStore,
-    clock: Clock
-) : ViewModel() {
+class HomeViewModel(container: AppContainer) : ViewModel() {
 
-    private val today = todayFlow(clock)
+    private val waterRepository: WaterRepository = container.waterRepository
+    private val foodRepository: FoodRepository = container.foodRepository
+    private val exerciseRepository: ExerciseRepository = container.exerciseRepository
+    private val goalsStore: GoalsStore = container.goalsStore
+
+    private val today = todayFlow(container.clock)
+
+    private val summaries: Flow<List<Summary>> =
+        combine(Modules.all.map { it.summary(container) }) { it.toList() }
+
+    private val lastWeek: Flow<List<DayScore>> = today.flatMapLatest { day ->
+        val days = lastDays(day)
+        val range = days.first()..day
+        combine(
+            waterRepository.totalsByDay(range),
+            foodRepository.kcalByDay(range),
+            exerciseRepository.kcalByDay(range),
+            goalsStore.goals
+        ) { water, food, exercise, goals ->
+            days.map { date ->
+                DayScore(date, dayScore(Totals(water[date] ?: 0, food[date] ?: 0, exercise[date] ?: 0), goals))
+            }
+        }
+    }
 
     private val water = combine(
         waterRepository.containers,
@@ -64,9 +90,10 @@ class HomeViewModel(
         today.flatMapLatest { day -> totals(day..day) },
         today.flatMapLatest { day -> totals(weekOf(day)) },
         combine(foodRepository.foods, exerciseRepository.types, ::Pair),
-        water
-    ) { goals, todayTotals, weekTotals, (foods, types), (quick, last) ->
-        HomeUiState(goals, todayTotals, weekTotals, foods, types, quick, last)
+        combine(water, summaries, lastWeek, ::Triple)
+    ) { goals, todayTotals, weekTotals, (foods, types), (water, summaries, lastWeek) ->
+        val (quick, last) = water
+        HomeUiState(goals, todayTotals, weekTotals, foods, types, quick, last, summaries, lastWeek)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
 
     private fun totals(days: ClosedRange<LocalDate>): Flow<Totals> = combine(
@@ -101,14 +128,7 @@ class HomeViewModel(
     companion object {
         val Factory = viewModelFactory {
             initializer {
-                val container = (this[APPLICATION_KEY] as WellioApp).container
-                HomeViewModel(
-                    container.waterRepository,
-                    container.foodRepository,
-                    container.exerciseRepository,
-                    container.goalsStore,
-                    container.clock
-                )
+                HomeViewModel((this[APPLICATION_KEY] as WellioApp).container)
             }
         }
     }

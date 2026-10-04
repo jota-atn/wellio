@@ -71,7 +71,7 @@ fun DashboardCard(
         contentColor = colors.onContainer,
         modifier = modifier.fillMaxWidth()
     ) {
-        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.fillMaxSize().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(
                 Modifier.semantics(mergeDescendants = true) {
                     contentDescription = "Hoje: ${percent(todayScore)} por cento das metas"
@@ -140,7 +140,7 @@ fun DashboardHalfCard(
                     goalSummaries(summaries).joinToString(". ") { it.spoken }
             }
     ) {
-        Box(Modifier.padding(14.dp), contentAlignment = Alignment.Center) {
+        Box(Modifier.fillMaxSize().padding(14.dp), contentAlignment = Alignment.Center) {
             GoalRings(goalSummaries(summaries), size = 124.dp, stroke = 8.dp)
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text("${percent(todayScore)}%", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)

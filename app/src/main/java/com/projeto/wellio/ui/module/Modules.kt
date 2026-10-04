@@ -26,6 +26,8 @@ object Modules {
     val all: List<WellioModule> = listOf(WaterModule, FoodModule, ExerciseModule, WeightModule)
 
     fun of(id: ModuleId): WellioModule = all.first { it.id == id }
+
+    fun byKey(key: String): WellioModule? = all.firstOrNull { it.id.key == key }
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)

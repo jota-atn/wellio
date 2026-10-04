@@ -10,7 +10,13 @@ import com.projeto.wellio.ui.theme.ModuleColors
 import com.projeto.wellio.ui.theme.WellioColors
 import kotlinx.coroutines.flow.Flow
 
-enum class ModuleId { Water, Food, Exercise, Weight }
+/** Módulos do app; [key] identifica o card no layout salvo da Home. */
+enum class ModuleId(val key: String) {
+    Water("water"),
+    Food("food"),
+    Exercise("exercise"),
+    Weight("weight")
+}
 
 /**
  * Tudo o que uma funcionalidade oferece ao resto do app, declarado num lugar só (SPEC §11,

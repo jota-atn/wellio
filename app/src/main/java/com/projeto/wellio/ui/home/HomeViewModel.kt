@@ -18,6 +18,12 @@ import com.projeto.wellio.domain.model.Goals
 import com.projeto.wellio.domain.model.Totals
 import com.projeto.wellio.domain.time.weekOf
 import com.projeto.wellio.domain.goals.DayScore
+import com.projeto.wellio.domain.home.DASHBOARD_KEY
+import com.projeto.wellio.domain.home.DefaultHomeLayout
+import com.projeto.wellio.domain.home.HomeCard
+import com.projeto.wellio.domain.home.decodeLayout
+import com.projeto.wellio.domain.home.encodeLayout
+import kotlinx.coroutines.flow.map
 import com.projeto.wellio.domain.goals.dayScore
 import com.projeto.wellio.domain.goals.lastDays
 import com.projeto.wellio.ui.module.Modules
@@ -39,8 +45,13 @@ data class HomeUiState(
     /** Resumo de hoje de cada módulo, na ordem de [Modules.all]. */
     val summaries: List<Summary> = emptyList(),
     /** % do dia nos últimos 7 dias, do mais antigo para hoje. */
-    val lastWeek: List<DayScore> = emptyList()
+    val lastWeek: List<DayScore> = emptyList(),
+    /** Cards da Home, na ordem do usuário. */
+    val layout: List<HomeCard> = DefaultHomeLayout
 )
+
+/** Cards que a Home sabe desenhar: o Dashboard e o de cada módulo. */
+val knownCardKeys: Set<String> = setOf(DASHBOARD_KEY) + Modules.all.map { it.id.key }
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModel(container: AppContainer) : ViewModel() {
@@ -49,6 +60,11 @@ class HomeViewModel(container: AppContainer) : ViewModel() {
     private val foodRepository: FoodRepository = container.foodRepository
     private val exerciseRepository: ExerciseRepository = container.exerciseRepository
     private val goalsStore: GoalsStore = container.goalsStore
+    private val layoutStore = container.homeLayoutStore
+
+    private val layout: Flow<List<HomeCard>> = layoutStore.layout.map { saved ->
+        saved?.let { decodeLayout(it, knownCardKeys) } ?: DefaultHomeLayout
+    }
 
     private val today = todayFlow(container.clock)
 
@@ -75,10 +91,10 @@ class HomeViewModel(container: AppContainer) : ViewModel() {
         goalsStore.goals,
         today.flatMapLatest { day -> totals(day..day) },
         today.flatMapLatest { day -> totals(weekOf(day)) },
-        summaries,
-        lastWeek
-    ) { goals, todayTotals, weekTotals, summaries, lastWeek ->
-        HomeUiState(goals, todayTotals, weekTotals, summaries, lastWeek)
+        combine(summaries, lastWeek, ::Pair),
+        layout
+    ) { goals, todayTotals, weekTotals, (summaries, lastWeek), layout ->
+        HomeUiState(goals, todayTotals, weekTotals, summaries, lastWeek, layout)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
 
     private fun totals(days: ClosedRange<LocalDate>): Flow<Totals> = combine(
@@ -86,6 +102,10 @@ class HomeViewModel(container: AppContainer) : ViewModel() {
         foodRepository.kcal(days),
         exerciseRepository.kcal(days)
     ) { water, consumed, burned -> Totals(water, consumed, burned) }
+
+    fun saveLayout(cards: List<HomeCard>) {
+        viewModelScope.launch { layoutStore.save(encodeLayout(cards)) }
+    }
 
     fun updateGoal(type: GoalType, daily: Int, weekly: Int) {
         // Semanal igual a diária × 7 continua automática; qualquer outro valor vira meta própria

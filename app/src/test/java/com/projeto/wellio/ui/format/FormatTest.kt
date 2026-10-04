@@ -58,4 +58,10 @@ class FormatTest {
         assertEquals("28 set", shortDate(LocalDate.of(2026, 9, 28), today))
         assertEquals("28 set 2025", shortDate(LocalDate.of(2025, 9, 28), today))
     }
+
+    @Test
+    fun `litros com uma casa e sem virgula zero`() {
+        assertEquals("1,4 L", formatLiters(1400))
+        assertEquals("2 L", formatLiters(2000))
+    }
 }

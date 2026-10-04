@@ -51,3 +51,10 @@ fun shortDate(day: LocalDate, today: LocalDate): String {
     val year = if (day.year != today.year) " ${day.year}" else ""
     return "${day.dayOfMonth} $month$year"
 }
+
+/** "1,4 L" ou "2 L" (sem ",0"). */
+fun formatLiters(ml: Int): String =
+    NumberFormat.getNumberInstance(ptBR).apply { maximumFractionDigits = 1 }.format(ml / 1000.0) + " L"
+
+/** "1.250" */
+fun formatInt(value: Int): String = NumberFormat.getIntegerInstance(ptBR).format(value)

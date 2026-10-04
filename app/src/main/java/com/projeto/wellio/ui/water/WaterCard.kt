@@ -111,7 +111,7 @@ fun WaterHomeCard(
 
 /**
  * Inteiro: gota, total/meta, barra, % e os recipientes rápidos com o desfazer.
- * Metade: gota, total/meta e o primeiro recipiente rápido.
+ * Metade: gota, total/meta, o primeiro recipiente rápido e o desfazer.
  */
 @Composable
 fun WaterCardContent(
@@ -177,8 +177,13 @@ fun WaterCardContent(
                     }
                 }
                 Spacer(Modifier.weight(1f))
-                state.quickButtons.firstOrNull()?.let {
-                    QuickButton(it, onQuickAdd, showName = true, modifier = Modifier.fillMaxWidth().padding(start = 8.dp))
+                Row(Modifier.padding(start = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    state.quickButtons.firstOrNull()?.let {
+                        QuickButton(it, onQuickAdd, showName = true, modifier = Modifier.weight(1f))
+                    }
+                    IconButton(onClick = onUndo, enabled = state.lastEntry != null, modifier = Modifier.size(36.dp)) {
+                        Icon(WellioIcons.Undo, contentDescription = "Desfazer último registro de água")
+                    }
                 }
             }
         }

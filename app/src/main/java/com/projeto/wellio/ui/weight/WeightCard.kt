@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -152,12 +153,20 @@ fun WeightCardContent(state: WeightCardState, size: CardSize, onOpen: () -> Unit
                 }
                 Spacer(Modifier.width(14.dp))
                 Column(Modifier.weight(1f).fillMaxHeight()) {
-                    MiniTrend(
-                        weightTrend(state.entries, state.today, WeightPeriod.Month),
-                        targetKg = state.goal?.targetKg,
-                        line = colors.accent,
-                        modifier = Modifier.weight(1f).fillMaxWidth()
-                    )
+                    val trend = weightTrend(state.entries, state.today, WeightPeriod.Month)
+                    if (trend.size >= 2) {
+                        MiniTrend(trend, targetKg = state.goal?.targetKg, line = colors.accent, modifier = Modifier.weight(1f).fillMaxWidth())
+                    } else {
+                        // Sem curva ainda: diz o que falta, em vez de deixar o espaço vazio
+                        Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            Text(
+                                "Registre mais pesagens para ver a curva",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = colors.onContainer.copy(alpha = 0.7f),
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
                     Spacer(Modifier.height(6.dp))
                     Text(
                         targetText(state.goal, current) ?: "últimos 30 dias",

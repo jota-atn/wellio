@@ -316,7 +316,7 @@ Um **botão flutuante "+" (FAB)** fica fixo no canto da Home e abre um menu: Ág
 - **Segurar um card e soltar** (sem mexer) abre um **leque de ações** naquele card: Ocultar, Deixar metade/inteiro e Editar Home. As ações valem na hora. Tocar fora fecha.
 - **Segurar e arrastar** (no mesmo gesto, logo depois da vibração) entra no **modo de edição** da Home já levando o card junto do dedo. "Editar Home" no leque também entra no modo de edição.
 - No modo de edição:
-  - todos os cards **tremem de leve** e ganham **selos por dentro dos cantos** (para não encostar nos selos do card vizinho): ⊖ para ocultar e ⇔ para alternar tamanho (inteiro/metade); a troca de tamanho é animada e mostra a outra versão na hora;
+  - todos os cards **tremem de leve** e ganham **selos pequenos por fora dos cantos de cima**: ⊖ para ocultar e ⇔ para alternar tamanho (inteiro/metade); a troca de tamanho é animada e mostra a outra versão na hora;
   - a sidebar não abre pelo gesto de deslizar, para não atrapalhar o arrasto;
   - arrastar um card (de qualquer ponto) move sua posição; os outros se reorganizam com animação;
   - uma barra no topo tem **"+ Adicionar card"** e **Concluir**;

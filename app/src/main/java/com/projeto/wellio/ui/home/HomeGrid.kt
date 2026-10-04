@@ -16,7 +16,7 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
@@ -39,6 +39,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.LookaheadScope
 import androidx.compose.ui.platform.LocalDensity
@@ -296,7 +297,8 @@ fun HomeGrid(
 
 /**
  * Por cima do card na edição: segura os toques (o card não abre nem registra), mostra os
- * selos ⊖ e ⇔ por dentro dos cantos e oferece ao TalkBack mover, mudar o tamanho e
+ * selos ⊖ e ⇔ por fora dos cantos de cima (pequenos, para não encostar nos do card
+ * vizinho) e oferece ao TalkBack mover, mudar o tamanho e
  * ocultar sem arrastar (SPEC §2.8).
  */
 @Composable
@@ -325,15 +327,15 @@ private fun EditOverlay(
         Badge(
             onClick = onHide,
             description = "Ocultar $title",
-            modifier = Modifier.align(Alignment.TopStart).padding(8.dp),
+            modifier = Modifier.align(Alignment.TopStart).offset((-4).dp, (-4).dp),
             error = true
-        ) { Icon(WellioIcons.Minus, contentDescription = null, modifier = Modifier.size(14.dp)) }
+        ) { Icon(WellioIcons.Minus, contentDescription = null, modifier = Modifier.size(12.dp)) }
         Badge(
             onClick = onToggleSize,
             description = if (size == CardSize.Full) "Deixar $title metade" else "Deixar $title inteiro",
-            modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+            modifier = Modifier.align(Alignment.TopEnd).offset(4.dp, (-4).dp),
             error = false
-        ) { Icon(WellioIcons.SwapHoriz, contentDescription = null, modifier = Modifier.size(14.dp)) }
+        ) { Icon(WellioIcons.SwapHoriz, contentDescription = null, modifier = Modifier.size(12.dp)) }
     }
 }
 
@@ -347,7 +349,7 @@ private fun Badge(onClick: () -> Unit, description: String, modifier: Modifier, 
         contentColor = if (error) scheme.onError else scheme.inverseOnSurface,
         shadowElevation = 3.dp,
         modifier = modifier
-            .size(26.dp)
+            .size(22.dp)
             .semantics { contentDescription = description }
     ) {
         Box(contentAlignment = Alignment.Center) { icon() }
@@ -385,7 +387,6 @@ private fun Modifier.holdToEdit(
         if (endedEarly != null) return@awaitEachGesture
 
         onHold()
-        var last = down.position
         var dragging = false
         while (true) {
             val event = awaitPointerEvent(PointerEventPass.Initial)
@@ -395,9 +396,12 @@ private fun Modifier.holdToEdit(
             if (!dragging && (change.position - down.position).getDistance() > viewConfiguration.touchSlop) {
                 dragging = true
                 onHoldDragStart(down.position)
+                // Até aqui o card não andou: o deslocamento desde o toque vale inteiro
+                onHoldDrag(change.position - down.position)
+            } else if (dragging) {
+                // O card anda junto com o dedo: positionChange já desconta isso (como no arrasto da edição)
+                onHoldDrag(change.positionChange())
             }
-            if (dragging) onHoldDrag(change.position - last)
-            last = change.position
         }
         if (dragging) onHoldDragEnd() else onHoldReleased()
     }

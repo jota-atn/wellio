@@ -215,7 +215,6 @@ fun QuickMenu(size: CardSize, onDismiss: () -> Unit, onAction: (QuickAction) -> 
                     contentColor = if (action == QuickAction.Hide) scheme.onErrorContainer else scheme.inverseOnSurface,
                     shadowElevation = 6.dp,
                     modifier = Modifier
-                        .padding(start = (index * 18).dp)
                         .graphicsLayer {
                             val t = shown.value
                             alpha = t.coerceIn(0f, 1f)

@@ -293,11 +293,14 @@ private fun DrawScope.drawConfetti(t: Float, seed: Int, palette: List<Color>) {
     }
 }
 
-/** Fita numerada do visor, centrada em [valueKg]: marca a cada 0,1 kg e número a cada 1 kg. */
+/**
+ * Fita numerada do visor, centrada em [valueKg]: marca a cada 0,1 kg e número a cada 1 kg.
+ * Também usada, menor, nos cards da Home ([compact]).
+ */
 @Composable
-private fun ScaleTape(valueKg: Float, tick: Color, needle: Color, modifier: Modifier = Modifier) {
+internal fun ScaleTape(valueKg: Float, tick: Color, needle: Color, modifier: Modifier = Modifier, compact: Boolean = false) {
     val measurer = rememberTextMeasurer()
-    val labelStyle = TextStyle(color = tick, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+    val labelStyle = TextStyle(color = tick, fontSize = if (compact) 10.sp else 12.sp, fontWeight = FontWeight.SemiBold)
     Canvas(
         modifier
             .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
@@ -312,7 +315,7 @@ private fun ScaleTape(valueKg: Float, tick: Color, needle: Color, modifier: Modi
                 )
             }
     ) {
-        val spacing = 9.dp.toPx()
+        val spacing = (if (compact) 6.dp else 9.dp).toPx()
         val centerX = size.width / 2
         val halfTenths = centerX / spacing
         val first = floor(valueKg * 10 - halfTenths).toInt()
@@ -335,14 +338,15 @@ private fun ScaleTape(valueKg: Float, tick: Color, needle: Color, modifier: Modi
             )
             if (major) {
                 val label = measurer.measure("${tenth / 10}", labelStyle)
-                drawText(label, topLeft = Offset(x - label.size.width / 2, size.height - label.size.height - 6.dp.toPx()))
+                drawText(label, topLeft = Offset(x - label.size.width / 2, size.height - label.size.height - (if (compact) 2.dp else 6.dp).toPx()))
             }
         }
         // Agulha vermelha: triângulo no alto e linha até o meio
         val needlePath = Path().apply {
-            moveTo(centerX - 7.dp.toPx(), 0f)
-            lineTo(centerX + 7.dp.toPx(), 0f)
-            lineTo(centerX, 9.dp.toPx())
+            val half = (if (compact) 5.dp else 7.dp).toPx()
+            moveTo(centerX - half, 0f)
+            lineTo(centerX + half, 0f)
+            lineTo(centerX, half * 1.3f)
             close()
         }
         drawPath(needlePath, needle)

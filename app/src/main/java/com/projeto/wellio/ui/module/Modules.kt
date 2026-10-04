@@ -15,7 +15,14 @@ import com.projeto.wellio.ui.weight.WeightRegister
 import com.projeto.wellio.R
 import com.projeto.wellio.data.time.todayFlow
 import com.projeto.wellio.domain.model.GoalType
+import com.projeto.wellio.domain.exercise.quickExercises
+import com.projeto.wellio.domain.water.quickButtons
 import com.projeto.wellio.domain.weight.latestWeight
+import com.projeto.wellio.ui.exercise.formatDuration
+import com.projeto.wellio.ui.format.formatMl
+import com.projeto.wellio.ui.icons.containerIconRes
+import com.projeto.wellio.ui.icons.exerciseIconRes
+import kotlinx.coroutines.flow.map
 import com.projeto.wellio.domain.weight.weekChange
 import com.projeto.wellio.ui.navigation.ExerciseDestination
 import com.projeto.wellio.ui.navigation.WaterDestination
@@ -25,6 +32,9 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+
+/** No máximo 4 ações de 1 toque por módulo, como os itens do FAB (SPEC §5.1). */
+private const val MAX_ONE_TAP = 4
 
 /** Os módulos do app, na ordem da seção Registros da sidebar (SPEC §2.2). */
 object Modules {
@@ -51,6 +61,17 @@ object WaterModule : WellioModule {
 
     @Composable
     override fun HomeCard(size: CardSize, onOpen: () -> Unit, modifier: Modifier) = WaterHomeCard(size, onOpen, modifier)
+
+    /** Os recipientes rápidos (até 4). */
+    override fun oneTapActions(container: AppContainer): Flow<List<OneTapAction>> =
+        container.waterRepository.containers.map { containers ->
+            quickButtons(containers, max = MAX_ONE_TAP).map { item ->
+                OneTapAction("${item.name} ${formatMl(item.amountMl)}", containerIconRes(item.iconKey)) {
+                    val id = container.waterRepository.add(item.amountMl, item.name)
+                    suspend { container.waterRepository.delete(id) }
+                }
+            }
+        }
 
     override val registerLabel = "Água"
 
@@ -99,6 +120,19 @@ object ExerciseModule : WellioModule {
 
     @Composable
     override fun HomeCard(size: CardSize, onOpen: () -> Unit, modifier: Modifier) = ExerciseHomeCard(size, onOpen, modifier)
+
+    /** Os favoritos e recentes, no último nível e duração usados (até 4). */
+    override fun oneTapActions(container: AppContainer): Flow<List<OneTapAction>> = combine(
+        container.exerciseRepository.types,
+        container.exerciseRepository.lastUses
+    ) { types, uses ->
+        quickExercises(types, uses, max = MAX_ONE_TAP).map { item ->
+            OneTapAction("${item.type.name} · ${formatDuration(item.minutes)}", exerciseIconRes(item.type)) {
+                val id = container.exerciseRepository.add(item.type, item.minutes)
+                suspend { container.exerciseRepository.delete(id) }
+            }
+        }
+    }
 
     override val registerLabel = "Exercício"
 

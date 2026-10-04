@@ -9,6 +9,7 @@ import com.projeto.wellio.domain.model.GoalType
 import com.projeto.wellio.ui.theme.ModuleColors
 import com.projeto.wellio.ui.theme.WellioColors
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 
 /** Módulos do app; [key] identifica o card no layout salvo da Home. */
 enum class ModuleId(val key: String) {
@@ -51,6 +52,9 @@ interface WellioModule {
      */
     @Composable
     fun HomeCard(size: CardSize, onOpen: () -> Unit, modifier: Modifier)
+
+    /** Ações de 1 toque no FAB (segurar a pílula); vazio = segurar não faz nada. */
+    fun oneTapActions(container: AppContainer): Flow<List<OneTapAction>> = flowOf(emptyList())
 
     /** Nome no menu do FAB ("Alimento", não "Alimentação"). */
     val registerLabel: String

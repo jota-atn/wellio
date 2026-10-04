@@ -5,6 +5,7 @@ import android.content.Context
 import androidx.datastore.preferences.preferencesDataStore
 import com.projeto.wellio.data.db.AppDatabase
 import com.projeto.wellio.data.prefs.GoalsStore
+import com.projeto.wellio.data.prefs.HomeLayoutStore
 import com.projeto.wellio.data.repository.ExerciseRepository
 import com.projeto.wellio.data.repository.FoodRepository
 import com.projeto.wellio.data.repository.WaterRepository
@@ -34,6 +35,7 @@ class AppContainer(context: Context) {
 
     val clock: Clock = Clock.systemDefaultZone()
     val goalsStore = GoalsStore(context.preferences)
+    val homeLayoutStore = HomeLayoutStore(context.preferences)
     val waterRepository = WaterRepository(database.waterDao(), clock)
     val foodRepository = FoodRepository(database.foodDao(), clock)
     val weightRepository = WeightRepository(database.weightDao(), clock)

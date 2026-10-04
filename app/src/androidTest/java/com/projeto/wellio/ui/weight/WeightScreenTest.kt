@@ -6,7 +6,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextReplacement
 import com.projeto.wellio.domain.model.WeightEntry
 import com.projeto.wellio.ui.theme.WellioTheme
 import org.junit.Assert.assertEquals
@@ -61,7 +61,8 @@ class WeightScreenTest {
         show(onSave = { day, kg -> saved = day to kg })
 
         compose.onNodeWithText("Registrar peso", useUnmergedTree = true).performClick()
-        compose.onNodeWithText("Peso (kg)").performTextInput("71,8")
+        compose.onNodeWithText("Digitar o peso").performClick()
+        compose.onNodeWithText("Peso (kg)").performTextReplacement("71,8")
         compose.onNodeWithText("Salvar").performClick()
 
         assertEquals(today to 71.8, saved)
@@ -72,8 +73,30 @@ class WeightScreenTest {
         show()
 
         compose.onNodeWithText("Registrar peso", useUnmergedTree = true).performClick()
-        compose.onNodeWithText("Peso (kg)").performTextInput("5")
+        compose.onNodeWithText("Digitar o peso").performClick()
+        compose.onNodeWithText("Peso (kg)").performTextReplacement("5")
 
         compose.onNodeWithText("Salvar").assertIsNotEnabled()
+    }
+
+    @Test
+    fun botoesAjustamOPesoDe0Virgula1() {
+        var saved: Double? = null
+        show(entries = listOf(ontem to null), onSave = { _, kg -> saved = kg })
+
+        compose.onNodeWithText("Registrar peso", useUnmergedTree = true).performClick()
+        compose.onNodeWithContentDescription("Aumentar 0,1 kg").performClick()
+        compose.onNodeWithContentDescription("Aumentar 0,1 kg").performClick()
+        compose.onNodeWithText("Salvar").performClick()
+
+        assertEquals(72.6, saved!!, 0.0)
+    }
+
+    @Test
+    fun curvaApareceComDuasPesagensNoPeriodo() {
+        show(entries = listOf(ontem to -0.7, semanaPassada to null))
+
+        compose.onNodeWithContentDescription("Curva de peso: de 73,1 kg a 72,4 kg em 30 dias").assertIsDisplayed()
+        compose.onNodeWithText("−0,7 kg em 30 dias").assertIsDisplayed()
     }
 }

@@ -1,5 +1,16 @@
 package com.projeto.wellio.ui.weight
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import com.projeto.wellio.domain.weight.WeightPeriod
+import com.projeto.wellio.domain.weight.trendChange
+import com.projeto.wellio.domain.weight.weightTrend
+import com.projeto.wellio.ui.icons.WellioIcons
+import kotlin.math.roundToInt
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -107,30 +118,39 @@ fun WeightScreen(
         snackbarHost = { SnackbarHost(snackbar) },
         containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
-        val current = state.entries.firstOrNull()
-        Column(Modifier.padding(innerPadding).fillMaxSize()) {
-            CurrentWeight(current?.first, state.today, Modifier.padding(16.dp))
-
+        LazyColumn(
+            modifier = Modifier.padding(innerPadding).fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 96.dp)
+        ) {
+            item(key = "topo") {
+                WeightHero(state, Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+            }
             if (state.entries.isEmpty()) {
-                Text(
-                    "Registre seu peso para o cálculo de calorias dos exercícios ficar certo.",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 24.dp)
-                )
+                item(key = "vazio") {
+                    Text(
+                        "Registre seu peso para o cálculo de calorias dos exercícios ficar certo.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
+                    )
+                }
             } else {
-                LazyColumn(
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 96.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(state.entries, key = { it.first.id }) { (entry, change) ->
-                        WeightRow(
-                            entry = entry,
-                            change = change,
-                            today = state.today,
-                            onClick = { editing = WeightEditing.Existing(entry) },
-                            onDelete = { deleteWithUndo(entry) }
-                        )
-                    }
+                item(key = "titulo") {
+                    Text(
+                        "Histórico",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(start = 20.dp, top = 16.dp, bottom = 8.dp)
+                    )
+                }
+                items(state.entries, key = { it.first.id }) { (entry, change) ->
+                    WeightRow(
+                        entry = entry,
+                        change = change,
+                        today = state.today,
+                        onClick = { editing = WeightEditing.Existing(entry) },
+                        onDelete = { deleteWithUndo(entry) },
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp).animateItem()
+                    )
                 }
             }
         }
@@ -140,6 +160,7 @@ fun WeightScreen(
         val existing = (current as? WeightEditing.Existing)?.entry
         WeightSheet(
             entry = existing,
+            suggestedKg = state.entries.firstOrNull()?.first?.weightKg ?: DEFAULT_WEIGHT_KG,
             today = state.today,
             onDismiss = { editing = null },
             onSave = { day, kg ->
@@ -156,25 +177,94 @@ fun WeightScreen(
     }
 }
 
+/** Topo da tela: peso atual, variação no período e a curva de evolução. */
 @Composable
-private fun CurrentWeight(entry: WeightEntry?, today: LocalDate, modifier: Modifier = Modifier) {
+private fun WeightHero(state: WeightUiState, modifier: Modifier = Modifier) {
     val colors = WellioTheme.colors.base
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = colors.container, contentColor = colors.onContainer)
+    val current = state.entries.firstOrNull()?.first
+    var period by rememberSaveable { mutableStateOf(WeightPeriod.Month) }
+    val trend = remember(state.entries, state.today, period) {
+        weightTrend(state.entries.map { it.first }, state.today, period)
+    }
+    val change = trendChange(trend)
+
+    Surface(
+        shape = RoundedCornerShape(32.dp),
+        color = colors.container,
+        contentColor = colors.onContainer,
+        modifier = modifier.fillMaxWidth()
     ) {
-        Column(Modifier.padding(20.dp)) {
-            Text("Peso atual", style = MaterialTheme.typography.labelLarge)
-            Text(
-                entry?.let { formatKg(it.weightKg) } ?: "—",
-                style = MaterialTheme.typography.headlineMedium
-            )
-            Text(
-                entry?.let { "Pesagem de ${dayLabel(it.date, today).lowercase()}" }
-                    ?: "Sem pesagens: o cálculo usa ${formatKg(DEFAULT_WEIGHT_KG)}",
-                style = MaterialTheme.typography.bodyMedium
-            )
+        Column(Modifier.padding(24.dp)) {
+            Row(verticalAlignment = Alignment.Top) {
+                Column(Modifier.weight(1f).semantics(mergeDescendants = true) {}) {
+                    Text("Peso atual", style = MaterialTheme.typography.labelLarge)
+                    Text(
+                        current?.let { formatKg(it.weightKg) } ?: "—",
+                        style = MaterialTheme.typography.displaySmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        current?.let { "Pesagem de ${dayLabel(it.date, state.today).lowercase()}" }
+                            ?: "Sem pesagens: o cálculo usa ${formatKg(DEFAULT_WEIGHT_KG)}",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+                change?.let {
+                    Surface(shape = RoundedCornerShape(50), color = colors.accent, contentColor = colors.onAccent) {
+                        Text(
+                            "${formatKgChange(it)} em ${period.label.lowercase()}",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+            }
+
+            if (state.entries.isNotEmpty()) {
+                Spacer(Modifier.height(16.dp))
+                if (trend.size >= 2) {
+                    WeightChart(
+                        trend,
+                        line = colors.accent,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(140.dp)
+                            .semantics {
+                                contentDescription = "Curva de peso: de ${formatKg(trend.first().weightKg)} " +
+                                    "a ${formatKg(trend.last().weightKg)} em ${period.label.lowercase()}"
+                            }
+                    )
+                } else {
+                    Box(Modifier.fillMaxWidth().height(80.dp), contentAlignment = Alignment.Center) {
+                        Text(
+                            "Registre mais pesagens para ver a curva",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = colors.onContainer.copy(alpha = 0.75f)
+                        )
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    WeightPeriod.entries.forEach { option ->
+                        val selected = option == period
+                        Surface(
+                            onClick = { period = option },
+                            shape = RoundedCornerShape(50),
+                            color = if (selected) colors.onContainer else Color.Transparent,
+                            contentColor = if (selected) colors.container else colors.onContainer,
+                            border = if (selected) null else BorderStroke(1.dp, colors.onContainer.copy(alpha = 0.4f)),
+                            modifier = Modifier.semantics { this.selected = selected }
+                        ) {
+                            Text(
+                                option.label,
+                                style = MaterialTheme.typography.labelLarge,
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -186,12 +276,14 @@ private fun WeightRow(
     change: Double?,
     today: LocalDate,
     onClick: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val dismissState = rememberSwipeToDismissBoxState()
     val day = dayLabel(entry.date, today)
     SwipeToDismissBox(
         state = dismissState,
+        modifier = modifier,
         enableDismissFromStartToEnd = false,
         onDismiss = { onDelete() },
         backgroundContent = {
@@ -218,7 +310,7 @@ private fun WeightRow(
                         .joinToString(", ")
                 }
         ) {
-            Row(Modifier.padding(start = 16.dp, top = 4.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(day, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
                 change?.let {
                     Text(
@@ -237,57 +329,108 @@ private fun WeightRow(
     }
 }
 
+/** "72,4" para os campos de texto. */
+private fun kgText(kg: Double): String = formatKg(kg).removeSuffix(" kg")
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun WeightSheet(
     entry: WeightEntry?,
+    suggestedKg: Double,
     today: LocalDate,
     onDismiss: () -> Unit,
     onSave: (LocalDate, Double) -> Unit,
     onDelete: (() -> Unit)?
 ) {
     val colors = WellioTheme.colors.base
-    var weightText by remember { mutableStateOf(entry?.weightKg?.let { formatKg(it).removeSuffix(" kg") }.orEmpty()) }
+    var weightText by remember { mutableStateOf(kgText(entry?.weightKg ?: suggestedKg)) }
+    var lastValid by remember { mutableDoubleStateOf(entry?.weightKg ?: suggestedKg) }
+    var typing by remember { mutableStateOf(false) }
     var day by remember { mutableStateOf(entry?.date ?: today) }
     var pickingDay by remember { mutableStateOf(false) }
     val weight = parseWeight(weightText)
+    LaunchedEffect(weight) { weight?.let { lastValid = it } }
+
+    fun step(delta: Double) {
+        val next = (((parseWeight(weightText) ?: lastValid) + delta) * 10).roundToInt() / 10.0
+        if (next in MIN_WEIGHT_KG..MAX_WEIGHT_KG) weightText = kgText(next)
+    }
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(Modifier.padding(horizontal = 24.dp).padding(bottom = 24.dp)) {
-            Text(if (entry == null) "Registrar peso" else "Editar pesagem", style = MaterialTheme.typography.titleLarge)
-            Spacer(Modifier.height(16.dp))
-            OutlinedTextField(
-                value = weightText,
-                onValueChange = { text -> weightText = text.filter { it.isDigit() || it == ',' || it == '.' }.take(6) },
-                label = { Text("Peso (kg)") },
-                isError = weightText.isNotEmpty() && weight == null,
-                supportingText = {
-                    if (weightText.isNotEmpty() && weight == null) {
-                        Text("Entre ${MIN_WEIGHT_KG.toInt()} e ${MAX_WEIGHT_KG.toInt()} kg")
-                    }
-                },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+        Column(Modifier.padding(bottom = 24.dp)) {
+            Text(
+                if (entry == null) "Registrar peso" else "Editar pesagem",
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(horizontal = 24.dp)
             )
-            OutlinedButton(onClick = { pickingDay = true }, modifier = Modifier.fillMaxWidth()) {
-                Text("Dia: ${dayLabel(day, today)}")
+            Spacer(Modifier.height(8.dp))
+
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                FilledTonalIconButton(onClick = { step(-0.1) }) {
+                    Icon(WellioIcons.Minus, contentDescription = "Diminuir 0,1 kg")
+                }
+                Text(
+                    formatKg(weight ?: lastValid),
+                    style = MaterialTheme.typography.displaySmall,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.weight(1f)
+                )
+                FilledTonalIconButton(onClick = { step(0.1) }) {
+                    Icon(Icons.Default.Add, contentDescription = "Aumentar 0,1 kg")
+                }
             }
-            Spacer(Modifier.height(16.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (onDelete != null) {
-                    TextButton(onClick = onDelete) {
-                        Icon(Icons.Default.Delete, contentDescription = null)
-                        Spacer(Modifier.width(4.dp))
-                        Text("Apagar")
+
+            WeightRuler(
+                value = weight ?: lastValid,
+                onValueChange = { weightText = kgText(it) },
+                tick = MaterialTheme.colorScheme.onSurfaceVariant,
+                indicator = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+            )
+
+            Column(Modifier.padding(horizontal = 24.dp)) {
+                if (typing) {
+                    OutlinedTextField(
+                        value = weightText,
+                        onValueChange = { text -> weightText = text.filter { it.isDigit() || it == ',' || it == '.' }.take(6) },
+                        label = { Text("Peso (kg)") },
+                        isError = weight == null,
+                        supportingText = {
+                            if (weight == null) Text("Entre ${MIN_WEIGHT_KG.toInt()} e ${MAX_WEIGHT_KG.toInt()} kg")
+                        },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                } else {
+                    TextButton(onClick = { typing = true }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+                        Text("Digitar o peso")
                     }
                 }
-                Spacer(Modifier.weight(1f))
-                Button(
-                    onClick = { weight?.let { onSave(day, it) } },
-                    enabled = weight != null,
-                    colors = ButtonDefaults.buttonColors(containerColor = colors.container, contentColor = colors.onContainer)
-                ) { Text("Salvar") }
+                OutlinedButton(onClick = { pickingDay = true }, modifier = Modifier.fillMaxWidth()) {
+                    Text("Dia: ${dayLabel(day, today)}")
+                }
+                Spacer(Modifier.height(16.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (onDelete != null) {
+                        TextButton(onClick = onDelete) {
+                            Icon(Icons.Default.Delete, contentDescription = null)
+                            Spacer(Modifier.width(4.dp))
+                            Text("Apagar")
+                        }
+                    }
+                    Spacer(Modifier.weight(1f))
+                    Button(
+                        onClick = { weight?.let { onSave(day, it) } },
+                        enabled = weight != null,
+                        colors = ButtonDefaults.buttonColors(containerColor = colors.container, contentColor = colors.onContainer)
+                    ) { Text("Salvar") }
+                }
             }
         }
     }

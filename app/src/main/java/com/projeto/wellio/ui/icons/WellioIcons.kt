@@ -23,4 +23,17 @@ object WellioIcons {
             }
         }
     }
+
+    val Minus: ImageVector by lazy {
+        materialIcon(name = "Wellio.Minus") {
+            materialPath {
+                moveTo(19f, 13f)
+                horizontalLineTo(5f)
+                verticalLineToRelative(-2f)
+                horizontalLineToRelative(14f)
+                verticalLineToRelative(2f)
+                close()
+            }
+        }
+    }
 }

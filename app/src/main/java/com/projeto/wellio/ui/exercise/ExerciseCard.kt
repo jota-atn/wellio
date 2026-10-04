@@ -54,7 +54,7 @@ fun ExerciseHomeCard(
     modifier: Modifier = Modifier,
     viewModel: ExerciseCardViewModel = viewModel(factory = ExerciseCardViewModel.Factory)
 ) {
-    val (summary, types) = viewModel.state.collectAsStateWithLifecycle().value
+    val summary = viewModel.state.collectAsStateWithLifecycle().value.first
     var registering by remember { mutableStateOf(false) }
     GoalCard(
         title = ExerciseModule.title,
@@ -65,14 +65,22 @@ fun ExerciseHomeCard(
         onRegister = { registering = true },
         modifier = modifier
     )
-    if (registering) {
-        ExerciseDialog(
-            exercises = types,
-            onDismiss = { registering = false },
-            onConfirm = { type, minutes ->
-                viewModel.add(type, minutes)
-                registering = false
-            }
-        )
-    }
+    if (registering) ExerciseRegister(onClose = { registering = false }, viewModel = viewModel)
+}
+
+/** Registrar exercício (dialog antigo até a tela de Exercício); usado pelo card e pelo FAB. */
+@Composable
+fun ExerciseRegister(
+    onClose: () -> Unit,
+    viewModel: ExerciseCardViewModel = viewModel(factory = ExerciseCardViewModel.Factory)
+) {
+    val types = viewModel.state.collectAsStateWithLifecycle().value.second
+    ExerciseDialog(
+        exercises = types,
+        onDismiss = onClose,
+        onConfirm = { type, minutes ->
+            viewModel.add(type, minutes)
+            onClose()
+        }
+    )
 }

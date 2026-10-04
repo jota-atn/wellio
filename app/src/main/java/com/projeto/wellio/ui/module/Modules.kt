@@ -5,9 +5,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.projeto.wellio.AppContainer
 import com.projeto.wellio.ui.exercise.ExerciseHomeCard
+import com.projeto.wellio.ui.exercise.ExerciseRegister
 import com.projeto.wellio.ui.food.FoodHomeCard
+import com.projeto.wellio.ui.food.FoodRegister
 import com.projeto.wellio.ui.water.WaterHomeCard
+import com.projeto.wellio.ui.water.WaterRegister
 import com.projeto.wellio.ui.weight.WeightHomeCard
+import com.projeto.wellio.ui.weight.WeightRegister
 import com.projeto.wellio.R
 import com.projeto.wellio.data.time.todayFlow
 import com.projeto.wellio.domain.model.GoalType
@@ -46,6 +50,11 @@ object WaterModule : WellioModule {
 
     @Composable
     override fun HomeCard(size: CardSize, onOpen: () -> Unit, modifier: Modifier) = WaterHomeCard(size, onOpen, modifier)
+
+    override val registerLabel = "Água"
+
+    @Composable
+    override fun Register(onClose: () -> Unit) = WaterRegister(onClose)
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -65,6 +74,11 @@ object FoodModule : WellioModule {
     // Sem tela ainda: tocar no card registra
     @Composable
     override fun HomeCard(size: CardSize, onOpen: () -> Unit, modifier: Modifier) = FoodHomeCard(size, modifier)
+
+    override val registerLabel = "Alimento"
+
+    @Composable
+    override fun Register(onClose: () -> Unit) = FoodRegister(onClose)
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -84,6 +98,11 @@ object ExerciseModule : WellioModule {
     // Sem tela ainda: tocar no card registra
     @Composable
     override fun HomeCard(size: CardSize, onOpen: () -> Unit, modifier: Modifier) = ExerciseHomeCard(size, modifier)
+
+    override val registerLabel = "Exercício"
+
+    @Composable
+    override fun Register(onClose: () -> Unit) = ExerciseRegister(onClose)
 }
 
 object WeightModule : WellioModule {
@@ -104,4 +123,9 @@ object WeightModule : WellioModule {
 
     @Composable
     override fun HomeCard(size: CardSize, onOpen: () -> Unit, modifier: Modifier) = WeightHomeCard(size, onOpen, modifier)
+
+    override val registerLabel = "Peso"
+
+    @Composable
+    override fun Register(onClose: () -> Unit) = WeightRegister(onClose)
 }

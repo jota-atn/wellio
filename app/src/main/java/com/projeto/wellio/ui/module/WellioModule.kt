@@ -20,7 +20,7 @@ enum class ModuleId(val key: String) {
 
 /**
  * Tudo o que uma funcionalidade oferece ao resto do app, declarado num lugar só (SPEC §11,
- * M1.5): item da sidebar, tela, resumo, card da Home e, numa próxima etapa, ação do FAB. Um
+ * M1.5): item da sidebar, tela, resumo, card da Home e registro rápido no FAB. Um
  * módulo novo implementa este contrato e aparece em todos esses lugares.
  */
 interface WellioModule {
@@ -48,4 +48,11 @@ interface WellioModule {
      */
     @Composable
     fun HomeCard(size: CardSize, onOpen: () -> Unit, modifier: Modifier)
+
+    /** Nome no menu do FAB ("Alimento", não "Alimentação"). */
+    val registerLabel: String
+
+    /** Registro rápido aberto por cima da Home pelo FAB (SPEC §5.1); [onClose] ao salvar ou cancelar. */
+    @Composable
+    fun Register(onClose: () -> Unit)
 }

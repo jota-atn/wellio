@@ -11,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -230,5 +231,28 @@ private fun MiniTrend(trend: List<WeightEntry>, targetKg: Double?, line: Color, 
         drawPath(area, Brush.verticalGradient(listOf(line.copy(alpha = 0.3f), Color.Transparent)))
         drawPath(curve, line, style = Stroke(2.5.dp.toPx(), cap = StrokeCap.Round))
         drawCircle(line, 3.5.dp.toPx(), points.last())
+    }
+}
+
+/** Registrar peso pelo FAB da Home: o mesmo sheet com a régua da tela de Peso. */
+@Composable
+fun WeightRegister(
+    onClose: () -> Unit,
+    viewModel: WeightViewModel = viewModel(factory = WeightViewModel.Factory)
+) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    // O sheet guarda o peso inicial da régua: recomeça quando o peso de verdade chega do banco
+    key(state.currentKg) {
+        WeightSheet(
+            entry = null,
+            suggestedKg = state.currentKg,
+            today = state.today,
+            onDismiss = onClose,
+            onSave = { day, kg ->
+                viewModel.save(day, kg)
+                onClose()
+            },
+            onDelete = null
+        )
     }
 }

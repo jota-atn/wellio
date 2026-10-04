@@ -54,7 +54,7 @@ fun FoodHomeCard(
     modifier: Modifier = Modifier,
     viewModel: FoodCardViewModel = viewModel(factory = FoodCardViewModel.Factory)
 ) {
-    val (summary, foods) = viewModel.state.collectAsStateWithLifecycle().value
+    val summary = viewModel.state.collectAsStateWithLifecycle().value.first
     var registering by remember { mutableStateOf(false) }
     GoalCard(
         title = FoodModule.title,
@@ -65,14 +65,22 @@ fun FoodHomeCard(
         onRegister = { registering = true },
         modifier = modifier
     )
-    if (registering) {
-        FoodDialog(
-            foods = foods,
-            onDismiss = { registering = false },
-            onConfirm = { food, portions ->
-                viewModel.add(food, portions)
-                registering = false
-            }
-        )
-    }
+    if (registering) FoodRegister(onClose = { registering = false }, viewModel = viewModel)
+}
+
+/** Registrar alimento (dialog antigo até o M1b); usado pelo card e pelo FAB. */
+@Composable
+fun FoodRegister(
+    onClose: () -> Unit,
+    viewModel: FoodCardViewModel = viewModel(factory = FoodCardViewModel.Factory)
+) {
+    val foods = viewModel.state.collectAsStateWithLifecycle().value.second
+    FoodDialog(
+        foods = foods,
+        onDismiss = onClose,
+        onConfirm = { food, portions ->
+            viewModel.add(food, portions)
+            onClose()
+        }
+    )
 }

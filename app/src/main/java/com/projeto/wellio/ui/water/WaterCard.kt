@@ -234,3 +234,23 @@ private fun QuickButton(
         }
     }
 }
+
+/** Registrar água agora pelo FAB da Home: o mesmo sheet da tela de Água. */
+@Composable
+fun WaterRegister(
+    onClose: () -> Unit,
+    viewModel: WaterViewModel = viewModel(factory = WaterViewModel.Factory)
+) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    WaterEntrySheet(
+        entry = null,
+        containers = state.containers,
+        zone = viewModel.zone,
+        onDismiss = onClose,
+        onSave = { amount, name, time ->
+            viewModel.add(amount, name, time)
+            onClose()
+        },
+        onDelete = null
+    )
+}

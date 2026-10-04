@@ -313,11 +313,13 @@ Um **botão flutuante "+" (FAB)** fica fixo no canto da Home e abre um menu: Ág
 
 ### 5.2 Cards arrastáveis
 
-- **Segurar um card e soltar** (sem mexer) abre o **editor daquele card**, como o redimensionamento dos widgets do Android: os outros cards escurecem, o card ganha uma moldura com uma **alça** na lateral livre e um botão **Ocultar**. Arrastar a alça estica ou encolhe o card, que encaixa em metade ou inteiro ao passar da metade do caminho (com vibração e a troca animada). As mudanças valem na hora; tocar fora ou voltar fecha.
+- **Segurar um card e soltar** (sem mexer) abre o **editor daquele card**, como o redimensionamento dos widgets do Android: os outros cards escurecem, o card ganha uma moldura com uma **alça** na lateral livre e o selo **⊖** (ocultar). Arrastar a alça estica ou encolhe a moldura junto com o dedo; passar de um terço do caminho vibra e, ao soltar (ou num puxão rápido na direção certa), o card encaixa no outro tamanho com mola; senão, volta. As mudanças valem na hora; tocar fora ou voltar fecha.
+- **Um jeito só de mexer num card**, dentro e fora do modo de edição: ocultar pelo selo ⊖, tamanho pela alça.
 - **Segurar e arrastar** (no mesmo gesto, logo depois da vibração) entra no **modo de edição** da Home já levando o card junto do dedo.
 - Um **lápis no topo da Home**, ao lado do menu, também entra no modo de edição.
 - No modo de edição:
-  - todos os cards **tremem de leve** e ganham **selos pequenos por fora dos cantos de cima**: ⊖ para ocultar e ⇔ para alternar tamanho (inteiro/metade); a troca de tamanho é animada e mostra a outra versão na hora;
+  - todos os cards **tremem de leve** e ganham o selo **⊖** (ocultar), pequeno, por fora do canto de cima;
+  - **tocar num card seleciona** ele: para de tremer e ganha a mesma moldura com a alça do editor de card; a troca de tamanho é animada e mostra a outra versão na hora;
   - a sidebar não abre pelo gesto de deslizar, para não atrapalhar o arrasto;
   - arrastar um card (de qualquer ponto) move sua posição; os outros se reorganizam com animação;
   - uma barra no topo tem **"+ Adicionar card"** e **Concluir**;

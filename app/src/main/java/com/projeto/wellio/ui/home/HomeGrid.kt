@@ -19,19 +19,16 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -52,6 +49,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
+import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.LookaheadScope
 import androidx.compose.ui.platform.LocalDensity
@@ -139,6 +137,8 @@ fun HomeGrid(
     // Card com o editor aberto (segurar e soltar)
     var focused by remember { mutableStateOf<String?>(null) }
     BackHandler(enabled = focused != null) { focused = null }
+    // Entrar ou sair da edição da Home fecha o editor de card
+    LaunchedEffect(editing) { focused = null }
     val latestCards by rememberUpdatedState(cards)
     val latestOnChange by rememberUpdatedState(onChange)
     val latestEditing by rememberUpdatedState(editing)
@@ -215,7 +215,8 @@ fun HomeGrid(
                             // cancelando o gesto no meio (o card ficava travado)
                             Modifier
                                 .holdToEdit(
-                                    enabled = { !latestEditing },
+                                    // Com o editor de um card aberto, segurar não pode roubar o arrasto da alça
+                                    enabled = { !latestEditing && focused == null },
                                     onHold = {
                                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                                         focused = null
@@ -231,9 +232,10 @@ fun HomeGrid(
                                 .then(boundsAnimation)
                                 .zIndex(if (isDragged || isSettling || focused == homeCard.key) 1f else 0f)
                                 .graphicsLayer {
-                                    // Editando um card: os outros escurecem
-                                    if (focused != null && focused != homeCard.key) alpha = 0.35f
-                                    if (editing && !isDragged) {
+                                    // Editando um card fora da edição da Home: os outros escurecem
+                                    if (!editing && focused != null && focused != homeCard.key) alpha = 0.35f
+                                    // O card selecionado para de tremer, para a alça ficar fácil de pegar
+                                    if (editing && !isDragged && focused != homeCard.key) {
                                         // Tremidinha, cada card numa fase diferente
                                         rotationZ = 0.7f * sin((wiggle + index * 0.37f) * 2 * PI.toFloat())
                                     }
@@ -266,8 +268,8 @@ fun HomeGrid(
                                     },
                                     modifier = Modifier
                                         .matchParentSize()
-                                        // Toque no card durante a edição não faz nada (nem sai da edição)
-                                        .pointerInput(Unit) { detectTapGestures { } }
+                                        // Tocar no card seleciona (moldura com a alça de tamanho), sem sair da edição
+                                        .pointerInput(Unit) { detectTapGestures { focused = homeCard.key } }
                                         .pointerInput(homeCard.key) {
                                             detectDragGestures(
                                                 onDragStart = {
@@ -284,26 +286,29 @@ fun HomeGrid(
                                         }
                                 )
                             }
-                            if (focused != null && !editing) {
-                                if (focused == homeCard.key) {
-                                    val rect = cardRects(cards, gridWidth, rowPx, gutterPx).getOrNull(index)
-                                    ResizeOverlay(
-                                        title = cardTitle(homeCard),
-                                        size = homeCard.size,
-                                        // A alça fica do lado livre: card da coluna da direita estica para a esquerda
-                                        handleOnLeft = rect != null && rect.left > 0f,
-                                        widthStepPx = (gridWidth + gutterPx) / 2,
-                                        onToggleSize = { onQuickAction(homeCard, QuickAction.ToggleSize) },
-                                        onHide = {
-                                            focused = null
-                                            onQuickAction(homeCard, QuickAction.Hide)
-                                        },
-                                        modifier = Modifier.matchParentSize()
-                                    )
-                                } else {
-                                    // Tocar num card escurecido fecha o editor
-                                    Box(Modifier.matchParentSize().pointerInput(Unit) { detectTapGestures { focused = null } })
-                                }
+                            if (focused == homeCard.key) {
+                                val rect = cardRects(cards, gridWidth, rowPx, gutterPx).getOrNull(index)
+                                ResizeOverlay(
+                                    title = cardTitle(homeCard),
+                                    size = homeCard.size,
+                                    // A alça fica do lado livre: card da coluna da direita estica para a esquerda
+                                    handleOnLeft = rect != null && rect.left > 0f,
+                                    widthStepPx = (gridWidth + gutterPx) / 2,
+                                    // Na edição da Home, o ⊖ e os toques no card já são da camada de edição
+                                    standalone = !editing,
+                                    onToggleSize = {
+                                        if (editing) onChange(toggleSize(latestCards, latestCards.indexOf(homeCard)))
+                                        else onQuickAction(homeCard, QuickAction.ToggleSize)
+                                    },
+                                    onHide = {
+                                        focused = null
+                                        onQuickAction(homeCard, QuickAction.Hide)
+                                    },
+                                    modifier = Modifier.matchParentSize()
+                                )
+                            } else if (focused != null && !editing) {
+                                // Tocar num card escurecido fecha o editor
+                                Box(Modifier.matchParentSize().pointerInput(Unit) { detectTapGestures { focused = null } })
                             }
                         }
                     }
@@ -331,10 +336,10 @@ fun HomeGrid(
 }
 
 /**
- * Por cima do card na edição: segura os toques (o card não abre nem registra), mostra os
- * selos ⊖ e ⇔ por fora dos cantos de cima (pequenos, para não encostar nos do card
- * vizinho) e oferece ao TalkBack mover, mudar o tamanho e
- * ocultar sem arrastar (SPEC §2.8).
+ * Por cima do card na edição: segura os toques (o card não abre nem registra; tocar
+ * seleciona), mostra o selo ⊖ por fora do canto e oferece ao TalkBack mover, mudar o
+ * tamanho e ocultar sem arrastar (SPEC §2.8). O tamanho, com o dedo, é pela alça do card
+ * selecionado, igual ao editor fora da edição.
  */
 @Composable
 private fun EditOverlay(
@@ -365,21 +370,22 @@ private fun EditOverlay(
             modifier = Modifier.align(Alignment.TopStart).offset((-4).dp, (-4).dp),
             error = true
         ) { Icon(WellioIcons.Minus, contentDescription = null, modifier = Modifier.size(12.dp)) }
-        Badge(
-            onClick = onToggleSize,
-            description = if (size == CardSize.Full) "Deixar $title metade" else "Deixar $title inteiro",
-            modifier = Modifier.align(Alignment.TopEnd).offset(4.dp, (-4).dp),
-            error = false
-        ) { Icon(WellioIcons.SwapHoriz, contentDescription = null, modifier = Modifier.size(12.dp)) }
     }
 }
 
+/** Fração do caminho entre metade e inteiro a partir da qual o card troca de tamanho ao soltar. */
+private const val RESIZE_THRESHOLD = 0.35f
+
+/** Velocidade (px/s) de um puxão rápido, que troca o tamanho mesmo antes do limite. */
+private const val RESIZE_FLING_PX = 900f
+
 /**
  * Editor de um card, como o redimensionamento dos widgets do Android: moldura em volta do
- * card, uma alça na lateral livre e o botão Ocultar. Arrastar a alça estica ou encolhe a
- * moldura junto com o dedo (entre metade e inteiro; [widthStepPx] é a diferença entre os
- * dois); passar do meio do caminho vibra, e ao soltar o card encaixa no tamanho mais
- * perto, com mola.
+ * card e uma alça na lateral livre. Arrastar a alça estica ou encolhe a moldura junto com
+ * o dedo (entre metade e inteiro; [widthStepPx] é a diferença entre os dois). Passar de
+ * um terço do caminho vibra; ao soltar (ou num puxão rápido), o card encaixa no outro
+ * tamanho com mola, senão volta. Fora da edição da Home ([standalone]), também traz o selo
+ * ⊖ e segura os toques no card.
  */
 @Composable
 private fun ResizeOverlay(
@@ -387,6 +393,7 @@ private fun ResizeOverlay(
     size: CardSize,
     handleOnLeft: Boolean,
     widthStepPx: Float,
+    standalone: Boolean,
     onToggleSize: () -> Unit,
     onHide: () -> Unit,
     modifier: Modifier
@@ -398,14 +405,34 @@ private fun ResizeOverlay(
     val growsLeft by rememberUpdatedState(handleOnLeft)
     // Quanto a moldura passou do card: positivo estica (metade → inteiro), negativo encolhe
     val stretch = remember { Animatable(0f) }
-    // Limites da moldura: metade só estica, inteiro só encolhe
+    // Para onde o tamanho muda: metade só estica (+1), inteiro só encolhe (-1)
+    fun towardOther() = if (currentSize == CardSize.Full) -1f else 1f
     fun range() = if (currentSize == CardSize.Full) -widthStepPx..0f else 0f..widthStepPx
-    fun pastHalfway(value: Float) = if (currentSize == CardSize.Full) value < -widthStepPx / 2 else value > widthStepPx / 2
+    fun progress(value: Float) = value * towardOther() / widthStepPx
+    fun pastThreshold(value: Float) = progress(value) > RESIZE_THRESHOLD
+
+    fun release(velocityX: Float) {
+        val outward = velocityX * (if (growsLeft) -1 else 1) * towardOther()
+        val toggle = pastThreshold(stretch.value) || (progress(stretch.value) > 0.08f && outward > RESIZE_FLING_PX)
+        scope.launch {
+            if (toggle) {
+                // O card muda de tamanho (com mola, pelo animateBounds); a moldura passa a ser
+                // relativa ao card novo e volta a zero junto
+                val offset = stretch.value - towardOther() * widthStepPx
+                if (!pastThreshold(stretch.value)) haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                onToggleSize()
+                stretch.snapTo(offset)
+            }
+            stretch.animateTo(0f, spring(dampingRatio = 0.6f, stiffness = Spring.StiffnessMediumLow))
+        }
+    }
 
     Box(
         modifier
-            // Toques no card em edição não abrem a tela
-            .pointerInput(Unit) { detectTapGestures { } }
+            .then(
+                // Fora da edição da Home, toques no card em edição não abrem a tela
+                if (standalone) Modifier.pointerInput(Unit) { detectTapGestures { } } else Modifier
+            )
             .drawWithContent {
                 drawContent()
                 val inset = 4.dp.toPx()
@@ -419,13 +446,16 @@ private fun ResizeOverlay(
                     style = Stroke(2.5.dp.toPx())
                 )
             }
-            .semantics {
-                contentDescription = "Editando $title, ${if (size == CardSize.Full) "inteiro" else "metade"}"
-                customActions = listOf(
-                    CustomAccessibilityAction(if (size == CardSize.Full) "Deixar metade" else "Deixar inteiro") { onToggleSize(); true },
-                    CustomAccessibilityAction("Ocultar") { onHide(); true }
-                )
-            }
+            .then(
+                if (!standalone) Modifier
+                else Modifier.semantics {
+                    contentDescription = "Editando $title, ${if (size == CardSize.Full) "inteiro" else "metade"}"
+                    customActions = listOf(
+                        CustomAccessibilityAction(if (size == CardSize.Full) "Deixar metade" else "Deixar inteiro") { onToggleSize(); true },
+                        CustomAccessibilityAction("Ocultar") { onHide(); true }
+                    )
+                }
+            )
     ) {
         Box(
             Modifier
@@ -437,31 +467,29 @@ private fun ResizeOverlay(
                 .size(48.dp)
                 .testTag("alca-tamanho")
                 .pointerInput(Unit) {
+                    val velocity = VelocityTracker()
+                    // A alça anda junto com o dedo: a velocidade sai da soma dos movimentos, não da posição nela
+                    var travelled = 0f
                     detectHorizontalDragGestures(
-                        onDragStart = { scope.launch { stretch.stop() } },
+                        onDragStart = {
+                            velocity.resetTracking()
+                            travelled = 0f
+                            scope.launch { stretch.stop() }
+                        },
                         onHorizontalDrag = { change, amount ->
                             change.consume()
+                            travelled += amount
+                            velocity.addPosition(change.uptimeMillis, Offset(travelled, 0f))
                             val before = stretch.value
                             val after = (before + if (growsLeft) -amount else amount).coerceIn(range())
-                            if (pastHalfway(after) != pastHalfway(before)) {
+                            if (pastThreshold(after) != pastThreshold(before)) {
                                 haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
                             }
                             scope.launch { stretch.snapTo(after) }
                         },
-                        onDragEnd = {
-                            val toggle = pastHalfway(stretch.value)
-                            scope.launch {
-                                if (toggle) {
-                                    // O card muda de tamanho (com mola, pelo animateBounds); a moldura
-                                    // passa a ser relativa ao card novo e volta a zero junto
-                                    val offset = stretch.value + if (currentSize == CardSize.Full) widthStepPx else -widthStepPx
-                                    onToggleSize()
-                                    stretch.snapTo(offset)
-                                }
-                                stretch.animateTo(0f, spring(dampingRatio = 0.6f, stiffness = Spring.StiffnessMediumLow))
-                            }
-                        },
-                        onDragCancel = { scope.launch { stretch.animateTo(0f, spring()) } }
+                        onDragEnd = { release(velocity.calculateVelocity().x) },
+                        // Gesto interrompido decide pelo mesmo critério, em vez de sempre voltar
+                        onDragCancel = { release(0f) }
                     )
                 },
             contentAlignment = Alignment.Center
@@ -474,22 +502,13 @@ private fun ResizeOverlay(
                 modifier = Modifier.size(22.dp)
             ) {}
         }
-        Surface(
-            onClick = onHide,
-            shape = RoundedCornerShape(50),
-            color = scheme.errorContainer,
-            contentColor = scheme.onErrorContainer,
-            shadowElevation = 4.dp,
-            modifier = Modifier.align(Alignment.BottomCenter).offset(y = 18.dp)
-        ) {
-            Row(
-                Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(WellioIcons.Minus, contentDescription = null, modifier = Modifier.size(16.dp))
-                Spacer(Modifier.size(6.dp))
-                Text("Ocultar", style = MaterialTheme.typography.labelLarge)
-            }
+        if (standalone) {
+            Badge(
+                onClick = onHide,
+                description = "Ocultar $title",
+                modifier = Modifier.align(Alignment.TopStart).offset((-4).dp, (-4).dp),
+                error = true
+            ) { Icon(WellioIcons.Minus, contentDescription = null, modifier = Modifier.size(12.dp)) }
         }
     }
 }

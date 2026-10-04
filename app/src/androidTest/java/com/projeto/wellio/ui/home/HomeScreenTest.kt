@@ -89,7 +89,8 @@ class HomeScreenTest {
         compose.onNodeWithTag("card-water").performTouchInput { longClick() }
 
         compose.onNodeWithContentDescription("Editando Água, inteiro").assertIsDisplayed()
-        compose.onNodeWithText("Ocultar").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Ocultar Água").assertIsDisplayed()
+        compose.onNodeWithTag("alca-tamanho").assertIsDisplayed()
     }
 
     @Test
@@ -97,7 +98,7 @@ class HomeScreenTest {
         show(listOf(agua, peso))
 
         compose.onNodeWithTag("card-water").performTouchInput { longClick() }
-        compose.onNodeWithText("Ocultar").performClick()
+        compose.onNodeWithContentDescription("Ocultar Água").performClick()
 
         assertEquals(listOf(peso), saved)
     }
@@ -144,7 +145,8 @@ class HomeScreenTest {
 
         enterEditing()
         compose.onNodeWithContentDescription("Ocultar Água").performClick()
-        compose.onNodeWithContentDescription("Deixar Peso inteiro").performClick()
+        val actions = compose.onNodeWithContentDescription("Peso, metade").fetchSemanticsNode().config[SemanticsActions.CustomActions]
+        compose.runOnUiThread { actions.first { it.label == "Deixar inteiro" }.action() }
         compose.onNodeWithText("Concluir").performClick()
 
         assertEquals(listOf(HomeCard("weight", CardSize.Full)), saved)
@@ -210,5 +212,39 @@ class HomeScreenTest {
         compose.waitForIdle()
 
         assertEquals(null, saved)
+    }
+
+    @Test
+    fun naEdicaoTocarNoCardMostraAAlcaQueMudaOTamanho() {
+        show(listOf(agua, peso))
+
+        enterEditing()
+        compose.onNodeWithContentDescription("Água, inteiro").performClick()
+        compose.onNodeWithTag("alca-tamanho").performTouchInput {
+            down(center)
+            repeat(30) { moveBy(Offset(-12f, 0f)) }
+            up()
+        }
+        compose.waitForIdle()
+        compose.onNodeWithText("Concluir").performClick()
+
+        assertEquals(listOf(HomeCard("water", CardSize.Half), peso), saved)
+    }
+
+    @Test
+    fun puxaoRapidoNaAlcaTrocaAntesDoLimite() {
+        show(listOf(agua, peso))
+
+        compose.onNodeWithTag("card-water").performTouchInput { longClick() }
+        compose.onNodeWithTag("alca-tamanho").performTouchInput {
+            down(center)
+            repeat(4) {
+                moveBy(Offset(-25f, 0f), delayMillis = 8)
+            }
+            up()
+        }
+        compose.waitForIdle()
+
+        assertEquals(listOf(HomeCard("water", CardSize.Half), peso), saved)
     }
 }

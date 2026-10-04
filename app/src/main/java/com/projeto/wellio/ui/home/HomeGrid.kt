@@ -119,7 +119,8 @@ fun HomeGrid(
     gutter: Dp,
     onStartEditing: () -> Unit,
     onChange: (List<HomeCard>) -> Unit,
-    onQuickAction: (HomeCard, QuickAction) -> Unit,
+    onQuickAction: (key: String, QuickAction) -> Unit,
+    onCardEditorChange: (open: Boolean) -> Unit,
     cardTitle: (HomeCard) -> String,
     modifier: Modifier = Modifier,
     card: @Composable (HomeCard, Modifier) -> Unit
@@ -139,8 +140,12 @@ fun HomeGrid(
     BackHandler(enabled = focused != null) { focused = null }
     // Entrar ou sair da edição da Home fecha o editor de card
     LaunchedEffect(editing) { focused = null }
+    LaunchedEffect(focused) { onCardEditorChange(focused != null) }
     val latestCards by rememberUpdatedState(cards)
     val latestOnChange by rememberUpdatedState(onChange)
+    // Os gestos são criados uma vez só (pointerInput(Unit)): o que eles chamam tem de ser sempre o atual
+    val latestOnStartEditing by rememberUpdatedState(onStartEditing)
+    val latestOnQuickAction by rememberUpdatedState(onQuickAction)
     val latestEditing by rememberUpdatedState(editing)
     var gridWidth by remember { mutableFloatStateOf(0f) }
     val density = LocalDensity.current
@@ -223,7 +228,7 @@ fun HomeGrid(
                                     },
                                     onHoldReleased = { focused = homeCard.key },
                                     onHoldDragStart = { offset ->
-                                        onStartEditing()
+                                        latestOnStartEditing()
                                         startDrag(homeCard.key, offset)
                                     },
                                     onHoldDrag = ::dragBy,
@@ -260,10 +265,10 @@ fun HomeGrid(
                                     size = homeCard.size,
                                     canMoveBack = index > 0,
                                     canMoveForward = index < cards.lastIndex,
-                                    onHide = { onChange(hideCard(latestCards, latestCards.indexOf(homeCard))) },
-                                    onToggleSize = { onChange(toggleSize(latestCards, latestCards.indexOf(homeCard))) },
+                                    onHide = { onChange(hideCard(latestCards, latestCards.indexOfFirst { it.key == homeCard.key })) },
+                                    onToggleSize = { onChange(toggleSize(latestCards, latestCards.indexOfFirst { it.key == homeCard.key })) },
                                     onMove = { delta ->
-                                        val from = latestCards.indexOf(homeCard)
+                                        val from = latestCards.indexOfFirst { it.key == homeCard.key }
                                         onChange(moveCard(latestCards, from, from + delta))
                                     },
                                     modifier = Modifier
@@ -297,12 +302,12 @@ fun HomeGrid(
                                     // Na edição da Home, o ⊖ e os toques no card já são da camada de edição
                                     standalone = !editing,
                                     onToggleSize = {
-                                        if (editing) onChange(toggleSize(latestCards, latestCards.indexOf(homeCard)))
-                                        else onQuickAction(homeCard, QuickAction.ToggleSize)
+                                        if (latestEditing) latestOnChange(toggleSize(latestCards, latestCards.indexOfFirst { it.key == homeCard.key }))
+                                        else latestOnQuickAction(homeCard.key, QuickAction.ToggleSize)
                                     },
                                     onHide = {
                                         focused = null
-                                        onQuickAction(homeCard, QuickAction.Hide)
+                                        latestOnQuickAction(homeCard.key, QuickAction.Hide)
                                     },
                                     modifier = Modifier.matchParentSize()
                                 )
@@ -403,12 +408,14 @@ private fun ResizeOverlay(
     val scope = rememberCoroutineScope()
     val currentSize by rememberUpdatedState(size)
     val growsLeft by rememberUpdatedState(handleOnLeft)
+    val step by rememberUpdatedState(widthStepPx)
+    val toggleSize by rememberUpdatedState(onToggleSize)
     // Quanto a moldura passou do card: positivo estica (metade → inteiro), negativo encolhe
     val stretch = remember { Animatable(0f) }
     // Para onde o tamanho muda: metade só estica (+1), inteiro só encolhe (-1)
     fun towardOther() = if (currentSize == CardSize.Full) -1f else 1f
-    fun range() = if (currentSize == CardSize.Full) -widthStepPx..0f else 0f..widthStepPx
-    fun progress(value: Float) = value * towardOther() / widthStepPx
+    fun range() = if (currentSize == CardSize.Full) -step..0f else 0f..step
+    fun progress(value: Float) = value * towardOther() / step
     fun pastThreshold(value: Float) = progress(value) > RESIZE_THRESHOLD
 
     fun release(velocityX: Float) {
@@ -418,9 +425,9 @@ private fun ResizeOverlay(
             if (toggle) {
                 // O card muda de tamanho (com mola, pelo animateBounds); a moldura passa a ser
                 // relativa ao card novo e volta a zero junto
-                val offset = stretch.value - towardOther() * widthStepPx
+                val offset = stretch.value - towardOther() * step
                 if (!pastThreshold(stretch.value)) haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                onToggleSize()
+                toggleSize()
                 stretch.snapTo(offset)
             }
             stretch.animateTo(0f, spring(dampingRatio = 0.6f, stiffness = Spring.StiffnessMediumLow))

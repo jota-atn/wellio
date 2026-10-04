@@ -2,6 +2,7 @@ package com.projeto.wellio.ui.home
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.Text
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
@@ -35,13 +36,18 @@ class HomeScreenTest {
     private var dismissed = false
 
     private fun show(layout: List<HomeCard>, showSuggestion: Boolean = false) {
+        // Como no app: o que é salvo volta como o layout da Home
+        val current = mutableStateOf(layout)
         compose.setContent {
             WellioTheme {
                 HomeScreen(
-                    state = HomeUiState(layout = layout, showSuggestion = showSuggestion),
+                    state = HomeUiState(layout = current.value, showSuggestion = showSuggestion),
                     onMenuClick = {},
                     onUpdateGoal = { _, _, _ -> },
-                    onSaveLayout = { saved = it },
+                    onSaveLayout = {
+                        saved = it
+                        current.value = it
+                    },
                     onDismissSuggestion = { dismissed = true }
                 ) { module, size, modifier ->
                     Box(modifier.testTag("card-${module.id.key}")) { Text("${module.title} ${size.name}") }
@@ -245,6 +251,31 @@ class HomeScreenTest {
         }
         compose.waitForIdle()
 
+        assertEquals(listOf(HomeCard("water", CardSize.Half), peso), saved)
+    }
+
+    private fun dragHandle(dx: Float) {
+        compose.onNodeWithTag("alca-tamanho").performTouchInput {
+            down(center)
+            repeat(30) { moveBy(Offset(dx / 30, 0f)) }
+            up()
+        }
+        compose.waitForIdle()
+    }
+
+    @Test
+    fun alcaFuncionaVariasVezesSeguidas() {
+        show(listOf(agua, peso))
+
+        compose.onNodeWithTag("card-water").performTouchInput { longClick() }
+        dragHandle(-360f)
+        assertEquals(listOf(HomeCard("water", CardSize.Half), peso), saved)
+
+        // Agora metade, na coluna da esquerda: a alça fica à direita e estica
+        dragHandle(360f)
+        assertEquals(listOf(agua, peso), saved)
+
+        dragHandle(-360f)
         assertEquals(listOf(HomeCard("water", CardSize.Half), peso), saved)
     }
 }

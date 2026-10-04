@@ -98,8 +98,9 @@ fun HomeScreen(
         draft = null
     }
     BackHandler(enabled = editing) { finishEditing() }
-    // A sidebar não abre pelo gesto enquanto os cards estão sendo arrastados
-    LaunchedEffect(editing) { onEditingChange(editing) }
+    // A sidebar não abre pelo gesto enquanto os cards estão sendo mexidos (edição ou editor de um card)
+    var cardEditorOpen by remember { mutableStateOf(false) }
+    LaunchedEffect(editing, cardEditorOpen) { onEditingChange(editing || cardEditorOpen) }
 
     val slot: @Composable (HomeCard, Modifier) -> Unit = { card, modifier ->
         HomeCardSlot(card, state, moduleCard, onDashboardClick = { showDetails = true }, onGoalClick = { goalBeingEdited = it }, modifier)
@@ -146,13 +147,14 @@ fun HomeScreen(
                         gutter = Gutter,
                         onStartEditing = { if (draft == null) draft = state.layout },
                         onChange = { draft = it },
-                        onQuickAction = { card, action ->
-                            val index = state.layout.indexOf(card)
+                        onQuickAction = { key, action ->
+                            val index = state.layout.indexOfFirst { it.key == key }
                             when (action) {
                                 QuickAction.Hide -> onSaveLayout(hideCard(state.layout, index))
                                 QuickAction.ToggleSize -> onSaveLayout(toggleSize(state.layout, index))
                             }
                         },
+                        onCardEditorChange = { cardEditorOpen = it },
                         cardTitle = ::titleOf,
                         modifier = Modifier.fillMaxWidth(),
                         card = slot

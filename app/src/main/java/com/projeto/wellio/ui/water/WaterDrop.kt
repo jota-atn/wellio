@@ -14,6 +14,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -57,6 +58,10 @@ fun WaterDrop(totalMl: Int, goalMl: Int, additions: Int, modifier: Modifier = Mo
     val overflowSeed = remember { mutableIntStateOf(0) }
     val previousTotal = remember { mutableIntStateOf(totalMl) }
     val handledAdditions = remember { mutableIntStateOf(additions) }
+    // Escopo próprio: o transbordar termina mesmo se o total mudar no meio (ex.: desfazer
+    // logo depois de registrar). Preso ao efeito abaixo, ele era cancelado e as gotinhas
+    // ficavam paradas na tela.
+    val overflowScope = rememberCoroutineScope()
 
     LaunchedEffect(totalMl, goalMl) {
         val added = totalMl > previousTotal.intValue && additions != handledAdditions.intValue
@@ -64,7 +69,7 @@ fun WaterDrop(totalMl: Int, goalMl: Int, additions: Int, modifier: Modifier = Mo
         if (added) handledAdditions.intValue = additions
         if (added && goalMl > 0 && totalMl >= goalMl) {
             overflowSeed.intValue++
-            launch {
+            overflowScope.launch {
                 overflow.snapTo(0f)
                 overflow.animateTo(1f, tween(durationMillis = 1800, easing = LinearEasing))
             }

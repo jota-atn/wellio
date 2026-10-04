@@ -7,7 +7,13 @@ import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.longClick
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
@@ -24,10 +30,19 @@ class HomeScreenTest {
     @get:Rule
     val compose = createComposeRule()
 
-    private fun show(layout: List<HomeCard>) {
+    private var saved: List<HomeCard>? = null
+    private var dismissed = false
+
+    private fun show(layout: List<HomeCard>, showSuggestion: Boolean = false) {
         compose.setContent {
             WellioTheme {
-                HomeScreen(state = HomeUiState(layout = layout), onMenuClick = {}, onUpdateGoal = { _, _, _ -> }) { module, size, modifier ->
+                HomeScreen(
+                    state = HomeUiState(layout = layout, showSuggestion = showSuggestion),
+                    onMenuClick = {},
+                    onUpdateGoal = { _, _, _ -> },
+                    onSaveLayout = { saved = it },
+                    onDismissSuggestion = { dismissed = true }
+                ) { module, size, modifier ->
                     Box(modifier.testTag("card-${module.id.key}")) { Text("${module.title} ${size.name}") }
                 }
             }
@@ -57,5 +72,60 @@ class HomeScreenTest {
         show(listOf(HomeCard("water", CardSize.Full)))
 
         compose.onNodeWithTag("card-water").assertHeightIsAtLeast(128.dp)
+    }
+
+    private val agua = HomeCard("water", CardSize.Full)
+    private val peso = HomeCard("weight", CardSize.Half)
+
+    @Test
+    fun segurarUmCardEntraNaEdicao() {
+        show(listOf(agua))
+
+        compose.onNodeWithTag("card-water").performTouchInput { longClick() }
+
+        compose.onNodeWithText("Concluir").assertIsDisplayed()
+    }
+
+    @Test
+    fun ocultarEAlternarTamanhoSalvamAoConcluir() {
+        show(listOf(agua, peso))
+
+        compose.onNodeWithTag("card-water").performTouchInput { longClick() }
+        compose.onNodeWithContentDescription("Ocultar Água").performClick()
+        compose.onNodeWithContentDescription("Deixar Peso inteiro").performClick()
+        compose.onNodeWithText("Concluir").performClick()
+
+        assertEquals(listOf(HomeCard("weight", CardSize.Full)), saved)
+    }
+
+    @Test
+    fun talkBackMoveSemArrastar() {
+        show(listOf(agua, peso))
+
+        compose.onNodeWithTag("card-water").performTouchInput { longClick() }
+        val actions = compose.onNodeWithContentDescription("Água, inteiro").fetchSemanticsNode().config[SemanticsActions.CustomActions]
+        compose.runOnUiThread { actions.first { it.label == "Mover para depois" }.action() }
+        compose.onNodeWithText("Concluir").performClick()
+
+        assertEquals(listOf(peso, agua), saved)
+    }
+
+    @Test
+    fun sugestaoAbreOCatalogoEAdicionaNaHora() {
+        show(listOf(agua), showSuggestion = true)
+
+        compose.onNodeWithText("Adicionar card").performClick()
+        compose.onNodeWithText("Adicionar Peso").performScrollTo().performClick()
+
+        assertEquals(listOf(agua, HomeCard("weight", CardSize.Full)), saved)
+    }
+
+    @Test
+    fun sugestaoPodeSerDispensada() {
+        show(listOf(agua), showSuggestion = true)
+
+        compose.onNodeWithContentDescription("Dispensar sugestão").performClick()
+
+        assertTrue(dismissed)
     }
 }

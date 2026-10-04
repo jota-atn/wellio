@@ -1,6 +1,12 @@
 package com.projeto.wellio.ui.home
 
 import androidx.compose.foundation.layout.*
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -18,7 +24,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.projeto.wellio.domain.home.CardSize
 import com.projeto.wellio.domain.home.DASHBOARD_KEY
 import com.projeto.wellio.domain.home.HomeCard
-import com.projeto.wellio.domain.home.homeRows
+import com.projeto.wellio.domain.home.addCard
+import com.projeto.wellio.domain.home.freeRows
 import com.projeto.wellio.domain.home.rowLayout
 import com.projeto.wellio.domain.model.GoalType
 import com.projeto.wellio.ui.components.DashboardCard
@@ -38,7 +45,9 @@ fun HomeRoute(
     HomeScreen(
         state = state,
         onMenuClick = onMenuClick,
-        onUpdateGoal = viewModel::updateGoal
+        onUpdateGoal = viewModel::updateGoal,
+        onSaveLayout = viewModel::saveLayout,
+        onDismissSuggestion = viewModel::dismissSuggestion
     ) { module, size, modifier ->
         module.HomeCard(size, onOpen = { onOpenModule(module) }, modifier = modifier)
     }
@@ -47,9 +56,18 @@ fun HomeRoute(
 private val Gutter = 12.dp
 private val EdgePadding = 16.dp
 
+/** Altura das prévias no catálogo (perto da altura real das linhas). */
+private val PreviewRowHeight = 136.dp
+
+/** Cards que podem ir para a Home: o Dashboard e o de cada módulo. */
+private val catalog: List<CatalogEntry> =
+    listOf(CatalogEntry(DASHBOARD_KEY, "Dashboard")) + Modules.all.map { CatalogEntry(it.id.key, it.title) }
+
+private fun titleOf(card: HomeCard) = catalog.firstOrNull { it.key == card.key }?.title ?: card.key
+
 /**
- * Home (SPEC §5.1): os cards do layout do usuário em linhas que preenchem a tela. O número
- * de linhas vem da altura disponível e da escala da fonte; com mais linhas que isso, rola.
+ * Home (SPEC §5.1 e §5.2): os cards do layout do usuário em linhas que preenchem a tela.
+ * Segurar um card entra no modo de edição, que mexe num rascunho salvo ao concluir.
  * [moduleCard] desenha o card de um módulo; separado para a tela poder ser testada sem os
  * ViewModels dos cards.
  */
@@ -58,20 +76,44 @@ fun HomeScreen(
     state: HomeUiState,
     onMenuClick: () -> Unit,
     onUpdateGoal: (GoalType, Int, Int) -> Unit,
+    onSaveLayout: (List<HomeCard>) -> Unit,
+    onDismissSuggestion: () -> Unit,
     moduleCard: @Composable (WellioModule, CardSize, Modifier) -> Unit
 ) {
     var goalBeingEdited by remember { mutableStateOf<GoalType?>(null) }
     var showDetails by remember { mutableStateOf(false) }
+    // Modo de edição: o layout sendo mexido (null = fora da edição)
+    var draft by remember { mutableStateOf<List<HomeCard>?>(null) }
+    var showCatalog by remember { mutableStateOf(false) }
+    val haptics = LocalHapticFeedback.current
     val fontScale = LocalDensity.current.fontScale
+    val cards = draft ?: state.layout
+    val editing = draft != null
+
+    fun finishEditing() {
+        draft?.let(onSaveLayout)
+        draft = null
+    }
+    BackHandler(enabled = editing) { finishEditing() }
+
+    val slot: @Composable (HomeCard, Modifier) -> Unit = { card, modifier ->
+        HomeCardSlot(card, state, moduleCard, onDashboardClick = { showDetails = true }, onGoalClick = { goalBeingEdited = it }, modifier)
+    }
 
     Scaffold(containerColor = MaterialTheme.colorScheme.background) { innerPadding ->
         Column(Modifier.padding(innerPadding).fillMaxSize()) {
-            IconButton(onClick = onMenuClick, modifier = Modifier.padding(start = 4.dp)) {
-                Icon(Icons.Default.Menu, contentDescription = "Abrir menu")
+            Box(Modifier.height(56.dp), contentAlignment = Alignment.CenterStart) {
+                if (editing) {
+                    EditBar(onAddCard = { showCatalog = true }, onDone = ::finishEditing)
+                } else {
+                    IconButton(onClick = onMenuClick, modifier = Modifier.padding(start = 4.dp)) {
+                        Icon(Icons.Default.Menu, contentDescription = "Abrir menu")
+                    }
+                }
             }
             BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
                 val rows = rowLayout(
-                    availableHeightDp = (maxHeight - EdgePadding).value,
+                    availableHeightDp = (maxHeight - EdgePadding - 8.dp).value,
                     fontScale = fontScale,
                     spacingDp = Gutter.value
                 )
@@ -80,28 +122,47 @@ fun HomeScreen(
                     Modifier
                         .fillMaxSize()
                         .verticalScroll(rememberScrollState())
-                        .padding(start = EdgePadding, end = EdgePadding, bottom = EdgePadding),
+                        // Respiro no alto para os selos da edição não serem cortados
+                        .padding(start = EdgePadding, end = EdgePadding, top = 8.dp, bottom = EdgePadding)
+                        // Tocar fora dos cards sai da edição (SPEC §5.2)
+                        .pointerInput(editing) { if (editing) detectTapGestures { finishEditing() } },
                     verticalArrangement = Arrangement.spacedBy(Gutter)
                 ) {
-                    homeRows(state.layout).forEach { row ->
-                        Row(Modifier.fillMaxWidth().height(rowHeight), horizontalArrangement = Arrangement.spacedBy(Gutter)) {
-                            row.forEach { card ->
-                                HomeCardSlot(
-                                    card = card,
-                                    state = state,
-                                    moduleCard = moduleCard,
-                                    onDashboardClick = { showDetails = true },
-                                    onGoalClick = { goalBeingEdited = it },
-                                    modifier = Modifier.weight(1f).fillMaxHeight()
-                                )
-                            }
-                            // Metade sem vizinho: o espaço à direita fica vazio (SPEC §5.1)
-                            if (row.size == 1 && row[0].size == CardSize.Half) Spacer(Modifier.weight(1f))
-                        }
+                    HomeGrid(
+                        cards = cards,
+                        editing = editing,
+                        rowHeight = rowHeight,
+                        gutter = Gutter,
+                        onLongPress = {
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            draft = state.layout
+                        },
+                        onChange = { draft = it },
+                        cardTitle = ::titleOf,
+                        modifier = Modifier.fillMaxWidth(),
+                        card = slot
+                    )
+                    if (!editing && state.showSuggestion && freeRows(cards, rows.count) > 0 && catalog.any { entry -> cards.none { it.key == entry.key } }) {
+                        AddCardSuggestion(rowHeight, onClick = { showCatalog = true }, onDismiss = onDismissSuggestion)
                     }
                 }
             }
         }
+    }
+
+    if (showCatalog) {
+        CatalogSheet(
+            entries = catalog,
+            onHome = cards.map { it.key }.toSet(),
+            rowHeight = PreviewRowHeight,
+            gutter = Gutter,
+            onDismiss = { showCatalog = false },
+            onAdd = { card ->
+                showCatalog = false
+                if (editing) draft = addCard(cards, card) else onSaveLayout(addCard(cards, card))
+            },
+            card = slot
+        )
     }
 
     goalBeingEdited?.let { type ->

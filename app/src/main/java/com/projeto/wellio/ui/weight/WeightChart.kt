@@ -47,7 +47,7 @@ data class ChartColors(val line: Color, val bubble: Color, val onBubble: Color, 
 
 /**
  * Curva suave do peso no período (SPEC §6.1): desenha da esquerda para a direita ao
- * aparecer e o ponto mais recente pulsa. Segurar o dedo e arrastar mostra o peso e o
+ * aparecer, a área embaixo dela respira e o ponto mais recente pulsa. Segurar o dedo e arrastar mostra o peso e o
  * dia de cada pesagem. [trend] vem da mais antiga para a mais recente; [targetKg]
  * desenha a linha tracejada do alvo.
  */
@@ -69,6 +69,13 @@ fun WeightChart(
         targetValue = 1f,
         animationSpec = infiniteRepeatable(tween(durationMillis = 1400), RepeatMode.Restart),
         label = "halo"
+    )
+    // A área sob a curva "respira" de leve (SPEC §2.9)
+    val breath by rememberInfiniteTransition(label = "respiro").animateFloat(
+        initialValue = 0.2f,
+        targetValue = 0.38f,
+        animationSpec = infiniteRepeatable(tween(durationMillis = 2600, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "area"
     )
     var selected by remember(trend) { mutableStateOf<Int?>(null) }
     val haptics = LocalHapticFeedback.current
@@ -121,7 +128,8 @@ fun WeightChart(
                 pathEffect = PathEffect.dashPathEffect(floatArrayOf(8.dp.toPx(), 6.dp.toPx()))
             )
             val label = measurer.measure("alvo ${formatKg(target)}", TextStyle(color = colors.guide, fontSize = 11.sp))
-            drawText(label, topLeft = Offset(size.width - label.size.width, y - label.size.height - 2.dp.toPx()))
+            // À esquerda: à direita ficaria em cima do ponto mais recente
+            drawText(label, topLeft = Offset(inset, y - label.size.height - 2.dp.toPx()))
         }
 
         // Curva com controles no meio de cada trecho: suave, sem passar dos pontos na vertical
@@ -140,7 +148,7 @@ fun WeightChart(
         }
 
         clipRect(right = size.width * reveal.value) {
-            drawPath(area, Brush.verticalGradient(listOf(colors.line.copy(alpha = 0.3f), Color.Transparent), startY = top))
+            drawPath(area, Brush.verticalGradient(listOf(colors.line.copy(alpha = breath), Color.Transparent), startY = top))
             drawPath(curve, colors.line, style = Stroke(strokeWidth, cap = StrokeCap.Round, join = StrokeJoin.Round))
         }
 

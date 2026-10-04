@@ -118,7 +118,7 @@ class WeightScreenTest {
     fun alvoMostraQuantoFalta() {
         show(entries = listOf(ontem to null), goal = WeightGoal(targetKg = 70.0, startKg = 75.0))
 
-        compose.onNodeWithText("faltam 2,4 kg").assertIsDisplayed()
+        compose.onNodeWithText("faltam 2,4 kg", substring = true).assertIsDisplayed()
     }
 
     @Test
@@ -126,7 +126,7 @@ class WeightScreenTest {
         var target: Double? = null
         show(entries = listOf(ontem to null), onSetTarget = { target = it })
 
-        compose.onNodeWithText("Peso alvo").performClick()
+        compose.onNodeWithText("Definir alvo").performClick()
         compose.onNodeWithContentDescription("Diminuir 0,1 kg").performClick()
         compose.onNodeWithText("Salvar").performClick()
 

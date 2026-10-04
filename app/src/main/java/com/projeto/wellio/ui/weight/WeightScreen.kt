@@ -1,5 +1,8 @@
 package com.projeto.wellio.ui.weight
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -11,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -134,11 +138,11 @@ fun WeightScreen(
                     subtitle = latest?.let { "Pesagem de ${dayLabel(it.first.date, state.today).lowercase()}" }
                         ?: "Sem pesagens: o cálculo usa ${formatKg(DEFAULT_WEIGHT_KG)}",
                     detail = latest?.second?.let { "${formatKgChange(it)} desde a anterior" },
+                    goalReached = state.goal?.let { remainingKg(it, state.currentKg) == 0.0 } ?: false,
                     modifier = Modifier.padding(top = 4.dp)
-                )
-            }
-            item(key = "alvo") {
-                TargetCard(state, onClick = { editingTarget = true })
+                ) {
+                    TargetLine(state, onClick = { editingTarget = true })
+                }
             }
             if (state.entries.isNotEmpty()) {
                 item(key = "evolucao") { EvolutionCard(state) }
@@ -216,66 +220,63 @@ fun WeightScreen(
     }
 }
 
-/** Peso alvo: progresso, quanto falta e a data estimada; sem alvo, um convite para definir. */
+/**
+ * Peso alvo dentro da balança (SPEC §6.1): com alvo, quanto falta, barrinha e data
+ * estimada; sem alvo, o botão para definir. Tocar abre a edição.
+ */
 @Composable
-private fun TargetCard(state: WeightUiState, onClick: () -> Unit) {
+private fun TargetLine(state: WeightUiState, onClick: () -> Unit) {
     val colors = WellioTheme.colors.base
     val goal = state.goal
-    val currentKg = state.currentKg
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(24.dp),
-        color = MaterialTheme.colorScheme.surface,
-        modifier = Modifier.fillMaxWidth()
+        shape = RoundedCornerShape(50),
+        color = colors.onContainer.copy(alpha = 0.1f),
+        contentColor = colors.onContainer
     ) {
         if (goal == null) {
-            Row(Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text("Peso alvo", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                    Text(
-                        "Defina um alvo para acompanhar o progresso",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Icon(Icons.Default.Add, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            Row(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(6.dp))
+                Text("Definir alvo", style = MaterialTheme.typography.labelLarge)
             }
             return@Surface
         }
 
-        val remaining = remainingKg(goal, currentKg)
-        val progress = goalProgress(goal, currentKg)
+        val remaining = remainingKg(goal, state.currentKg)
+        val progress by animateFloatAsState(
+            goalProgress(goal, state.currentKg),
+            spring(dampingRatio = 0.5f, stiffness = Spring.StiffnessLow),
+            label = "alvo"
+        )
         val rate = weeklyRate(weightTrend(state.entries.map { it.first }, state.today, WeightPeriod.Month))
-        val eta = projectedDate(goal, currentKg, rate, state.today)
-        Column(Modifier.padding(20.dp).semantics(mergeDescendants = true) {}) {
-            Row(verticalAlignment = Alignment.Bottom) {
-                Text("Alvo ${formatKg(goal.targetKg)}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                Spacer(Modifier.weight(1f))
+        val eta = projectedDate(goal, state.currentKg, rate, state.today)
+        Row(
+            Modifier.padding(start = 18.dp, end = 14.dp, top = 8.dp, bottom = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(Modifier.width(IntrinsicSize.Max)) {
                 Text(
-                    if (remaining == 0.0) "Chegou lá!" else "faltam ${formatKg(remaining)}",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary
+                    listOfNotNull(
+                        "Alvo ${formatKg(goal.targetKg)}",
+                        if (remaining == 0.0) "chegou lá!" else "faltam ${formatKg(remaining)}",
+                        eta?.let { "~${shortDate(it, state.today)}" }
+                    ).joinToString(" · "),
+                    style = MaterialTheme.typography.labelLarge
                 )
+                Spacer(Modifier.height(6.dp))
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(colors.onContainer.copy(alpha = 0.2f))
+                ) {
+                    Box(Modifier.fillMaxWidth(progress).fillMaxHeight().background(colors.accent))
+                }
             }
-            Spacer(Modifier.height(10.dp))
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .height(10.dp)
-                    .clip(RoundedCornerShape(5.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-            ) {
-                Box(Modifier.fillMaxWidth(progress).fillMaxHeight().clip(RoundedCornerShape(5.dp)).background(colors.container))
-            }
-            Spacer(Modifier.height(8.dp))
-            Text(
-                listOfNotNull(
-                    "Começou em ${formatKg(goal.startKg)}",
-                    eta?.let { "chega lá por volta de ${shortDate(it, state.today)}" }
-                ).joinToString(" · "),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Spacer(Modifier.width(10.dp))
+            Icon(Icons.Default.Edit, contentDescription = "Mudar alvo", modifier = Modifier.size(16.dp))
         }
     }
 }

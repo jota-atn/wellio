@@ -85,6 +85,8 @@ Home → cards (atalhos para as mesmas telas)
 
 **A Home é um atalho, não a única porta.** Toda funcionalidade é acessível pela sidebar (seção Registros e demais itens) ou pelo FAB, mesmo que nenhum card dela esteja na Home. Ocultar um card nunca tira acesso a nada.
 
+**Toda funcionalidade tem tela própria** (Água, Peso, Exercício, Alimentação e, no M2, a Visão geral do Dashboard), com a mesma linguagem visual (§2.9). Os dialogs antigos de detalhes (Dashboard, Alimentação, Exercício) saem quando a tela correspondente chega.
+
 O registro de alimento e de exercício abre num **bottom sheet em tela cheia** (busca, favoritos/recentes, código de barras, quantidade); arrastar para baixo fecha. Dialogs ficam só para interações pequenas (definir meta, confirmações). As telas de detalhe servem para histórico, edição e cadastro.
 
 ### 2.3 Ícones
@@ -162,6 +164,18 @@ Regras:
   - toasts de parabenização são anunciados pelo leitor de tela.
 - **Cor nunca é a única informação**: estados como "acima da meta" também aparecem em texto (ex.: `+320 kcal`).
 - Contraste mínimo WCAG AA nos dois temas (§2.5).
+
+### 2.9 Linguagem visual das telas
+
+Cada tela de funcionalidade tem **personalidade própria**, com um elemento ilustrativo animado no topo, em vez de só cards e listas:
+
+- **Água**: uma gota grande que enche até a % do dia, com onda suave contínua; ao registrar, o nível sobe com um "chacoalhão" elástico.
+- **Peso**: curva de evolução no topo (ponto atual em destaque) e registro por **régua deslizante** com marcas de 0,1 kg e vibração leve a cada marca.
+- Exercício e Alimentação seguem a mesma ideia quando chegarem.
+
+Com "Remover animações" ligado, os elementos ficam parados (§2.8).
+
+**Transições entre telas**: deslize com mola solta ("gelatina"): passa do ponto, volta e assenta devagar.
 
 ## 3. Regras gerais
 
@@ -371,7 +385,11 @@ Junta **até 3 resumos** escolhidos pelo usuário num card só, com visual capri
 - **Sem limite na meta**: dá para beber mais do que a meta; a barra fica cheia e mostra o excedente (ex.: `2.300 / 2.000 ml`).
 - Os botões negativos (−200, −300, −500) saem. Para corrigir: **Desfazer último** no card, ou editar/remover registros na tela de detalhes.
 - **Tela de detalhes**: lista dos registros do dia com horário, edição e remoção; navegação entre dias; gráfico dos últimos 7/30 dias.
-- **Recipientes nomeados**: além dos botões de ml, atalhos com nome e volume (ex.: "Copo 200 ml", "Garrafa 500 ml", "Squeeze 750 ml"), criados e editados em Configurações. Os botões rápidos do card podem ser recipientes.
+- **Recipientes nomeados**: atalhos com nome, volume e ícone (ex.: "Copo 200 ml", "Garrafa 500 ml", "Squeeze 750 ml"), gerenciados **na própria tela de Água**, sem engrenagem:
+  - uma fileira de botões de recipiente: **tocar registra** na hora, **segurar abre a edição** daquele recipiente, e o último botão **"+"** cria um novo;
+  - **"Editar"** ao lado da fileira transforma ela na grade **"Meus recipientes"**, com lápis em cada um, "+ Novo" e apagar; "Pronto" volta ao normal;
+  - cada recipiente tem um **ícone escolhido pelo usuário** num conjunto desenhado para o Wellio (copo, caneca, xícara, garrafa, squeeze, taça, garrafa térmica, galão); um recipiente novo já vem com um ícone sugerido pelo volume. Nada de emoji (§2.3);
+  - os marcados como rápidos (até 3) também viram botões no card da Home.
 
 ## 7. Alimentação
 
@@ -842,6 +860,7 @@ Modelo de dados adicional: `plan_item` (id, date, time?, kind: exercise/template
 - **Acessibilidade**: fonte até 200% com adaptação; respeitar "Remover animações"; TalkBack completo, com reorganização sem arrastar (§2.8).
 - **Testes de migração do banco**: um por migração, com schemas versionados (§2.7).
 - **M1 dividido em M1a/M1b/M1c**; uma tela por módulo; navegação entre dias por setas, deslizar e calendário (§11).
+- **Telas próprias para tudo** e personalidade visual por tela (gota na Água, curva + régua no Peso); transição "gelatina"; recipientes na tela de Água com fileira + modo edição e ícones desenhados (§2.2, §2.9, §6).
 - **Tom dos textos**: zoeiro e épico, sem ser brega; trilhas com nomes evocativos (Caudal, Fornalha...) (§9.5, `TEXTOS.md`).
 
 ## 15. Decisões em aberto

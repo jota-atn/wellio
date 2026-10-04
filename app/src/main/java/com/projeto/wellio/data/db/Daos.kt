@@ -13,6 +13,9 @@ import java.time.LocalDate
 /** Soma de um dia (consultas agrupadas por data). */
 data class DayTotal(val date: LocalDate, val total: Int)
 
+/** Último uso de uma atividade (consulta de recentes). */
+data class ExerciseUseRow(val typeId: String, val minutes: Int, val lastAt: Instant)
+
 @Dao
 interface WaterDao {
     @Query("SELECT COALESCE(SUM(amountMl), 0) FROM water_entry WHERE date BETWEEN :from AND :to AND deletedAt IS NULL")
@@ -89,6 +92,44 @@ interface ExerciseDao {
 
     @Query("SELECT date, SUM(kcal) AS total FROM exercise_entry WHERE date BETWEEN :from AND :to AND deletedAt IS NULL GROUP BY date")
     fun kcalByDay(from: LocalDate, to: LocalDate): Flow<List<DayTotal>>
+
+    @Query("SELECT COALESCE(SUM(minutes), 0) FROM exercise_entry WHERE date BETWEEN :from AND :to AND deletedAt IS NULL")
+    fun minutesBetween(from: LocalDate, to: LocalDate): Flow<Int>
+
+    @Query("SELECT date, SUM(minutes) AS total FROM exercise_entry WHERE date BETWEEN :from AND :to AND deletedAt IS NULL GROUP BY date")
+    fun minutesByDay(from: LocalDate, to: LocalDate): Flow<List<DayTotal>>
+
+    @Query("SELECT * FROM exercise_entry WHERE date = :day AND deletedAt IS NULL ORDER BY timestamp")
+    fun entriesOn(day: LocalDate): Flow<List<ExerciseEntryEntity>>
+
+    @Query("SELECT * FROM exercise_entry WHERE id = :id")
+    suspend fun entryById(id: String): ExerciseEntryEntity?
+
+    @Update
+    suspend fun updateEntry(entry: ExerciseEntryEntity)
+
+    @Query("UPDATE exercise_entry SET deletedAt = :at, updatedAt = :at WHERE id = :id")
+    suspend fun softDelete(id: String, at: Instant)
+
+    @Query("UPDATE exercise_entry SET deletedAt = NULL, updatedAt = :at WHERE id = :id")
+    suspend fun restore(id: String, at: Instant)
+
+    /** Último uso de cada atividade (minutos e quando), do mais recente para o mais antigo. */
+    @Query(
+        """
+        SELECT e.exerciseTypeId AS typeId, e.minutes AS minutes, e.timestamp AS lastAt
+        FROM exercise_entry e
+        WHERE e.deletedAt IS NULL AND e.timestamp = (
+            SELECT MAX(x.timestamp) FROM exercise_entry x
+            WHERE x.exerciseTypeId = e.exerciseTypeId AND x.deletedAt IS NULL
+        )
+        ORDER BY e.timestamp DESC
+        """
+    )
+    fun lastUses(): Flow<List<ExerciseUseRow>>
+
+    @Query("UPDATE exercise_type SET isFavorite = :favorite WHERE id = :id")
+    suspend fun setFavorite(id: String, favorite: Boolean)
 
     @Insert
     suspend fun insertEntry(entry: ExerciseEntryEntity)

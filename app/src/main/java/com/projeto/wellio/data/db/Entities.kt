@@ -70,10 +70,13 @@ data class ExerciseTypeEntity(
     val category: String,
     val mets: Double,
     val iconKey: String,
-    val isCustom: Boolean = false
+    val isCustom: Boolean = false,
+    val compendiumCode: String? = null,
+    val isFavorite: Boolean = false,
+    val kcalPerMinute: Double? = null
 )
 
-@Entity(tableName = "exercise_entry", indices = [Index("date")])
+@Entity(tableName = "exercise_entry", indices = [Index("date"), Index("exerciseTypeId")])
 data class ExerciseEntryEntity(
     @PrimaryKey val id: String,
     val date: LocalDate,

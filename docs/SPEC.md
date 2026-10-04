@@ -468,6 +468,21 @@ Quando as kcal consumidas passam da faixa da meta (+10%), o card de Alimentaçã
 - **Cadastro de exercícios próprios**: nome, categoria, METs (com ajuda: leve ≈ 3, moderado ≈ 5, intenso ≈ 8) ou kcal/minuto, ícone.
 - **Tela de detalhes**: treinos do dia, edição e remoção, navegação entre dias.
 
+### 8.0 Tela, registro e card (decidido para o M1a)
+
+- **Fogueira** no topo (elemento ilustrativo, §2.9): a chama cresce com o progresso do dia: brasa no começo, labaredas que dançam no meio, faíscas ao bater a meta. Ao registrar, a chama "aviva" com mola. Ao lado, o valor na unidade da meta em destaque e o outro menor (ex.: `320 de 500 kcal · 45 min`); tocar na meta abre o sheet de meta.
+- **Meta à escolha**: kcal queimadas ou minutos ativos, no sheet da meta (também editável no Dashboard).
+- **Fileira de favoritos** abaixo da fogueira (como os recipientes da Água): favoritos (★) e mais recentes, cada um com ícone e a última duração usada (`Corrida · 30 min`). Tocar registra na hora, com desfazer; segurar abre o registro já preenchido; "+" abre o registro vazio.
+- **Registro** em sheet de tela cheia:
+  - **Escolha da atividade**: busca no topo, faixa de Recentes/Favoritos, chips das 7 categorias e a lista filtrada; estrela marca favorito. No fim da lista, **"+ Criar atividade"**: nome, categoria e intensidade (leve ≈ 3, moderada ≈ 5, intensa ≈ 8 METs) ou kcal por minuto; fica salva e aparece na busca.
+  - **Duração num mostrador de relógio**: arrastar o ponteiro em volta marca os minutos (uma volta = 60 min; continua em voltas seguintes, até 300 min), com vibração a cada 5 min.
+  - **kcal**: a estimativa (METs × peso atual × horas) aparece grande e muda ao vivo com o mostrador. Tocar nela permite digitar o valor do relógio; fica marcado "do relógio" e para de acompanhar o tempo (↺ volta para a estimativa).
+  - Horário (padrão: agora) e o dia aberto na tela.
+- **Ícones**: um por categoria, desenhados no estilo do app (tênis/cardio, haltere, luva, bola, ondas, lótus, estrela); cada atividade usa o da sua categoria.
+- **Registros do dia** recolhidos (setinha), com edição, apagar e desfazer, e navegação entre dias (setas, deslizar, calendário).
+- **Card**: inteiro com fogueira pequena, valor na unidade da meta e o outro menor, barra, os treinos do dia (ícone + nome) e um botão +; metade com fogueira, valor/meta e o +.
+- **FAB**: a pílula Exercício abre o registro; segurar mostra os favoritos (ação de 1 toque, §5.1). A da Água (recipientes) entra junto.
+
 ### 8.1 Base de exercícios
 
 - Fonte: **Compendium of Physical Activities** (versão adulta de 2024), referência oficial dos valores de METs.

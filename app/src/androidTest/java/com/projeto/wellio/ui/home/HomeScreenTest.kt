@@ -129,7 +129,8 @@ class HomeScreenTest {
         compose.onNodeWithTag("card-water").performTouchInput {
             down(center)
             advanceEventTime(1000)
-            moveBy(Offset(-width * 0.25f, height * 1.2f))
+            // Como o dedo de verdade: vários movimentos pequenos, não um salto só
+            repeat(30) { moveBy(Offset(-width * 0.25f / 30, height * 1.2f / 30)) }
             up()
         }
         compose.onNodeWithText("Concluir").performClick()
@@ -178,5 +179,36 @@ class HomeScreenTest {
         compose.onNodeWithContentDescription("Dispensar sugestão").performClick()
 
         assertTrue(dismissed)
+    }
+
+    @Test
+    fun alcaEncolheOCardAoPassarDaMetadeESoltar() {
+        show(listOf(agua, peso))
+
+        compose.onNodeWithTag("card-water").performTouchInput { longClick() }
+        // Card inteiro: a alça fica à direita; arrastar para a esquerda encolhe
+        compose.onNodeWithTag("alca-tamanho").performTouchInput {
+            down(center)
+            repeat(30) { moveBy(Offset(-12f, 0f)) }
+            up()
+        }
+        compose.waitForIdle()
+
+        assertEquals(listOf(HomeCard("water", CardSize.Half), peso), saved)
+    }
+
+    @Test
+    fun alcaQueNaoPassaDaMetadeVoltaSemMudar() {
+        show(listOf(agua, peso))
+
+        compose.onNodeWithTag("card-water").performTouchInput { longClick() }
+        compose.onNodeWithTag("alca-tamanho").performTouchInput {
+            down(center)
+            repeat(5) { moveBy(Offset(-8f, 0f)) }
+            up()
+        }
+        compose.waitForIdle()
+
+        assertEquals(null, saved)
     }
 }

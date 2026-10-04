@@ -56,6 +56,7 @@ import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.LookaheadScope
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
@@ -375,9 +376,10 @@ private fun EditOverlay(
 
 /**
  * Editor de um card, como o redimensionamento dos widgets do Android: moldura em volta do
- * card, uma alça na lateral livre e o botão Ocultar. Arrastar a alça estica ou encolhe; ao
- * passar da metade do caminho ([widthStepPx] = diferença entre inteiro e metade), o card
- * encaixa no outro tamanho, com vibração.
+ * card, uma alça na lateral livre e o botão Ocultar. Arrastar a alça estica ou encolhe a
+ * moldura junto com o dedo (entre metade e inteiro; [widthStepPx] é a diferença entre os
+ * dois); passar do meio do caminho vibra, e ao soltar o card encaixa no tamanho mais
+ * perto, com mola.
  */
 @Composable
 private fun ResizeOverlay(
@@ -391,8 +393,15 @@ private fun ResizeOverlay(
 ) {
     val scheme = MaterialTheme.colorScheme
     val haptics = LocalHapticFeedback.current
+    val scope = rememberCoroutineScope()
     val currentSize by rememberUpdatedState(size)
     val growsLeft by rememberUpdatedState(handleOnLeft)
+    // Quanto a moldura passou do card: positivo estica (metade → inteiro), negativo encolhe
+    val stretch = remember { Animatable(0f) }
+    // Limites da moldura: metade só estica, inteiro só encolhe
+    fun range() = if (currentSize == CardSize.Full) -widthStepPx..0f else 0f..widthStepPx
+    fun pastHalfway(value: Float) = if (currentSize == CardSize.Full) value < -widthStepPx / 2 else value > widthStepPx / 2
+
     Box(
         modifier
             // Toques no card em edição não abrem a tela
@@ -400,10 +409,12 @@ private fun ResizeOverlay(
             .drawWithContent {
                 drawContent()
                 val inset = 4.dp.toPx()
+                val extra = stretch.value
+                val left = if (growsLeft) -inset - extra else -inset
                 drawRoundRect(
                     color = scheme.primary,
-                    topLeft = Offset(-inset, -inset),
-                    size = Size(this.size.width + 2 * inset, this.size.height + 2 * inset),
+                    topLeft = Offset(left, -inset),
+                    size = Size(this.size.width + 2 * inset + extra, this.size.height + 2 * inset),
                     cornerRadius = CornerRadius(32.dp.toPx()),
                     style = Stroke(2.5.dp.toPx())
                 )
@@ -416,28 +427,41 @@ private fun ResizeOverlay(
                 )
             }
     ) {
-        // Alça: arrastar para fora estica, para dentro encolhe
-        var stretch by remember { mutableFloatStateOf(0f) }
         Box(
             Modifier
                 .align(if (handleOnLeft) Alignment.CenterStart else Alignment.CenterEnd)
-                .offset(x = if (handleOnLeft) (-15).dp else 15.dp)
-                .size(44.dp)
+                .graphicsLayer {
+                    // A alça acompanha a borda da moldura
+                    translationX = (if (growsLeft) -1 else 1) * (15.dp.toPx() + stretch.value)
+                }
+                .size(48.dp)
+                .testTag("alca-tamanho")
                 .pointerInput(Unit) {
                     detectHorizontalDragGestures(
-                        onDragStart = { stretch = 0f },
+                        onDragStart = { scope.launch { stretch.stop() } },
                         onHorizontalDrag = { change, amount ->
                             change.consume()
-                            stretch += if (growsLeft) -amount else amount
-                            val full = currentSize == CardSize.Full
-                            // Metade estica até passar da metade do caminho; inteiro encolhe até lá
-                            if (!full && stretch > widthStepPx / 2 || full && stretch < -widthStepPx / 2) {
-                                stretch += if (full) widthStepPx else -widthStepPx
+                            val before = stretch.value
+                            val after = (before + if (growsLeft) -amount else amount).coerceIn(range())
+                            if (pastHalfway(after) != pastHalfway(before)) {
                                 haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                                onToggleSize()
+                            }
+                            scope.launch { stretch.snapTo(after) }
+                        },
+                        onDragEnd = {
+                            val toggle = pastHalfway(stretch.value)
+                            scope.launch {
+                                if (toggle) {
+                                    // O card muda de tamanho (com mola, pelo animateBounds); a moldura
+                                    // passa a ser relativa ao card novo e volta a zero junto
+                                    val offset = stretch.value + if (currentSize == CardSize.Full) widthStepPx else -widthStepPx
+                                    onToggleSize()
+                                    stretch.snapTo(offset)
+                                }
+                                stretch.animateTo(0f, spring(dampingRatio = 0.6f, stiffness = Spring.StiffnessMediumLow))
                             }
                         },
-                        onDragEnd = { stretch = 0f }
+                        onDragCancel = { scope.launch { stretch.animateTo(0f, spring()) } }
                     )
                 },
             contentAlignment = Alignment.Center
@@ -522,6 +546,8 @@ private fun Modifier.holdToEdit(
         while (true) {
             val event = awaitPointerEvent(PointerEventPass.Initial)
             val change = event.changes.firstOrNull { it.id == down.id }
+            // Mede antes de consumir: depois de consumido, positionChange() devolve zero
+            val moved = change?.positionChange() ?: Offset.Zero
             event.changes.forEach { it.consume() }
             if (change == null || !change.pressed) break
             if (!dragging && (change.position - down.position).getDistance() > viewConfiguration.touchSlop) {
@@ -531,7 +557,7 @@ private fun Modifier.holdToEdit(
                 onHoldDrag(change.position - down.position)
             } else if (dragging) {
                 // O card anda junto com o dedo: positionChange já desconta isso (como no arrasto da edição)
-                onHoldDrag(change.positionChange())
+                onHoldDrag(moved)
             }
         }
         if (dragging) onHoldDragEnd() else onHoldReleased()

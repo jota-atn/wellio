@@ -2,6 +2,7 @@ package com.projeto.wellio.ui.module
 
 import androidx.annotation.DrawableRes
 import com.projeto.wellio.AppContainer
+import com.projeto.wellio.domain.model.GoalType
 import com.projeto.wellio.ui.theme.ModuleColors
 import com.projeto.wellio.ui.theme.WellioColors
 import kotlinx.coroutines.flow.Flow
@@ -22,6 +23,9 @@ interface WellioModule {
 
     /** Cores do módulo dentro da paleta do tema. */
     fun colors(palette: WellioColors): ModuleColors
+
+    /** Meta diária que o módulo alimenta no Dashboard; null se não tiver (Peso). */
+    val goalType: GoalType?
 
     /** Tela própria; null enquanto ela não existe (cai em "Em breve"). */
     val destination: Any?

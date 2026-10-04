@@ -42,7 +42,7 @@ fun foodSummary(consumedKcal: Int, goalKcal: Int): Summary {
     return Summary(
         module = ModuleId.Food,
         value = formatInt(consumedKcal),
-        secondary = "de ${formatInt(goalKcal)} kcal",
+        secondary = "de ${formatInt(goalKcal)}",
         progress = fraction,
         spoken = "Alimentação: ${formatInt(consumedKcal)} de ${formatInt(goalKcal)} quilocalorias, ${percent(fraction)} por cento"
     )
@@ -53,7 +53,7 @@ fun exerciseSummary(burnedKcal: Int, goalKcal: Int): Summary {
     return Summary(
         module = ModuleId.Exercise,
         value = formatInt(burnedKcal),
-        secondary = "de ${formatInt(goalKcal)} kcal",
+        secondary = "de ${formatInt(goalKcal)}",
         progress = fraction,
         spoken = "Exercício: ${formatInt(burnedKcal)} de ${formatInt(goalKcal)} quilocalorias queimadas, ${percent(fraction)} por cento"
     )

@@ -18,11 +18,12 @@ class SummaryTest {
     }
 
     @Test
-    fun `alimentacao mostra kcal da meta`() {
+    fun `alimentacao mostra kcal da meta, com a unidade so na fala`() {
         val summary = foodSummary(consumedKcal = 1250, goalKcal = 2000)
 
         assertEquals("1.250", summary.value)
-        assertEquals("de 2.000 kcal", summary.secondary)
+        assertEquals("de 2.000", summary.secondary)
+        assertEquals("Alimentação: 1.250 de 2.000 quilocalorias, 62 por cento", summary.spoken)
     }
 
     @Test

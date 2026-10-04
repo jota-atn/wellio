@@ -3,6 +3,7 @@ package com.projeto.wellio.ui.module
 import com.projeto.wellio.AppContainer
 import com.projeto.wellio.R
 import com.projeto.wellio.data.time.todayFlow
+import com.projeto.wellio.domain.model.GoalType
 import com.projeto.wellio.domain.weight.latestWeight
 import com.projeto.wellio.domain.weight.weekChange
 import com.projeto.wellio.ui.navigation.WaterDestination
@@ -26,6 +27,7 @@ object WaterModule : WellioModule {
     override val title = "Água"
     override val icon = R.drawable.ic_module_water
     override fun colors(palette: WellioColors) = palette.water
+    override val goalType = GoalType.WATER
     override val destination: Any = WaterDestination
 
     override fun summary(container: AppContainer): Flow<Summary> = combine(
@@ -40,6 +42,7 @@ object FoodModule : WellioModule {
     override val title = "Alimentação"
     override val icon = R.drawable.ic_module_food
     override fun colors(palette: WellioColors) = palette.food
+    override val goalType = GoalType.FOOD
     override val destination: Any? = null
 
     override fun summary(container: AppContainer): Flow<Summary> = combine(
@@ -54,6 +57,7 @@ object ExerciseModule : WellioModule {
     override val title = "Exercício"
     override val icon = R.drawable.ic_module_exercise
     override fun colors(palette: WellioColors) = palette.exercise
+    override val goalType = GoalType.EXERCISE
     override val destination: Any? = null
 
     override fun summary(container: AppContainer): Flow<Summary> = combine(
@@ -67,6 +71,7 @@ object WeightModule : WellioModule {
     override val title = "Peso"
     override val icon = R.drawable.ic_module_weight
     override fun colors(palette: WellioColors) = palette.base
+    override val goalType: GoalType? = null
     override val destination: Any = WeightDestination
 
     override fun summary(container: AppContainer): Flow<Summary> = combine(

@@ -41,7 +41,7 @@ object WaterModule : WellioModule {
     override val icon = R.drawable.ic_module_water
     override fun colors(palette: WellioColors) = palette.water
     override val goalType = GoalType.WATER
-    override val destination: Any = WaterDestination
+    override fun destination(fromCard: Boolean): Any = WaterDestination(fromCard)
 
     override fun summary(container: AppContainer): Flow<Summary> = combine(
         todayFlow(container.clock).flatMapLatest { container.waterRepository.totalMl(it..it) },
@@ -64,7 +64,7 @@ object FoodModule : WellioModule {
     override val icon = R.drawable.ic_module_food
     override fun colors(palette: WellioColors) = palette.food
     override val goalType = GoalType.FOOD
-    override val destination: Any? = null
+    override fun destination(fromCard: Boolean): Any? = null
 
     override fun summary(container: AppContainer): Flow<Summary> = combine(
         todayFlow(container.clock).flatMapLatest { container.foodRepository.kcal(it..it) },
@@ -88,7 +88,7 @@ object ExerciseModule : WellioModule {
     override val icon = R.drawable.ic_module_exercise
     override fun colors(palette: WellioColors) = palette.exercise
     override val goalType = GoalType.EXERCISE
-    override val destination: Any? = null
+    override fun destination(fromCard: Boolean): Any? = null
 
     override fun summary(container: AppContainer): Flow<Summary> = combine(
         todayFlow(container.clock).flatMapLatest { container.exerciseRepository.kcal(it..it) },
@@ -111,7 +111,7 @@ object WeightModule : WellioModule {
     override val icon = R.drawable.ic_module_weight
     override fun colors(palette: WellioColors) = palette.base
     override val goalType: GoalType? = null
-    override val destination: Any = WeightDestination
+    override fun destination(fromCard: Boolean): Any = WeightDestination(fromCard)
 
     override fun summary(container: AppContainer): Flow<Summary> = combine(
         todayFlow(container.clock),

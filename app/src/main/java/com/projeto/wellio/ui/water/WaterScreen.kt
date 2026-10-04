@@ -31,27 +31,31 @@ import com.projeto.wellio.domain.model.WaterContainer
 import com.projeto.wellio.domain.model.WaterEntry
 import com.projeto.wellio.domain.water.ContainerIcon
 import com.projeto.wellio.domain.water.lastEntry
-import com.projeto.wellio.ui.components.RecordsHeader
 import com.projeto.wellio.ui.components.DayNavigator
+import com.projeto.wellio.ui.components.RecordsHeader
 import com.projeto.wellio.ui.components.swipeBetweenDays
 import com.projeto.wellio.ui.format.formatMl
 import com.projeto.wellio.ui.format.formatTime
 import com.projeto.wellio.ui.icons.containerIconRes
+import com.projeto.wellio.ui.navigation.sharedContainer
+import com.projeto.wellio.ui.navigation.sharedHero
 import com.projeto.wellio.ui.theme.WellioTheme
-import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
+import kotlinx.coroutines.launch
 
 @Composable
 fun WaterRoute(
     onBack: () -> Unit,
+    fromCard: Boolean = false,
     viewModel: WaterViewModel = viewModel(factory = WaterViewModel.Factory)
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     WaterScreen(
         state = state,
         zone = viewModel.zone,
+        fromCard = fromCard,
         onBack = onBack,
         onDayChange = viewModel::selectDay,
         onAdd = viewModel::add,
@@ -87,7 +91,9 @@ fun WaterScreen(
     onRestore: (WaterEntry) -> Unit,
     onSetGoal: (Int) -> Unit,
     onSaveContainer: (id: String?, name: String, amountMl: Int, isQuick: Boolean, iconKey: String) -> Unit,
-    onDeleteContainer: (WaterContainer) -> Unit
+    onDeleteContainer: (WaterContainer) -> Unit,
+    /** Aberta pelo card da Home: o card cresce e vira esta tela (SPEC §2.9). */
+    fromCard: Boolean = false
 ) {
     val colors = WellioTheme.colors.water
     val snackbar = remember { SnackbarHostState() }
@@ -120,6 +126,7 @@ fun WaterScreen(
     }
 
     Scaffold(
+        modifier = Modifier.sharedContainer("card-water", RoundedCornerShape(28.dp), enabled = fromCard),
         topBar = {
             TopAppBar(
                 title = { Text("Água") },
@@ -153,7 +160,7 @@ fun WaterScreen(
                 DayNavigator(state.day, state.today, onDayChange, Modifier.padding(horizontal = 8.dp))
             }
             item(key = "gota") {
-                WaterHero(state.totalMl, state.goalMl, additions, onEditGoal = { editingGoal = true }, Modifier.padding(horizontal = 16.dp))
+                WaterHero(state.totalMl, state.goalMl, additions, fromCard, onEditGoal = { editingGoal = true }, Modifier.padding(horizontal = 16.dp))
             }
             item(key = "recipientes") {
                 ContainersSection(
@@ -259,7 +266,7 @@ fun WaterScreen(
 
 /** Topo da tela: a gota enchendo e os números do dia. */
 @Composable
-private fun WaterHero(totalMl: Int, goalMl: Int, additions: Int, onEditGoal: () -> Unit, modifier: Modifier = Modifier) {
+private fun WaterHero(totalMl: Int, goalMl: Int, additions: Int, fromCard: Boolean, onEditGoal: () -> Unit, modifier: Modifier = Modifier) {
     val colors = WellioTheme.colors.water
     val fraction = progress(totalMl, goalMl)
     Surface(
@@ -273,7 +280,7 @@ private fun WaterHero(totalMl: Int, goalMl: Int, additions: Int, onEditGoal: () 
             }
     ) {
         Row(Modifier.padding(start = 8.dp, end = 20.dp, top = 12.dp, bottom = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-            WaterDrop(totalMl, goalMl, additions, Modifier.size(width = 136.dp, height = 176.dp))
+            WaterDrop(totalMl, goalMl, additions, Modifier.sharedHero("hero-water", enabled = fromCard).size(width = 136.dp, height = 176.dp))
             Spacer(Modifier.width(12.dp))
             Column {
                 Text(

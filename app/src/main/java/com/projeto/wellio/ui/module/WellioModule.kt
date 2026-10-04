@@ -36,8 +36,11 @@ interface WellioModule {
     /** Meta diária que o módulo alimenta no Dashboard; null se não tiver (Peso). */
     val goalType: GoalType?
 
-    /** Tela própria; null enquanto ela não existe (cai em "Em breve"). */
-    val destination: Any?
+    /**
+     * Tela própria; null enquanto ela não existe (cai em "Em breve"). [fromCard]: aberta pelo
+     * card da Home, quando o card vira a tela (SPEC §2.9).
+     */
+    fun destination(fromCard: Boolean = false): Any?
 
     /** Resumo de hoje, atualizado sozinho. */
     fun summary(container: AppContainer): Flow<Summary>

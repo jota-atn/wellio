@@ -29,6 +29,7 @@ import com.projeto.wellio.AppContainer
 import com.projeto.wellio.WellioApp
 import com.projeto.wellio.data.time.todayFlow
 import com.projeto.wellio.domain.goals.progress
+import com.projeto.wellio.domain.home.CardSize
 import com.projeto.wellio.domain.model.WaterContainer
 import com.projeto.wellio.domain.model.WaterEntry
 import com.projeto.wellio.domain.water.lastEntry
@@ -37,7 +38,8 @@ import com.projeto.wellio.domain.water.totalMl
 import com.projeto.wellio.ui.format.formatMl
 import com.projeto.wellio.ui.icons.WellioIcons
 import com.projeto.wellio.ui.icons.containerIconRes
-import com.projeto.wellio.domain.home.CardSize
+import com.projeto.wellio.ui.navigation.sharedContainer
+import com.projeto.wellio.ui.navigation.sharedHero
 import com.projeto.wellio.ui.theme.WellioTheme
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.SharingStarted
@@ -129,7 +131,7 @@ fun WaterCardContent(
         shape = RoundedCornerShape(28.dp),
         color = colors.container,
         contentColor = colors.onContainer,
-        modifier = modifier
+        modifier = modifier.sharedContainer("card-water", RoundedCornerShape(28.dp))
     ) {
         val numbers = Modifier.semantics(mergeDescendants = true) {
             contentDescription = "Água: ${formatMl(state.totalMl)} de ${formatMl(state.goalMl)}, $percent por cento"
@@ -139,7 +141,7 @@ fun WaterCardContent(
                 Modifier.fillMaxSize().padding(start = 6.dp, end = 14.dp, top = 10.dp, bottom = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                WaterDrop(state.totalMl, state.goalMl, additions, Modifier.size(width = 76.dp, height = 100.dp))
+                WaterDrop(state.totalMl, state.goalMl, additions, Modifier.sharedHero("hero-water").size(width = 76.dp, height = 100.dp))
                 Spacer(Modifier.width(6.dp))
                 Column(Modifier.weight(1f)) {
                     Row(numbers, verticalAlignment = Alignment.Bottom) {
@@ -168,7 +170,7 @@ fun WaterCardContent(
             }
             CardSize.Half -> Column(Modifier.fillMaxSize().padding(start = 4.dp, end = 12.dp, top = 8.dp, bottom = 12.dp)) {
                 Row(numbers, verticalAlignment = Alignment.CenterVertically) {
-                    WaterDrop(state.totalMl, state.goalMl, additions, Modifier.size(width = 52.dp, height = 68.dp))
+                    WaterDrop(state.totalMl, state.goalMl, additions, Modifier.sharedHero("hero-water").size(width = 52.dp, height = 68.dp))
                     Column {
                         Text(formatMl(state.totalMl), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, maxLines = 1)
                         Text("de ${formatMl(state.goalMl)}", style = MaterialTheme.typography.labelSmall, maxLines = 1)

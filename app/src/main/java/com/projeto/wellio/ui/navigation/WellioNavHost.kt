@@ -1,6 +1,15 @@
 package com.projeto.wellio.ui.navigation
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.navigation.NavBackStackEntry
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -49,7 +58,7 @@ fun WellioNavHost() {
             WellioDrawerContent(
                 onModuleClick = { module ->
                     scope.launch { drawerState.close() }
-                    navController.navigate(module.destination ?: ComingSoonDestination(module.title))
+                    navController.navigate(module.destination() ?: ComingSoonDestination(module.title))
                 },
                 onItemClick = { title ->
                     scope.launch { drawerState.close() }
@@ -58,6 +67,8 @@ fun WellioNavHost() {
             )
         }
     ) {
+        SharedTransitionLayout {
+        CompositionLocalProvider(LocalSharedTransitionScope provides this) {
         NavHost(
             modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
             navController = navController,
@@ -67,22 +78,39 @@ fun WellioNavHost() {
             popEnterTransition = popEnterFromLeft,
             popExitTransition = popExitToRight
         ) {
-            composable<HomeDestination> {
+            composable<HomeDestination>(
+                // Indo para uma tela pelo card, a Home fica parada atrás enquanto o card cresce
+                exitTransition = { if (targetState.openedFromCard()) fadeOut(tween(durationMillis = 350, delayMillis = 150)) else exitToLeft() },
+                popEnterTransition = { if (initialState.openedFromCard()) fadeIn(tween(durationMillis = 200)) else popEnterFromLeft() }
+            ) {
+                NavScope {
                 HomeRoute(
                     onMenuClick = { scope.launch { drawerState.open() } },
                     onOpenModule = { module ->
-                        navController.navigate(module.destination ?: ComingSoonDestination(module.title))
+                        // Pelo card: o card vira a tela (SPEC §2.9)
+                        navController.navigate(module.destination(fromCard = true) ?: ComingSoonDestination(module.title))
                     },
                     onEditingChange = { homeEditing = it }
                 )
+                }
             }
-            composable<WaterDestination> {
+            composable<WaterDestination>(
+                enterTransition = { if (targetState.openedFromCard()) EnterTransition.None else enterFromRight() },
+                popExitTransition = { if (initialState.openedFromCard()) ExitTransition.None else popExitToRight() }
+            ) { entry ->
                 JellyBack(navController)
-                WaterRoute(onBack = { navController.popBackStack() })
+                NavScope {
+                    WaterRoute(fromCard = entry.toRoute<WaterDestination>().fromCard, onBack = { navController.popBackStack() })
+                }
             }
-            composable<WeightDestination> {
+            composable<WeightDestination>(
+                enterTransition = { if (targetState.openedFromCard()) EnterTransition.None else enterFromRight() },
+                popExitTransition = { if (initialState.openedFromCard()) ExitTransition.None else popExitToRight() }
+            ) { entry ->
                 JellyBack(navController)
-                WeightRoute(onBack = { navController.popBackStack() })
+                NavScope {
+                    WeightRoute(fromCard = entry.toRoute<WeightDestination>().fromCard, onBack = { navController.popBackStack() })
+                }
             }
             composable<ComingSoonDestination> { entry ->
                 JellyBack(navController)
@@ -92,7 +120,18 @@ fun WellioNavHost() {
                 )
             }
         }
+        }
+        }
     }
+}
+
+/** Tela aberta pelo card da Home (rota com `fromCard = true`). */
+private fun NavBackStackEntry.openedFromCard(): Boolean = arguments?.getBoolean("fromCard") == true
+
+/** Passa a animação desta tela no NavHost para os cards e telas usarem na transformação. */
+@Composable
+private fun AnimatedVisibilityScope.NavScope(content: @Composable () -> Unit) {
+    CompositionLocalProvider(LocalNavAnimatedScope provides this, content = content)
 }
 
 /**

@@ -5,11 +5,12 @@ import kotlinx.serialization.Serializable
 @Serializable
 data object HomeDestination
 
+/** [fromCard]: aberta tocando no card da Home (o card vira a tela); pela sidebar, desliza. */
 @Serializable
-data object WaterDestination
+data class WaterDestination(val fromCard: Boolean = false)
 
 @Serializable
-data object WeightDestination
+data class WeightDestination(val fromCard: Boolean = false)
 
 /** Destino provisório das telas que ainda não existem. */
 @Serializable

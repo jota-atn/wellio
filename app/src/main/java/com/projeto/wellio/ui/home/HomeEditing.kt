@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.projeto.wellio.domain.home.CardSize
 import com.projeto.wellio.domain.home.HomeCard
+import com.projeto.wellio.ui.navigation.LocalCardTransitionEnabled
 
 /** Barra do modo de edição (SPEC §5.2): "+ Adicionar card" e "Concluir". */
 @Composable
@@ -129,7 +130,10 @@ fun CatalogSheet(
                                     }
                                 }
                         ) {
-                            card(HomeCard(entry.key, size), Modifier.fillMaxSize())
+                            // A prévia não pode virar a tela no lugar do card da Home
+                            CompositionLocalProvider(LocalCardTransitionEnabled provides false) {
+                                card(HomeCard(entry.key, size), Modifier.fillMaxSize())
+                            }
                         }
                     }
                     if (added) {

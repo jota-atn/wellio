@@ -47,6 +47,8 @@ import com.projeto.wellio.domain.weight.weightTrend
 import com.projeto.wellio.ui.format.formatKg
 import com.projeto.wellio.domain.home.CardSize
 import com.projeto.wellio.ui.module.weightSummary
+import com.projeto.wellio.ui.navigation.sharedContainer
+import com.projeto.wellio.ui.navigation.sharedHero
 import com.projeto.wellio.ui.theme.NeedleRed
 import com.projeto.wellio.ui.theme.WellioTheme
 import kotlinx.coroutines.flow.SharingStarted
@@ -114,9 +116,11 @@ fun WeightCardContent(state: WeightCardState, size: CardSize, onOpen: () -> Unit
         shape = RoundedCornerShape(28.dp),
         color = colors.container,
         contentColor = colors.onContainer,
-        modifier = modifier.clearAndSetSemantics {
-            contentDescription = weightSummary(current, change, state.goal).spoken
-        }
+        modifier = modifier
+            .sharedContainer("card-weight", RoundedCornerShape(28.dp))
+            .clearAndSetSemantics {
+                contentDescription = weightSummary(current, change, state.goal).spoken
+            }
     ) {
         val tape: @Composable (Int) -> Unit = { height ->
             ScaleTape(
@@ -125,6 +129,7 @@ fun WeightCardContent(state: WeightCardState, size: CardSize, onOpen: () -> Unit
                 needle = NeedleRed,
                 compact = true,
                 modifier = Modifier
+                    .sharedHero("hero-weight")
                     .fillMaxWidth()
                     .height(height.dp)
                     .clip(RoundedCornerShape(12.dp))

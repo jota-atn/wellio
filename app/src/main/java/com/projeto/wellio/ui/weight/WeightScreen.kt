@@ -44,13 +44,15 @@ import com.projeto.wellio.ui.format.dayLabel
 import com.projeto.wellio.ui.format.formatKg
 import com.projeto.wellio.ui.format.formatKgChange
 import com.projeto.wellio.ui.format.shortDate
+import com.projeto.wellio.ui.navigation.sharedContainer
 import com.projeto.wellio.ui.theme.WellioTheme
-import kotlinx.coroutines.launch
 import java.time.LocalDate
+import kotlinx.coroutines.launch
 
 @Composable
 fun WeightRoute(
     onBack: () -> Unit,
+    fromCard: Boolean = false,
     viewModel: WeightViewModel = viewModel(factory = WeightViewModel.Factory)
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -62,7 +64,8 @@ fun WeightRoute(
         onDelete = viewModel::delete,
         onRestore = viewModel::restore,
         onSetTarget = viewModel::setTarget,
-        onClearTarget = viewModel::clearTarget
+        onClearTarget = viewModel::clearTarget,
+        fromCard = fromCard
     )
 }
 
@@ -81,7 +84,9 @@ fun WeightScreen(
     onDelete: (WeightEntry) -> Unit,
     onRestore: (WeightEntry) -> Unit,
     onSetTarget: (Double) -> Unit,
-    onClearTarget: () -> Unit
+    onClearTarget: () -> Unit,
+    /** Aberta pelo card da Home: o card cresce e vira esta tela (SPEC §2.9). */
+    fromCard: Boolean = false
 ) {
     val colors = WellioTheme.colors.base
     val snackbar = remember { SnackbarHostState() }
@@ -104,6 +109,7 @@ fun WeightScreen(
     }
 
     Scaffold(
+        modifier = Modifier.sharedContainer("card-weight", RoundedCornerShape(28.dp), enabled = fromCard),
         topBar = {
             TopAppBar(
                 title = { Text("Peso") },
@@ -134,6 +140,7 @@ fun WeightScreen(
         ) {
             item(key = "balanca") {
                 BathroomScale(
+                    shareTape = fromCard,
                     currentKg = latest?.first?.weightKg,
                     subtitle = latest?.let { "Pesagem de ${dayLabel(it.first.date, state.today).lowercase()}" }
                         ?: "Sem pesagens: o cálculo usa ${formatKg(DEFAULT_WEIGHT_KG)}",

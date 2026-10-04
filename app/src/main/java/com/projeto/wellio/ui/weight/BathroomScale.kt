@@ -51,14 +51,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.projeto.wellio.domain.weight.DEFAULT_WEIGHT_KG
 import com.projeto.wellio.ui.format.formatKg
+import com.projeto.wellio.ui.navigation.sharedHero
 import com.projeto.wellio.ui.theme.NeedleRed
 import com.projeto.wellio.ui.theme.WellioTheme
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.roundToInt
 import kotlin.random.Random
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * Balança de banheiro vista de cima (SPEC §2.9), com agulha vermelha no visor.
@@ -73,6 +74,8 @@ import kotlin.random.Random
  */
 @Composable
 fun BathroomScale(
+    /** O visor voa do card da Home para cá quando a tela é aberta pelo card. */
+    shareTape: Boolean = false,
     currentKg: Double?,
     subtitle: String,
     detail: String?,
@@ -182,6 +185,7 @@ fun BathroomScale(
                     tick = colors.onContainer,
                     needle = NeedleRed,
                     modifier = Modifier
+                        .sharedHero("hero-weight", enabled = shareTape)
                         .fillMaxWidth(0.86f)
                         .height(64.dp)
                         .clip(RoundedCornerShape(18.dp))

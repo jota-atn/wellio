@@ -310,6 +310,7 @@ Um **botão flutuante "+" (FAB)** fica fixo no canto da Home e abre um menu: Ág
 
 - Abre **em leque com mola**: o "+" gira para "×", os itens sobem um a um em pílulas com ícone e cor do módulo, e a Home escurece atrás.
 - Cada módulo entra no FAB pelo seu contrato; só aparece o que existe (Anotação entra no M5).
+- Tocar num item abre o **registro rápido por cima da Home**, sem trocar de tela: o mesmo sheet de registro da tela do módulo (Água com recipientes e horário, Peso com a régua); Alimento e Exercício usam os registros antigos até serem refeitos.
 
 ### 5.2 Cards arrastáveis
 

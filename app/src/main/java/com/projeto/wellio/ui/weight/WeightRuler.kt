@@ -45,7 +45,7 @@ private fun indexOf(kg: Double): Int = ((kg - MIN_WEIGHT_KG) * 10).roundToInt().
 
 /**
  * Régua de balança (SPEC §2.9): arrastar escolhe o peso de 0,1 em 0,1 kg, com marca
- * maior a cada 1 kg e vibração leve a cada marca. O ajuste acessível fica nos botões
+ * maior a cada 1 kg e vibração a cada 0,5 kg (mais forte a cada 1 kg). O ajuste acessível fica nos botões
  * −/+ e no campo de texto do sheet; a régua em si é ignorada pelo TalkBack.
  */
 @Composable
@@ -74,7 +74,11 @@ fun WeightRuler(
     LaunchedEffect(state) {
         snapshotFlow { centered }.collect { index ->
             if (state.isScrollInProgress && !following.value) {
-                haptics.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick)
+                val tenth = MIN_WEIGHT_KG.roundToInt() * 10 + index
+                when {
+                    tenth % 10 == 0 -> haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                    tenth % 5 == 0 -> haptics.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick)
+                }
                 currentOnChange(kgAt(index.coerceIn(0, TickCount - 1)))
             }
         }

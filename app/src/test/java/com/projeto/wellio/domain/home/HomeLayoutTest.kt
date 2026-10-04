@@ -60,4 +60,36 @@ class HomeLayoutTest {
     fun `cards desconhecidos ou invalidos sao ignorados`() {
         assertEquals(listOf(full("water")), decodeLayout("water:F,sumiu:H,food:X,lixo", setOf("water", "food")))
     }
+
+    @Test
+    fun `mover leva o card para a nova posicao`() {
+        val moved = moveCard(listOf(full("a"), full("b"), full("c")), from = 0, to = 2)
+
+        assertEquals(listOf("b", "c", "a"), moved.map { it.key })
+    }
+
+    @Test
+    fun `alternar tamanho troca inteiro e metade`() {
+        assertEquals(CardSize.Half, toggleSize(listOf(full("a")), 0)[0].size)
+        assertEquals(CardSize.Full, toggleSize(listOf(half("a")), 0)[0].size)
+    }
+
+    @Test
+    fun `ocultar tira o card`() {
+        assertEquals(listOf("b"), hideCard(listOf(full("a"), full("b")), 0).map { it.key })
+    }
+
+    @Test
+    fun `adicionar vai para o fim e nao duplica`() {
+        val cards = listOf(full("a"))
+
+        assertEquals(listOf("a", "b"), addCard(cards, half("b")).map { it.key })
+        assertEquals(cards, addCard(cards, half("a")))
+    }
+
+    @Test
+    fun `linhas livres contam o que sobra na tela`() {
+        assertEquals(1, freeRows(DefaultHomeLayout, rowsPerScreen = 5))
+        assertEquals(0, freeRows(DefaultHomeLayout, rowsPerScreen = 3))
+    }
 }

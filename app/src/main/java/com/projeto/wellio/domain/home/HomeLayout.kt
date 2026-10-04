@@ -80,3 +80,25 @@ fun decodeLayout(text: String, knownKeys: Set<String>): List<HomeCard> =
         }
         HomeCard(parts[0], size)
     }
+
+/** Move o card de [from] para a posição [to] (índices da lista), sem mudar os outros de ordem. */
+fun moveCard(cards: List<HomeCard>, from: Int, to: Int): List<HomeCard> {
+    if (from == to || from !in cards.indices || to !in cards.indices) return cards
+    return cards.toMutableList().apply { add(to, removeAt(from)) }
+}
+
+/** Alterna o card de [index] entre inteiro e metade. */
+fun toggleSize(cards: List<HomeCard>, index: Int): List<HomeCard> =
+    cards.mapIndexed { i, card ->
+        if (i != index) card else card.copy(size = if (card.size == CardSize.Full) CardSize.Half else CardSize.Full)
+    }
+
+/** Oculta (tira da Home) o card de [index]; ele continua no catálogo. */
+fun hideCard(cards: List<HomeCard>, index: Int): List<HomeCard> = cards.filterIndexed { i, _ -> i != index }
+
+/** Adiciona um card no fim da Home; um card que já está lá não entra de novo. */
+fun addCard(cards: List<HomeCard>, card: HomeCard): List<HomeCard> =
+    if (cards.any { it.key == card.key }) cards else cards + card
+
+/** Linhas livres no fim da tela, onde aparece a sugestão de adicionar card (SPEC §5.1). */
+fun freeRows(cards: List<HomeCard>, rowsPerScreen: Int): Int = maxOf(0, rowsPerScreen - homeRows(cards).size)

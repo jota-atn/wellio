@@ -313,8 +313,9 @@ Um **botão flutuante "+" (FAB)** fica fixo no canto da Home e abre um menu: Ág
 
 ### 5.2 Cards arrastáveis
 
-- **Segurar um card e soltar** (sem mexer) abre um **leque de ações** naquele card: Ocultar, Deixar metade/inteiro e Editar Home. As ações valem na hora. Tocar fora fecha.
-- **Segurar e arrastar** (no mesmo gesto, logo depois da vibração) entra no **modo de edição** da Home já levando o card junto do dedo. "Editar Home" no leque também entra no modo de edição.
+- **Segurar um card e soltar** (sem mexer) abre o **editor daquele card**, como o redimensionamento dos widgets do Android: os outros cards escurecem, o card ganha uma moldura com uma **alça** na lateral livre e um botão **Ocultar**. Arrastar a alça estica ou encolhe o card, que encaixa em metade ou inteiro ao passar da metade do caminho (com vibração e a troca animada). As mudanças valem na hora; tocar fora ou voltar fecha.
+- **Segurar e arrastar** (no mesmo gesto, logo depois da vibração) entra no **modo de edição** da Home já levando o card junto do dedo.
+- Um **lápis no topo da Home**, ao lado do menu, também entra no modo de edição.
 - No modo de edição:
   - todos os cards **tremem de leve** e ganham **selos pequenos por fora dos cantos de cima**: ⊖ para ocultar e ⇔ para alternar tamanho (inteiro/metade); a troca de tamanho é animada e mostra a outra versão na hora;
   - a sidebar não abre pelo gesto de deslizar, para não atrapalhar o arrasto;

@@ -73,7 +73,10 @@ data class ExerciseTypeEntity(
     val isCustom: Boolean = false,
     val compendiumCode: String? = null,
     val isFavorite: Boolean = false,
-    val kcalPerMinute: Double? = null
+    val kcalPerMinute: Double? = null,
+    /** Nível (nome do enum Intensity) quando a atividade tem variações. */
+    val level: String? = null,
+    val levelHint: String? = null
 )
 
 @Entity(tableName = "exercise_entry", indices = [Index("date"), Index("exerciseTypeId")])

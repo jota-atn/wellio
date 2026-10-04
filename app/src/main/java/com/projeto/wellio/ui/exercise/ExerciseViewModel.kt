@@ -11,6 +11,7 @@ import com.projeto.wellio.data.repository.ExerciseRepository
 import com.projeto.wellio.data.repository.WeightRepository
 import com.projeto.wellio.data.time.todayFlow
 import com.projeto.wellio.domain.exercise.ExerciseCategory
+import com.projeto.wellio.domain.exercise.ExerciseFamily
 import com.projeto.wellio.domain.exercise.Intensity
 import com.projeto.wellio.domain.model.ExerciseEntry
 import com.projeto.wellio.domain.model.ExerciseType
@@ -108,8 +109,9 @@ class ExerciseViewModel(
         viewModelScope.launch { repository.restore(entry.id) }
     }
 
-    fun toggleFavorite(type: ExerciseType) {
-        viewModelScope.launch { repository.setFavorite(type.id, !type.isFavorite) }
+    /** Favorito vale para a atividade inteira (todos os níveis). */
+    fun toggleFavorite(family: ExerciseFamily) {
+        viewModelScope.launch { repository.setFavorite(family.variants.map { it.id }, !family.isFavorite) }
     }
 
     /** Cria uma atividade própria e devolve ela em [onCreated] (já selecionada no registro). */

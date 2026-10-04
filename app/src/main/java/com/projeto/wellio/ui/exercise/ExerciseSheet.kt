@@ -32,8 +32,11 @@ import com.projeto.wellio.domain.exercise.DEFAULT_EXERCISE_MINUTES
 import com.projeto.wellio.domain.exercise.ExerciseCategory
 import com.projeto.wellio.domain.exercise.Intensity
 import com.projeto.wellio.domain.exercise.parseKcal
-import com.projeto.wellio.domain.exercise.recentExercises
-import com.projeto.wellio.domain.exercise.searchExercises
+import com.projeto.wellio.domain.exercise.ExerciseFamily
+import com.projeto.wellio.domain.exercise.exerciseFamilies
+import com.projeto.wellio.domain.exercise.lastOf
+import com.projeto.wellio.domain.exercise.recentFamilies
+import com.projeto.wellio.domain.exercise.searchFamilies
 import com.projeto.wellio.domain.exercise.validateCustomExercise
 import com.projeto.wellio.domain.model.ExerciseType
 import com.projeto.wellio.domain.model.ExerciseUse
@@ -48,8 +51,9 @@ import java.time.format.DateTimeFormatter
 /**
  * Registro de exercício (SPEC §8.0), em tela cheia. Sem [initial], começa escolhendo a
  * atividade (busca, recentes, categorias, ★ favorito, criar atividade); com [initial]
- * (editar um treino ou um favorito segurado), já abre nos detalhes: mostrador de duração,
- * kcal ao vivo (tocar permite digitar a do relógio) e horário.
+ * (editar um treino ou um favorito segurado), já abre nos detalhes: nível (Leve /
+ * Moderada / Intensa, quando a atividade tem variações), mostrador de duração, kcal ao vivo
+ * (tocar permite digitar a do relógio) e horário.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,7 +67,7 @@ fun ExerciseSheet(
     onDismiss: () -> Unit,
     onSave: (ExerciseDraft) -> Unit,
     onDelete: (() -> Unit)?,
-    onToggleFavorite: (ExerciseType) -> Unit,
+    onToggleFavorite: (ExerciseFamily) -> Unit,
     onCreateCustom: (String, ExerciseCategory, Intensity, Double?, (ExerciseType) -> Unit) -> Unit
 ) {
     var selected by remember { mutableStateOf(initial?.type) }
@@ -71,18 +75,22 @@ fun ExerciseSheet(
     var manualKcal by remember { mutableStateOf(initial?.manualKcal) }
     var time by remember { mutableStateOf(initial?.time ?: defaultTime) }
     var creating by remember { mutableStateOf(false) }
+    val families = remember(types) { exerciseFamilies(types) }
     // A atividade pode ter mudado no banco (ex.: virou favorita): usa a versão atual
     val current = selected?.let { s -> types.firstOrNull { it.id == s.id } ?: s }
+    val currentFamily = current?.let { c -> families.firstOrNull { it.contains(c.id) } }
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         Column(Modifier.fillMaxHeight(0.94f)) {
             if (current == null) {
                 ActivityPicker(
-                    types = types,
+                    families = families,
                     uses = uses,
-                    onPick = { type ->
-                        selected = type
-                        minutes = uses.firstOrNull { it.typeId == type.id }?.minutes ?: DEFAULT_EXERCISE_MINUTES
+                    onPick = { family ->
+                        // Abre no nível e na duração usados por último
+                        val last = lastOf(family, uses)
+                        selected = last.type
+                        minutes = last.minutes
                         manualKcal = null
                     },
                     onToggleFavorite = onToggleFavorite,
@@ -91,6 +99,8 @@ fun ExerciseSheet(
             } else {
                 ExerciseDetails(
                     type = current,
+                    family = currentFamily,
+                    onLevelChange = { selected = it },
                     minutes = minutes,
                     onMinutesChange = { minutes = it },
                     estimatedKcal = exerciseKcal(current, weightKg, minutes),
@@ -100,7 +110,7 @@ fun ExerciseSheet(
                     onTimeChange = { time = it },
                     title = if (editing) "Editar treino" else "Registrar exercício",
                     onChangeActivity = { selected = null },
-                    onToggleFavorite = { onToggleFavorite(current) },
+                    onToggleFavorite = { currentFamily?.let(onToggleFavorite) },
                     onSave = { onSave(ExerciseDraft(current, minutes, manualKcal, time)) },
                     onDelete = onDelete
                 )
@@ -126,17 +136,17 @@ fun ExerciseSheet(
 /** Passo 1: escolher a atividade. */
 @Composable
 private fun ActivityPicker(
-    types: List<ExerciseType>,
+    families: List<ExerciseFamily>,
     uses: List<ExerciseUse>,
-    onPick: (ExerciseType) -> Unit,
-    onToggleFavorite: (ExerciseType) -> Unit,
+    onPick: (ExerciseFamily) -> Unit,
+    onToggleFavorite: (ExerciseFamily) -> Unit,
     onCreate: () -> Unit
 ) {
     val colors = WellioTheme.colors.exercise
     var query by rememberSaveable { mutableStateOf("") }
     var category by remember { mutableStateOf<ExerciseCategory?>(null) }
-    val results = remember(types, query, category) { searchExercises(types, query, category) }
-    val recents = remember(types, uses) { recentExercises(types, uses) }
+    val results = remember(families, query, category) { searchFamilies(families, query, category) }
+    val recents = remember(families, uses) { recentFamilies(families, uses) }
 
     Text("Registrar exercício", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(horizontal = 24.dp))
     Spacer(Modifier.height(12.dp))
@@ -152,11 +162,11 @@ private fun ActivityPicker(
     if (query.isBlank() && recents.isNotEmpty()) {
         Text("Recentes", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 24.dp, top = 12.dp, bottom = 6.dp))
         LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(recents, key = { it.id }) { type ->
+            items(recents, key = { it.category + it.name }) { family ->
                 AssistChip(
-                    onClick = { onPick(type) },
-                    label = { Text(type.name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                    leadingIcon = { Icon(painterResource(exerciseIconRes(type)), contentDescription = null, tint = colors.accent, modifier = Modifier.size(18.dp)) },
+                    onClick = { onPick(family) },
+                    label = { Text(family.name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                    leadingIcon = { Icon(painterResource(exerciseIconRes(family.default)), contentDescription = null, tint = colors.accent, modifier = Modifier.size(18.dp)) },
                     modifier = Modifier.widthIn(max = 220.dp)
                 )
             }
@@ -180,8 +190,8 @@ private fun ActivityPicker(
         }
     }
     LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
-        items(results, key = { it.id }) { type ->
-            ActivityRow(type, onPick = { onPick(type) }, onToggleFavorite = { onToggleFavorite(type) })
+        items(results, key = { it.category + it.name }) { family ->
+            ActivityRow(family, onPick = { onPick(family) }, onToggleFavorite = { onToggleFavorite(family) })
         }
         item(key = "criar") {
             TextButton(onClick = onCreate, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
@@ -194,7 +204,8 @@ private fun ActivityPicker(
 }
 
 @Composable
-private fun ActivityRow(type: ExerciseType, onPick: () -> Unit, onToggleFavorite: () -> Unit) {
+private fun ActivityRow(family: ExerciseFamily, onPick: () -> Unit, onToggleFavorite: () -> Unit) {
+    val type = family.default
     val colors = WellioTheme.colors.exercise
     Row(
         Modifier
@@ -208,10 +219,13 @@ private fun ActivityRow(type: ExerciseType, onPick: () -> Unit, onToggleFavorite
         }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
-            Text(type.name, style = MaterialTheme.typography.bodyLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(family.name, style = MaterialTheme.typography.bodyLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Text(
-                type.kcalPerMinute?.let { "${formatInt(it.toInt())} kcal/min · própria" }
-                    ?: ("${type.mets.toString().replace('.', ',')} MET" + if (type.isCustom) " · própria" else ""),
+                when {
+                    type.kcalPerMinute != null -> "${formatInt(type.kcalPerMinute.toInt())} kcal/min · própria"
+                    family.hasLevels -> family.variants.mapNotNull { it.level?.label?.lowercase() }.joinToString(" · ")
+                    else -> "${type.mets.toString().replace('.', ',')} MET" + if (type.isCustom) " · própria" else ""
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -219,8 +233,8 @@ private fun ActivityRow(type: ExerciseType, onPick: () -> Unit, onToggleFavorite
         IconButton(onClick = onToggleFavorite) {
             Icon(
                 Icons.Default.Star,
-                contentDescription = if (type.isFavorite) "Tirar ${type.name} dos favoritos" else "Favoritar ${type.name}",
-                tint = if (type.isFavorite) colors.accent else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                contentDescription = if (family.isFavorite) "Tirar ${family.name} dos favoritos" else "Favoritar ${family.name}",
+                tint = if (family.isFavorite) colors.accent else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
             )
         }
     }
@@ -230,6 +244,8 @@ private fun ActivityRow(type: ExerciseType, onPick: () -> Unit, onToggleFavorite
 @Composable
 private fun ExerciseDetails(
     type: ExerciseType,
+    family: ExerciseFamily?,
+    onLevelChange: (ExerciseType) -> Unit,
     minutes: Int,
     onMinutesChange: (Int) -> Unit,
     estimatedKcal: Int,
@@ -260,14 +276,36 @@ private fun ExerciseDetails(
             }
             Spacer(Modifier.width(12.dp))
             Text(type.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+            val favorite = family?.isFavorite ?: type.isFavorite
             IconButton(onClick = onToggleFavorite) {
                 Icon(
                     Icons.Default.Star,
-                    contentDescription = if (type.isFavorite) "Tirar dos favoritos" else "Favoritar",
-                    tint = if (type.isFavorite) colors.accent else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                    contentDescription = if (favorite) "Tirar dos favoritos" else "Favoritar",
+                    tint = if (favorite) colors.accent else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
                 )
             }
             TextButton(onClick = onChangeActivity) { Text("Trocar") }
+        }
+        if (family != null && family.hasLevels) {
+            Spacer(Modifier.height(8.dp))
+            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                family.variants.forEachIndexed { index, variant ->
+                    SegmentedButton(
+                        selected = variant.id == type.id,
+                        onClick = { onLevelChange(variant) },
+                        shape = SegmentedButtonDefaults.itemShape(index, family.variants.size),
+                        colors = SegmentedButtonDefaults.colors(activeContainerColor = colors.container, activeContentColor = colors.onContainer),
+                        label = {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(variant.level?.label ?: "", maxLines = 1)
+                                variant.levelHint?.let {
+                                    Text(it, style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                }
+                            }
+                        }
+                    )
+                }
+            }
         }
         Spacer(Modifier.height(8.dp))
         ExerciseDial(

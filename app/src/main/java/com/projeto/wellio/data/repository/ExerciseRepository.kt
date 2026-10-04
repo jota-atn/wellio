@@ -5,6 +5,7 @@ import com.projeto.wellio.data.db.ExerciseEntryEntity
 import com.projeto.wellio.data.db.ExerciseTypeEntity
 import com.projeto.wellio.data.seed.exerciseSeed
 import com.projeto.wellio.domain.calories.exerciseKcal
+import com.projeto.wellio.domain.exercise.Intensity
 import com.projeto.wellio.domain.model.ExerciseEntry
 import com.projeto.wellio.domain.model.ExerciseType
 import com.projeto.wellio.domain.model.ExerciseUse
@@ -92,7 +93,8 @@ class ExerciseRepository(
 
     suspend fun restore(id: String) = dao.restore(id, Instant.now(clock))
 
-    suspend fun setFavorite(typeId: String, favorite: Boolean) = dao.setFavorite(typeId, favorite)
+    /** Favorito vale para a atividade inteira: todos os níveis dela. */
+    suspend fun setFavorite(typeIds: List<String>, favorite: Boolean) = typeIds.forEach { dao.setFavorite(it, favorite) }
 
     /** Cria uma atividade própria (SPEC §8): pela intensidade em METs ou por kcal por minuto. */
     suspend fun createCustom(name: String, category: String, iconKey: String, mets: Double, kcalPerMinute: Double?): ExerciseType {
@@ -118,11 +120,17 @@ class ExerciseRepository(
     }
 }
 
-private fun ExerciseTypeEntity.toDomain() =
-    ExerciseType(id, name, category, mets, iconKey, compendiumCode, isCustom, isFavorite, kcalPerMinute)
+private fun ExerciseTypeEntity.toDomain() = ExerciseType(
+    id, name, category, mets, iconKey, compendiumCode, isCustom, isFavorite, kcalPerMinute,
+    level = Intensity.entries.firstOrNull { it.name == level },
+    levelHint = levelHint
+)
 
-private fun ExerciseType.toEntity() =
-    ExerciseTypeEntity(id, name, category, mets, iconKey, isCustom, compendiumCode, isFavorite, kcalPerMinute)
+private fun ExerciseType.toEntity() = ExerciseTypeEntity(
+    id, name, category, mets, iconKey, isCustom, compendiumCode, isFavorite, kcalPerMinute,
+    level = level?.name,
+    levelHint = levelHint
+)
 
 private fun ExerciseEntryEntity.toDomain() =
     ExerciseEntry(id, date, timestamp, exerciseTypeId, minutes, kcal, kcalIsManual)

@@ -26,30 +26,59 @@ const val DEFAULT_EXERCISE_MINUTES = 30
 const val MAX_EXERCISE_MINUTES = 300
 const val MAX_EXERCISE_KCAL = 5000
 
-/** Um atalho da fileira de favoritos: a atividade e a última duração usada. */
+/**
+ * Uma atividade como aparece na lista (SPEC §8.1): o nome e os níveis dela (Leve, Moderada,
+ * Intensa), ou um só quando não tem variações.
+ */
+data class ExerciseFamily(val name: String, val category: String, val iconKey: String, val variants: List<ExerciseType>) {
+    val isFavorite: Boolean get() = variants.any { it.isFavorite }
+    val hasLevels: Boolean get() = variants.size > 1
+
+    /** Nível que abre por padrão: o moderado, se houver; senão o primeiro. */
+    val default: ExerciseType get() = variants.firstOrNull { it.level == Intensity.Moderate } ?: variants.first()
+
+    fun contains(typeId: String): Boolean = variants.any { it.id == typeId }
+}
+
+/** Junta os níveis de cada atividade (mesmo nome e categoria), do leve ao intenso. */
+fun exerciseFamilies(types: List<ExerciseType>): List<ExerciseFamily> =
+    types.groupBy { it.category to it.name }.map { (key, variants) ->
+        ExerciseFamily(
+            name = key.second,
+            category = key.first,
+            iconKey = variants.first().iconKey,
+            variants = variants.sortedBy { it.level?.ordinal ?: -1 }
+        )
+    }
+
+/** Um atalho da fileira de favoritos: a atividade no nível usado por último e a duração. */
 data class QuickExercise(val type: ExerciseType, val minutes: Int)
 
+/** Nível e duração do último uso da atividade; sem uso, o nível padrão e a duração padrão. */
+fun lastOf(family: ExerciseFamily, uses: List<ExerciseUse>): QuickExercise {
+    val use = uses.firstOrNull { family.contains(it.typeId) }
+    val type = use?.let { u -> family.variants.first { it.id == u.typeId } } ?: family.default
+    return QuickExercise(type, use?.minutes ?: DEFAULT_EXERCISE_MINUTES)
+}
+
 /**
- * Fileira de favoritos da tela (SPEC §8.0): primeiro os favoritos, depois os mais recentes
- * que não são favoritos; cada um com a última duração usada (ou a padrão). Favoritos usados
- * mais recentemente vêm antes; favoritos nunca usados, por nome.
+ * Fileira de favoritos da tela (SPEC §8.0): primeiro as atividades favoritas, depois as
+ * mais recentes que não são favoritas; cada uma no último nível e duração usados.
+ * Favoritas usadas mais recentemente vêm antes; favoritas nunca usadas, por nome.
+ * [uses] vem do uso mais recente para o mais antigo.
  */
 fun quickExercises(types: List<ExerciseType>, uses: List<ExerciseUse>, max: Int = 8): List<QuickExercise> {
-    val byId = types.associateBy { it.id }
-    val lastUse = uses.associateBy { it.typeId }
-    val favorites = types.filter { it.isFavorite }
-        .sortedWith(compareByDescending<ExerciseType> { lastUse[it.id]?.lastAt }.thenBy { it.name })
-    val recents = uses.mapNotNull { byId[it.typeId] }.filter { !it.isFavorite }
-    return (favorites + recents).take(max).map {
-        QuickExercise(it, lastUse[it.id]?.minutes ?: DEFAULT_EXERCISE_MINUTES)
-    }
+    val families = exerciseFamilies(types)
+    fun lastAt(f: ExerciseFamily) = uses.firstOrNull { f.contains(it.typeId) }?.lastAt
+    val favorites = families.filter { it.isFavorite }
+        .sortedWith(compareByDescending<ExerciseFamily> { lastAt(it) }.thenBy { it.name })
+    val recents = recentFamilies(families, uses).filter { !it.isFavorite }
+    return (favorites + recents).take(max).map { lastOf(it, uses) }
 }
 
 /** Atividades usadas por último, da mais recente para a mais antiga (faixa de Recentes do registro). */
-fun recentExercises(types: List<ExerciseType>, uses: List<ExerciseUse>, max: Int = 6): List<ExerciseType> {
-    val byId = types.associateBy { it.id }
-    return uses.mapNotNull { byId[it.typeId] }.take(max)
-}
+fun recentFamilies(families: List<ExerciseFamily>, uses: List<ExerciseUse>, max: Int = 6): List<ExerciseFamily> =
+    uses.mapNotNull { use -> families.firstOrNull { it.contains(use.typeId) } }.distinct().take(max)
 
 /** Texto sem acento e em minúsculas, para a busca achar "musculacao" em "Musculação". */
 fun normalize(text: String): String =
@@ -59,12 +88,12 @@ fun normalize(text: String): String =
  * Busca (SPEC §8.0): sem acento nem maiúsculas, opcionalmente numa categoria. Nomes que
  * começam com o texto vêm antes; depois os que só contêm; empate por nome.
  */
-fun searchExercises(types: List<ExerciseType>, query: String, category: ExerciseCategory? = null): List<ExerciseType> {
+fun searchFamilies(families: List<ExerciseFamily>, query: String, category: ExerciseCategory? = null): List<ExerciseFamily> {
     val q = normalize(query)
-    return types
+    return families
         .filter { category == null || ExerciseCategory.of(it.category) == category }
         .filter { q.isEmpty() || normalize(it.name).contains(q) }
-        .sortedWith(compareBy<ExerciseType> { if (q.isNotEmpty() && normalize(it.name).startsWith(q)) 0 else 1 }.thenBy { normalize(it.name) })
+        .sortedWith(compareBy<ExerciseFamily> { if (q.isNotEmpty() && normalize(it.name).startsWith(q)) 0 else 1 }.thenBy { normalize(it.name) })
 }
 
 /**

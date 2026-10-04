@@ -29,8 +29,34 @@ class ExerciseTest {
         assertEquals(ExerciseCategory.Other, ExerciseCategory.of("Sumiu"))
     }
 
+    private fun level(id: String, name: String, intensity: Intensity) =
+        ExerciseType(id, name, "Cardio", mets = 5.0 + intensity.ordinal, iconKey = "exercise.run", level = intensity)
+
+    private val corridaLeve = level("c1", "Corrida", Intensity.Light)
+    private val corridaModerada = level("c2", "Corrida", Intensity.Moderate)
+    private val corridaIntensa = level("c3", "Corrida", Intensity.Vigorous)
+
     @Test
-    fun `fileira traz favoritos primeiro e depois recentes, com a ultima duracao`() {
+    fun `niveis da mesma atividade viram uma so, do leve ao intenso`() {
+        val families = exerciseFamilies(listOf(corridaIntensa, bike, corridaLeve, corridaModerada))
+
+        assertEquals(2, families.size)
+        val corrida = families.first { it.name == "Corrida" }
+        assertEquals(listOf("c1", "c2", "c3"), corrida.variants.map { it.id })
+        assertEquals("c2", corrida.default.id)
+        assertTrue(corrida.hasLevels)
+    }
+
+    @Test
+    fun `ultimo uso da atividade traz o nivel e a duracao`() {
+        val corrida = exerciseFamilies(listOf(corridaLeve, corridaModerada, corridaIntensa)).single()
+
+        assertEquals(QuickExercise(corridaIntensa, 40), lastOf(corrida, listOf(use("c3", 40, 10))))
+        assertEquals(QuickExercise(corridaModerada, DEFAULT_EXERCISE_MINUTES), lastOf(corrida, emptyList()))
+    }
+
+    @Test
+    fun `fileira traz favoritas primeiro e depois recentes, com a ultima duracao`() {
         val uses = listOf(use("bike", 45, 12), use("corrida", 30, 9))
 
         val quick = quickExercises(todos, uses)
@@ -42,15 +68,25 @@ class ExerciseTest {
     }
 
     @Test
+    fun `fileira mostra cada atividade uma vez, no ultimo nivel usado`() {
+        val uses = listOf(use("c3", 20, 12), use("c1", 50, 9))
+
+        val quick = quickExercises(listOf(corridaLeve, corridaModerada, corridaIntensa), uses)
+
+        assertEquals(listOf(QuickExercise(corridaIntensa, 20)), quick)
+    }
+
+    @Test
     fun `fileira respeita o maximo`() {
         assertEquals(1, quickExercises(todos, emptyList(), max = 1).size)
     }
 
     @Test
-    fun `recentes vem do uso mais recente para o mais antigo`() {
-        val uses = listOf(use("natacao", 20, 15), use("bike", 45, 12))
+    fun `recentes vem do uso mais recente para o mais antigo, sem repetir`() {
+        val families = exerciseFamilies(todos + listOf(corridaLeve, corridaIntensa))
+        val uses = listOf(use("natacao", 20, 15), use("c3", 30, 13), use("c1", 30, 12))
 
-        assertEquals(listOf("natacao", "bike"), recentExercises(todos, uses).map { it.id })
+        assertEquals(listOf("Natação", "Corrida"), recentFamilies(families, uses).map { it.name })
     }
 
     @Test
@@ -58,15 +94,15 @@ class ExerciseTest {
         val caminhada = type("cam", "Caminhada")
         val corridaCaminhada = type("cc", "Corrida e caminhada")
 
-        val result = searchExercises(listOf(corridaCaminhada, caminhada, natacao), "CAMIN")
+        val result = searchFamilies(exerciseFamilies(listOf(corridaCaminhada, caminhada, natacao)), "CAMIN")
 
-        assertEquals(listOf("cam", "cc"), result.map { it.id })
-        assertEquals(listOf("natacao"), searchExercises(todos, "natacao").map { it.id })
+        assertEquals(listOf("Caminhada", "Corrida e caminhada"), result.map { it.name })
+        assertEquals(listOf("Natação"), searchFamilies(exerciseFamilies(todos), "natacao").map { it.name })
     }
 
     @Test
     fun `busca filtra pela categoria`() {
-        assertEquals(listOf("natacao"), searchExercises(todos, "", ExerciseCategory.Water).map { it.id })
+        assertEquals(listOf("Natação"), searchFamilies(exerciseFamilies(todos), "", ExerciseCategory.Water).map { it.name })
     }
 
     @Test

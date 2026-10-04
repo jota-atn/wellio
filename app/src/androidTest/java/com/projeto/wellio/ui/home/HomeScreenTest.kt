@@ -34,6 +34,7 @@ class HomeScreenTest {
 
     private var saved: List<HomeCard>? = null
     private var dismissed = false
+    private var registered: String? = null
 
     private fun show(layout: List<HomeCard>, showSuggestion: Boolean = false) {
         // Como no app: o que é salvo volta como o layout da Home
@@ -48,7 +49,8 @@ class HomeScreenTest {
                         saved = it
                         current.value = it
                     },
-                    onDismissSuggestion = { dismissed = true }
+                    onDismissSuggestion = { dismissed = true },
+                    register = { module, _ -> registered = module.title }
                 ) { module, size, modifier ->
                     Box(modifier.testTag("card-${module.id.key}")) { Text("${module.title} ${size.name}") }
                 }
@@ -277,5 +279,36 @@ class HomeScreenTest {
 
         dragHandle(-360f)
         assertEquals(listOf(HomeCard("water", CardSize.Half), peso), saved)
+    }
+
+    @Test
+    fun fabAbreOLequeComOsModulos() {
+        show(listOf(agua))
+
+        compose.onNodeWithContentDescription("Registrar").performClick()
+
+        listOf("Água", "Alimento", "Exercício", "Peso").forEach {
+            compose.onNodeWithContentDescription("Registrar $it").assertIsDisplayed()
+        }
+    }
+
+    @Test
+    fun itemDoFabAbreORegistroDoModulo() {
+        show(listOf(agua))
+
+        compose.onNodeWithContentDescription("Registrar").performClick()
+        compose.onNodeWithContentDescription("Registrar Peso").performClick()
+
+        // O registro abre na recomposição seguinte ao toque
+        compose.runOnIdle { assertEquals("Peso", registered) }
+    }
+
+    @Test
+    fun fabSomeNaEdicao() {
+        show(listOf(agua))
+
+        enterEditing()
+
+        compose.onNodeWithContentDescription("Registrar").assertDoesNotExist()
     }
 }

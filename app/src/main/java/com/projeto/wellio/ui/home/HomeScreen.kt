@@ -50,7 +50,8 @@ fun HomeRoute(
         onUpdateGoal = viewModel::updateGoal,
         onSaveLayout = viewModel::saveLayout,
         onDismissSuggestion = viewModel::dismissSuggestion,
-        onEditingChange = onEditingChange
+        onEditingChange = onEditingChange,
+        register = { module, onClose -> module.Register(onClose) }
     ) { module, size, modifier ->
         module.HomeCard(size, onOpen = { onOpenModule(module) }, modifier = modifier)
     }
@@ -71,8 +72,9 @@ private fun titleOf(card: HomeCard) = catalog.firstOrNull { it.key == card.key }
 /**
  * Home (SPEC §5.1 e §5.2): os cards do layout do usuário em linhas que preenchem a tela.
  * Segurar um card entra no modo de edição, que mexe num rascunho salvo ao concluir.
- * [moduleCard] desenha o card de um módulo; separado para a tela poder ser testada sem os
- * ViewModels dos cards.
+ * O FAB abre o registro rápido de cada módulo. [moduleCard] desenha o card de um módulo e
+ * [register] abre o registro dele; separados para a tela poder ser testada sem os
+ * ViewModels dos módulos.
  */
 @Composable
 fun HomeScreen(
@@ -82,8 +84,11 @@ fun HomeScreen(
     onSaveLayout: (List<HomeCard>) -> Unit,
     onDismissSuggestion: () -> Unit,
     onEditingChange: (Boolean) -> Unit = {},
+    register: @Composable (WellioModule, onClose: () -> Unit) -> Unit = { _, _ -> },
     moduleCard: @Composable (WellioModule, CardSize, Modifier) -> Unit
 ) {
+    // Módulo com o registro rápido aberto pelo FAB
+    var registering by remember { mutableStateOf<WellioModule?>(null) }
     var goalBeingEdited by remember { mutableStateOf<GoalType?>(null) }
     var showDetails by remember { mutableStateOf(false) }
     // Modo de edição: o layout sendo mexido (null = fora da edição)
@@ -106,66 +111,71 @@ fun HomeScreen(
         HomeCardSlot(card, state, moduleCard, onDashboardClick = { showDetails = true }, onGoalClick = { goalBeingEdited = it }, modifier)
     }
 
-    Scaffold(containerColor = MaterialTheme.colorScheme.background) { innerPadding ->
-        Column(Modifier.padding(innerPadding).fillMaxSize()) {
-            Box(Modifier.height(56.dp), contentAlignment = Alignment.CenterStart) {
-                if (editing) {
-                    EditBar(onAddCard = { showCatalog = true }, onDone = ::finishEditing)
-                } else {
-                    Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(onClick = onMenuClick) {
-                            Icon(Icons.Default.Menu, contentDescription = "Abrir menu")
-                        }
-                        Spacer(Modifier.weight(1f))
-                        IconButton(onClick = { draft = state.layout }) {
-                            Icon(Icons.Default.Edit, contentDescription = "Editar Home")
+    Box(Modifier.fillMaxSize()) {
+        Scaffold(containerColor = MaterialTheme.colorScheme.background) { innerPadding ->
+            Column(Modifier.padding(innerPadding).fillMaxSize()) {
+                Box(Modifier.height(56.dp), contentAlignment = Alignment.CenterStart) {
+                    if (editing) {
+                        EditBar(onAddCard = { showCatalog = true }, onDone = ::finishEditing)
+                    } else {
+                        Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = onMenuClick) {
+                                Icon(Icons.Default.Menu, contentDescription = "Abrir menu")
+                            }
+                            Spacer(Modifier.weight(1f))
+                            IconButton(onClick = { draft = state.layout }) {
+                                Icon(Icons.Default.Edit, contentDescription = "Editar Home")
+                            }
                         }
                     }
                 }
-            }
-            BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
-                val rows = rowLayout(
-                    availableHeightDp = (maxHeight - EdgePadding - 8.dp).value,
-                    fontScale = fontScale,
-                    spacingDp = Gutter.value
-                )
-                val rowHeight = rows.rowHeightDp.dp
-                Column(
-                    Modifier
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
-                        // Respiro no alto para os selos da edição não serem cortados
-                        .padding(start = EdgePadding, end = EdgePadding, top = 8.dp, bottom = EdgePadding)
-                        // Tocar fora dos cards sai da edição (SPEC §5.2)
-                        .pointerInput(editing) { if (editing) detectTapGestures { finishEditing() } },
-                    verticalArrangement = Arrangement.spacedBy(Gutter)
-                ) {
-                    HomeGrid(
-                        cards = cards,
-                        editing = editing,
-                        rowHeight = rowHeight,
-                        gutter = Gutter,
-                        onStartEditing = { if (draft == null) draft = state.layout },
-                        onChange = { draft = it },
-                        onQuickAction = { key, action ->
-                            val index = state.layout.indexOfFirst { it.key == key }
-                            when (action) {
-                                QuickAction.Hide -> onSaveLayout(hideCard(state.layout, index))
-                                QuickAction.ToggleSize -> onSaveLayout(toggleSize(state.layout, index))
-                            }
-                        },
-                        onCardEditorChange = { cardEditorOpen = it },
-                        cardTitle = ::titleOf,
-                        modifier = Modifier.fillMaxWidth(),
-                        card = slot
+                BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
+                    val rows = rowLayout(
+                        availableHeightDp = (maxHeight - EdgePadding - 8.dp).value,
+                        fontScale = fontScale,
+                        spacingDp = Gutter.value
                     )
-                    if (!editing && state.showSuggestion && freeRows(cards, rows.count) > 0 && catalog.any { entry -> cards.none { it.key == entry.key } }) {
-                        AddCardSuggestion(rowHeight, onClick = { showCatalog = true }, onDismiss = onDismissSuggestion)
+                    val rowHeight = rows.rowHeightDp.dp
+                    Column(
+                        Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            // Respiro no alto para os selos da edição não serem cortados
+                            .padding(start = EdgePadding, end = EdgePadding, top = 8.dp, bottom = EdgePadding)
+                            // Tocar fora dos cards sai da edição (SPEC §5.2)
+                            .pointerInput(editing) { if (editing) detectTapGestures { finishEditing() } },
+                        verticalArrangement = Arrangement.spacedBy(Gutter)
+                    ) {
+                        HomeGrid(
+                            cards = cards,
+                            editing = editing,
+                            rowHeight = rowHeight,
+                            gutter = Gutter,
+                            onStartEditing = { if (draft == null) draft = state.layout },
+                            onChange = { draft = it },
+                            onQuickAction = { key, action ->
+                                val index = state.layout.indexOfFirst { it.key == key }
+                                when (action) {
+                                    QuickAction.Hide -> onSaveLayout(hideCard(state.layout, index))
+                                    QuickAction.ToggleSize -> onSaveLayout(toggleSize(state.layout, index))
+                                }
+                            },
+                            onCardEditorChange = { cardEditorOpen = it },
+                            cardTitle = ::titleOf,
+                            modifier = Modifier.fillMaxWidth(),
+                            card = slot
+                        )
+                        if (!editing && state.showSuggestion && freeRows(cards, rows.count) > 0 && catalog.any { entry -> cards.none { it.key == entry.key } }) {
+                            AddCardSuggestion(rowHeight, onClick = { showCatalog = true }, onDismiss = onDismissSuggestion)
+                        }
                     }
                 }
             }
         }
+        RegisterFab(modules = Modules.all, visible = !editing, onPick = { registering = it })
     }
+
+    registering?.let { module -> register(module) { registering = null } }
 
     if (showCatalog) {
         CatalogSheet(

@@ -1,5 +1,6 @@
 package com.projeto.wellio.ui.navigation
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -18,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -49,11 +51,7 @@ fun WellioNavHost() {
             enterTransition = enterFromRight,
             exitTransition = exitToLeft,
             popEnterTransition = popEnterFromLeft,
-            popExitTransition = popExitToRight,
-            // Gesto de voltar (voltar preditivo): mesma animação do voltar, acompanhando o dedo,
-            // em vez do padrão da biblioteca, que encolhe a tela num cartão
-            predictivePopEnterTransition = { _ -> popEnterFromLeft() },
-            predictivePopExitTransition = { _ -> popExitToRight() }
+            popExitTransition = popExitToRight
         ) {
             composable<HomeDestination> {
                 HomeRoute(
@@ -62,12 +60,15 @@ fun WellioNavHost() {
                 )
             }
             composable<WaterDestination> {
+                JellyBack(navController)
                 WaterRoute(onBack = { navController.popBackStack() })
             }
             composable<WeightDestination> {
+                JellyBack(navController)
                 WeightRoute(onBack = { navController.popBackStack() })
             }
             composable<ComingSoonDestination> { entry ->
+                JellyBack(navController)
                 ComingSoonScreen(
                     title = entry.toRoute<ComingSoonDestination>().title,
                     onBack = { navController.popBackStack() }
@@ -75,6 +76,16 @@ fun WellioNavHost() {
             }
         }
     }
+}
+
+/**
+ * Gesto de voltar com a mesma animação "gelatina" da seta (SPEC §2.9). Registrado dentro da
+ * tela, tem prioridade sobre o voltar preditivo do NavHost, que faz a tela seguir o dedo e
+ * comprime a mola: ao soltar, sobrava só o fim da animação e a volta parecia rápida demais.
+ */
+@Composable
+private fun JellyBack(navController: NavHostController) {
+    BackHandler { navController.popBackStack() }
 }
 
 /** Item da sidebar → destino; o que ainda não existe cai em "Em breve". */

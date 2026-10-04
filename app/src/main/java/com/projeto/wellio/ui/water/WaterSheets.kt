@@ -33,6 +33,7 @@ import com.projeto.wellio.ui.format.formatKg
 import com.projeto.wellio.domain.water.parseWaterAmount
 import com.projeto.wellio.domain.water.suggestedIcon
 import com.projeto.wellio.domain.water.validateContainer
+import com.projeto.wellio.ui.components.TimePickerDialog
 import com.projeto.wellio.ui.format.formatMl
 import com.projeto.wellio.ui.icons.containerIconRes
 import com.projeto.wellio.ui.theme.WellioTheme
@@ -146,18 +147,6 @@ fun WaterEntrySheet(
             }
         )
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun TimePickerDialog(initial: LocalTime, onDismiss: () -> Unit, onConfirm: (LocalTime) -> Unit) {
-    val state = rememberTimePickerState(initialHour = initial.hour, initialMinute = initial.minute, is24Hour = true)
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = { TextButton(onClick = { onConfirm(LocalTime.of(state.hour, state.minute)) }) { Text("OK") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } },
-        text = { TimePicker(state = state) }
-    )
 }
 
 /** Criar ([container] = null) ou editar um recipiente: ícone, nome, volume e se vira botão no card. */

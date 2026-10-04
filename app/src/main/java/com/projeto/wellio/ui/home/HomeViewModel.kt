@@ -47,7 +47,9 @@ data class HomeUiState(
     /** % do dia nos últimos 7 dias, do mais antigo para hoje. */
     val lastWeek: List<DayScore> = emptyList(),
     /** Cards da Home, na ordem do usuário. */
-    val layout: List<HomeCard> = DefaultHomeLayout
+    val layout: List<HomeCard> = DefaultHomeLayout,
+    /** Mostrar "+ Adicionar card" nas linhas vazias (até ser dispensada). */
+    val showSuggestion: Boolean = true
 )
 
 /** Cards que a Home sabe desenhar: o Dashboard e o de cada módulo. */
@@ -92,9 +94,9 @@ class HomeViewModel(container: AppContainer) : ViewModel() {
         today.flatMapLatest { day -> totals(day..day) },
         today.flatMapLatest { day -> totals(weekOf(day)) },
         combine(summaries, lastWeek, ::Pair),
-        layout
-    ) { goals, todayTotals, weekTotals, (summaries, lastWeek), layout ->
-        HomeUiState(goals, todayTotals, weekTotals, summaries, lastWeek, layout)
+        combine(layout, layoutStore.suggestionDismissed, ::Pair)
+    ) { goals, todayTotals, weekTotals, (summaries, lastWeek), (layout, dismissed) ->
+        HomeUiState(goals, todayTotals, weekTotals, summaries, lastWeek, layout, showSuggestion = !dismissed)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
 
     private fun totals(days: ClosedRange<LocalDate>): Flow<Totals> = combine(
@@ -105,6 +107,10 @@ class HomeViewModel(container: AppContainer) : ViewModel() {
 
     fun saveLayout(cards: List<HomeCard>) {
         viewModelScope.launch { layoutStore.save(encodeLayout(cards)) }
+    }
+
+    fun dismissSuggestion() {
+        viewModelScope.launch { layoutStore.dismissSuggestion() }
     }
 
     fun updateGoal(type: GoalType, daily: Int, weekly: Int) {

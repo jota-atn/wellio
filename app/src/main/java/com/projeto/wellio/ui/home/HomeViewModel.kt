@@ -12,16 +12,10 @@ import com.projeto.wellio.data.repository.ExerciseRepository
 import com.projeto.wellio.data.repository.FoodRepository
 import com.projeto.wellio.data.repository.WaterRepository
 import com.projeto.wellio.data.time.todayFlow
-import com.projeto.wellio.domain.model.ExerciseType
-import com.projeto.wellio.domain.model.Food
 import com.projeto.wellio.domain.model.Goal
 import com.projeto.wellio.domain.model.GoalType
 import com.projeto.wellio.domain.model.Goals
 import com.projeto.wellio.domain.model.Totals
-import com.projeto.wellio.domain.model.WaterContainer
-import com.projeto.wellio.domain.model.WaterEntry
-import com.projeto.wellio.domain.water.lastEntry
-import com.projeto.wellio.domain.water.quickButtons
 import com.projeto.wellio.domain.time.weekOf
 import com.projeto.wellio.domain.goals.DayScore
 import com.projeto.wellio.domain.goals.dayScore
@@ -42,10 +36,6 @@ data class HomeUiState(
     val goals: Goals = Goals.Default,
     val today: Totals = Totals(),
     val week: Totals = Totals(),
-    val foods: List<Food> = emptyList(),
-    val exerciseTypes: List<ExerciseType> = emptyList(),
-    val waterQuickButtons: List<WaterContainer> = emptyList(),
-    val lastWaterToday: WaterEntry? = null,
     /** Resumo de hoje de cada módulo, na ordem de [Modules.all]. */
     val summaries: List<Summary> = emptyList(),
     /** % do dia nos últimos 7 dias, do mais antigo para hoje. */
@@ -80,20 +70,15 @@ class HomeViewModel(container: AppContainer) : ViewModel() {
         }
     }
 
-    private val water = combine(
-        waterRepository.containers,
-        today.flatMapLatest { waterRepository.entries(it) }
-    ) { containers, entries -> quickButtons(containers) to lastEntry(entries) }
 
     val uiState: StateFlow<HomeUiState> = combine(
         goalsStore.goals,
         today.flatMapLatest { day -> totals(day..day) },
         today.flatMapLatest { day -> totals(weekOf(day)) },
-        combine(foodRepository.foods, exerciseRepository.types, ::Pair),
-        combine(water, summaries, lastWeek, ::Triple)
-    ) { goals, todayTotals, weekTotals, (foods, types), (water, summaries, lastWeek) ->
-        val (quick, last) = water
-        HomeUiState(goals, todayTotals, weekTotals, foods, types, quick, last, summaries, lastWeek)
+        summaries,
+        lastWeek
+    ) { goals, todayTotals, weekTotals, summaries, lastWeek ->
+        HomeUiState(goals, todayTotals, weekTotals, summaries, lastWeek)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
 
     private fun totals(days: ClosedRange<LocalDate>): Flow<Totals> = combine(
@@ -101,23 +86,6 @@ class HomeViewModel(container: AppContainer) : ViewModel() {
         foodRepository.kcal(days),
         exerciseRepository.kcal(days)
     ) { water, consumed, burned -> Totals(water, consumed, burned) }
-
-    fun addWater(container: WaterContainer) {
-        viewModelScope.launch { waterRepository.add(container.amountMl, container.name) }
-    }
-
-    fun undoLastWater() {
-        val last = uiState.value.lastWaterToday ?: return
-        viewModelScope.launch { waterRepository.delete(last.id) }
-    }
-
-    fun addFood(food: Food, portions: Double) {
-        viewModelScope.launch { foodRepository.add(food, portions) }
-    }
-
-    fun addExercise(type: ExerciseType, minutes: Int) {
-        viewModelScope.launch { exerciseRepository.add(type, minutes) }
-    }
 
     fun updateGoal(type: GoalType, daily: Int, weekly: Int) {
         // Semanal igual a diária × 7 continua automática; qualquer outro valor vira meta própria

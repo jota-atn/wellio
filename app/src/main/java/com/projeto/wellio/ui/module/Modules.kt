@@ -1,6 +1,12 @@
 package com.projeto.wellio.ui.module
 
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import com.projeto.wellio.AppContainer
+import com.projeto.wellio.ui.exercise.ExerciseHomeCard
+import com.projeto.wellio.ui.food.FoodHomeCard
+import com.projeto.wellio.ui.water.WaterHomeCard
+import com.projeto.wellio.ui.weight.WeightHomeCard
 import com.projeto.wellio.R
 import com.projeto.wellio.data.time.todayFlow
 import com.projeto.wellio.domain.model.GoalType
@@ -34,6 +40,9 @@ object WaterModule : WellioModule {
         todayFlow(container.clock).flatMapLatest { container.waterRepository.totalMl(it..it) },
         container.goalsStore.goals
     ) { total, goals -> waterSummary(total, goals.water.daily) }
+
+    @Composable
+    override fun HomeCard(size: CardSize, onOpen: () -> Unit, modifier: Modifier) = WaterHomeCard(size, onOpen, modifier)
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -49,6 +58,10 @@ object FoodModule : WellioModule {
         todayFlow(container.clock).flatMapLatest { container.foodRepository.kcal(it..it) },
         container.goalsStore.goals
     ) { kcal, goals -> foodSummary(kcal, goals.food.daily) }
+
+    // Sem tela ainda: tocar no card registra
+    @Composable
+    override fun HomeCard(size: CardSize, onOpen: () -> Unit, modifier: Modifier) = FoodHomeCard(size, modifier)
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -64,6 +77,10 @@ object ExerciseModule : WellioModule {
         todayFlow(container.clock).flatMapLatest { container.exerciseRepository.kcal(it..it) },
         container.goalsStore.goals
     ) { kcal, goals -> exerciseSummary(kcal, goals.exercise.daily) }
+
+    // Sem tela ainda: tocar no card registra
+    @Composable
+    override fun HomeCard(size: CardSize, onOpen: () -> Unit, modifier: Modifier) = ExerciseHomeCard(size, modifier)
 }
 
 object WeightModule : WellioModule {
@@ -81,4 +98,7 @@ object WeightModule : WellioModule {
     ) { today, entries, goal ->
         weightSummary(latestWeight(entries)?.weightKg, weekChange(entries, today), goal)
     }
+
+    @Composable
+    override fun HomeCard(size: CardSize, onOpen: () -> Unit, modifier: Modifier) = WeightHomeCard(size, onOpen, modifier)
 }

@@ -62,7 +62,9 @@ fun WellioNavHost() {
             composable<HomeDestination> {
                 HomeRoute(
                     onMenuClick = { scope.launch { drawerState.open() } },
-                    onOpenWater = { navController.navigate(WaterDestination) }
+                    onOpenModule = { module ->
+                        navController.navigate(module.destination ?: ComingSoonDestination(module.title))
+                    }
                 )
             }
             composable<WaterDestination> {

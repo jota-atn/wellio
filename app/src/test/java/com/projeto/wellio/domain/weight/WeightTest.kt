@@ -127,4 +127,11 @@ class WeightTest {
     fun `ritmo na direcao contraria nao projeta`() {
         assertNull(projectedDate(perder, 72.0, 0.3, LocalDate.of(2026, 10, 1)))
     }
+
+    @Test
+    fun `variacao da semana olha so os ultimos 7 dias`() {
+        val today = LocalDate.of(2026, 9, 20)
+
+        assertEquals(-0.5, weekChange(listOf(weighing(1, 75.0), weighing(14, 73.0), weighing(20, 72.5)), today)!!, 0.0)
+    }
 }

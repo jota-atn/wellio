@@ -92,3 +92,7 @@ fun projectedDate(goal: WeightGoal, currentKg: Double, ratePerWeek: Double?, tod
     if (days <= 0 || days > 730) return null
     return today.plusDays(ceil(days).toLong())
 }
+
+/** Variação nos últimos 7 dias (da primeira à última pesagem desse intervalo); null com menos de duas. */
+fun weekChange(entries: List<WeightEntry>, today: LocalDate): Double? =
+    trendChange(entries.filter { !it.date.isBefore(today.minusDays(7)) }.sortedBy { it.date })

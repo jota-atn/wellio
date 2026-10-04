@@ -10,6 +10,101 @@ Total: **136 atividades** em 7 categorias.
 - **Original**: descrição em inglês do Compendium, para conferência.
 - Itens marcados com ⚠️ são aproximações: a atividade não existe no Compendium e usa o código mais próximo.
 
+
+<!-- familias:inicio -->
+## Como aparecem no app (67 atividades)
+
+Cada exercício aparece uma vez só; os que têm variações ganham níveis (Leve / Moderada / Intensa) no registro, cada um com o MET abaixo. Gerado por `tools/compendium/gerar_seed.py` a partir de `tools/compendium/familias.py`; as tabelas mais abaixo são a base do Compendium de onde saem os METs.
+
+**Cardio**
+
+- Caminhada: Leve 3,5 (passeio, ~4 km/h) · Moderada 4,8 (~6 km/h) · Intensa 5,5 (~7 km/h)
+- Caminhada na esteira: Leve 3,8 (~5 km/h) · Moderada 4,8 (~6 km/h) · Intensa 5,8 (~7 km/h)
+- Passear com o cachorro: 3,0 MET
+- Trilha: Leve 5,3 (ritmo normal) · Intensa 7,8 (com mochila)
+- Corrida: Leve 8,5 (~8 km/h) · Moderada 10,5 (~11 km/h) · Intensa 13,0 (~14 km/h)
+- Corrida em trilha: 9,3 MET
+- Subir escadas: Moderada 6,8 (andando) · Intensa 15,0 (correndo)
+- Simulador de escada: 9,3 MET
+- Bicicleta: Leve 4,3 (passeio) · Moderada 7,0 (ritmo constante) · Intensa 9,0 (forte)
+- Mountain bike: 8,5 MET
+- Bike indoor: Moderada 6,8 (ergométrica) · Intensa 9,0 (spinning)
+- Elíptico: Moderada 5,0 · Intensa 9,0
+- Remo ergômetro: Moderada 5,0 · Intensa 7,3
+- Pular corda: Leve 8,3 (ritmo lento) · Intensa 11,0 (ritmo rápido)
+- Aeróbica / step: 7,3 MET
+- HIIT: Moderada 7,0 · Intensa 11,0 (burpees, Tabata)
+
+**Musculação**
+
+- Musculação: Leve 3,5 (8–15 repetições) · Moderada 5,0 (cargas pesadas) · Intensa 5,8 (circuito, supersets)
+- Academia (musculação + aeróbico): 5,0 MET
+- Aula de condicionamento físico: 7,8 MET
+- CrossFit: 7,5 MET
+- Treino em circuito: 5,0 MET
+- Calistenia: Leve 3,0 (peso do corpo) · Moderada 3,8 · Intensa 7,5 (barra, burpees)
+- Treino em casa: Leve 3,8 · Intensa 6,0 (vídeo intenso)
+- Abdominais e prancha: 2,8 MET
+
+**Lutas**
+
+- Boxe: Leve 5,8 (saco de pancada) · Moderada 7,8 (sparring) · Intensa 12,3 (luta no ringue)
+- Kickboxing / Muay Thai: 7,3 MET
+- Artes marciais (jiu-jitsu, karatê): Leve 5,3 (iniciante) · Intensa 10,3 (ritmo de treino)
+- Judô: 11,3 MET
+- Taekwondo: 14,3 MET
+- Capoeira: 10,3 MET
+
+**Esportes**
+
+- Futebol: Moderada 7,0 (pelada) · Intensa 9,5 (competitivo)
+- Futsal: 7,8 MET
+- Basquete: Leve 5,0 (arremessos) · Moderada 7,5 (treino) · Intensa 8,0 (jogo)
+- Vôlei: Leve 4,0 (recreativo) · Intensa 6,0 (competitivo)
+- Vôlei de praia / futevôlei: 8,0 MET
+- Tênis: Leve 4,5 (duplas) · Intensa 8,0 (simples)
+- Beach tennis: 4,5 MET
+- Tênis de mesa: 4,0 MET
+- Badminton: 5,5 MET
+- Squash: 7,3 MET
+- Handebol: 8,0 MET
+- Golfe: 4,5 MET
+- Skate: 5,0 MET
+- Patins: 7,0 MET
+- Escalada: Moderada 5,8 (via moderada) · Intensa 8,8 (boulder)
+- Cavalgada / hipismo: 5,5 MET
+- Boliche: 3,8 MET
+
+**Aquáticos**
+
+- Natação: Leve 5,8 (lento) · Moderada 8,0 (moderado) · Intensa 9,8 (rápido)
+- Hidroginástica: 5,5 MET
+- Corrida na água: 9,8 MET
+- Surfe: 3,0 MET
+- Stand up paddle: 6,5 MET
+- Caiaque: 5,0 MET
+- Mergulho: 6,8 MET
+
+**Zen/Dança**
+
+- Yoga: Leve 2,3 (Hatha) · Moderada 2,7 (Vinyasa) · Intensa 4,0 (Power)
+- Pilates: 2,8 MET
+- Alongamento: 2,3 MET
+- Tai chi / qi gong: 3,3 MET
+- Zumba: 6,5 MET
+- Dança: Leve 3,0 (salão, lenta) · Moderada 4,5 (salsa, forró, samba) · Intensa 9,8 (balada, quadrilha)
+- Ballet / jazz: 5,0 MET
+- Pole dance: 4,5 MET
+
+**Outros**
+
+- Tarefas domésticas: Moderada 3,3 (moderadas) · Intensa 4,3 (faxina pesada)
+- Carregar móveis ou caixas: 5,8 MET
+- Jardinagem: 3,8 MET
+- Videogame ativo: 4,0 MET
+- Sexo: 3,0 MET
+<!-- familias:fim -->
+
 ## Cardio (46)
 
 | Nome | MET | Código | Original |

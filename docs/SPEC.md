@@ -475,6 +475,7 @@ Quando as kcal consumidas passam da faixa da meta (+10%), o card de Alimentaçã
 - **Fileira de favoritos** abaixo da fogueira (como os recipientes da Água): favoritos (★) e mais recentes, cada um com ícone e a última duração usada (`Corrida · 30 min`). Tocar registra na hora, com desfazer; segurar abre o registro já preenchido; "+" abre o registro vazio.
 - **Registro** em sheet de tela cheia:
   - **Escolha da atividade**: busca no topo, faixa de Recentes/Favoritos, chips das 7 categorias e a lista filtrada; estrela marca favorito. No fim da lista, **"+ Criar atividade"**: nome, categoria e intensidade (leve ≈ 3, moderada ≈ 5, intensa ≈ 8 METs) ou kcal por minuto; fica salva e aparece na busca.
+  - **Nível**: nas atividades com variações, um seletor Leve / Moderada / Intensa (com a dica de cada nível) acima do mostrador; abre no nível usado por último (ou no moderado). Favorito vale para a atividade inteira.
   - **Duração num mostrador de relógio**: arrastar o ponteiro em volta marca os minutos (uma volta = 60 min; continua em voltas seguintes, até 300 min), com vibração a cada 5 min.
   - **kcal**: a estimativa (METs × peso atual × horas) aparece grande e muda ao vivo com o mostrador. Tocar nela permite digitar o valor do relógio; fica marcado "do relógio" e para de acompanhar o tempo (↺ volta para a estimativa).
   - Horário (padrão: agora) e o dia aberto na tela.
@@ -486,7 +487,8 @@ Quando as kcal consumidas passam da faixa da meta (+10%), o card de Alimentaçã
 ### 8.1 Base de exercícios
 
 - Fonte: **Compendium of Physical Activities** (versão adulta de 2024), referência oficial dos valores de METs.
-- Uma seleção curada de **~100 atividades**, traduzidas e agrupadas nas categorias do app (Cardio, Musculação, Lutas, Esportes, Aquáticos, Zen/Dança, Outros). Cada uma guarda o código do Compendium (`compendiumCode`).
+- Uma seleção curada de **67 atividades**, traduzidas e agrupadas nas categorias do app (Cardio, Musculação, Lutas, Esportes, Aquáticos, Zen/Dança, Outros). **Cada exercício aparece uma vez só**; os que têm variações (Corrida, Caminhada, Bicicleta, Natação, Yoga…) ganham até 3 **níveis** (Leve / Moderada / Intensa), cada um com o MET e o código do Compendium (`compendiumCode`) e uma dica ("~11 km/h"). Ao todo, 103 níveis.
+- Fonte: `tools/compendium/familias.py` (como aparecem no app) + `docs/EXERCICIOS.md` (lista aprovada do Compendium, de onde saem os METs); `tools/compendium/gerar_seed.py` gera o seed e o resumo no topo do `EXERCICIOS.md`.
 - Substitui a lista atual do `ExerciseRepository`, revisando os METs e os ícones.
 - A tela "Sobre" cita o Compendium como fonte.
 

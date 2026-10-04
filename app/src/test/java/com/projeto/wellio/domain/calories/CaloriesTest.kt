@@ -1,5 +1,6 @@
 package com.projeto.wellio.domain.calories
 
+import com.projeto.wellio.domain.model.ExerciseType
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -29,5 +30,19 @@ class CaloriesTest {
     @Test
     fun `alimento aceita meia porcao`() {
         assertEquals(68, foodKcal(kcalPerPortion = 135.0, portions = 0.5))
+    }
+
+    @Test
+    fun `atividade propria com kcal por minuto ignora os METs`() {
+        val custom = ExerciseType("x", "Treino do parque", "Outros", mets = 5.0, iconKey = "exercise.other", isCustom = true, kcalPerMinute = 8.5)
+
+        assertEquals(255, exerciseKcal(custom, weightKg = 70.0, minutes = 30))
+    }
+
+    @Test
+    fun `atividade sem kcal por minuto usa os METs`() {
+        val walk = ExerciseType("w", "Caminhada", "Cardio", mets = 3.5, iconKey = "exercise.walk")
+
+        assertEquals(exerciseKcal(3.5, 70.0, 30), exerciseKcal(walk, 70.0, 30))
     }
 }

@@ -31,3 +31,28 @@ fun validateContainer(name: String, amountText: String): ContainerValidation {
     val amount = parseWaterAmount(amountText) ?: return ContainerValidation.InvalidAmount
     return ContainerValidation.Valid(trimmed, amount)
 }
+
+/** Ícones disponíveis para recipientes (SPEC §6), na ordem do seletor. */
+enum class ContainerIcon(val key: String, val label: String) {
+    Copo("water.copo", "Copo"),
+    Caneca("water.caneca", "Caneca"),
+    Xicara("water.xicara", "Xícara"),
+    Garrafa("water.garrafa", "Garrafa"),
+    Squeeze("water.squeeze", "Squeeze"),
+    Taca("water.taca", "Taça"),
+    Termica("water.termica", "Garrafa térmica"),
+    Galao("water.galao", "Galão");
+
+    companion object {
+        /** Chave desconhecida cai no copo (SPEC §2.3). */
+        fun fromKey(key: String): ContainerIcon = entries.find { it.key == key } ?: Copo
+    }
+}
+
+/** Ícone sugerido para um recipiente novo, pelo volume. */
+fun suggestedIcon(amountMl: Int): ContainerIcon = when {
+    amountMl <= 250 -> ContainerIcon.Copo
+    amountMl <= 400 -> ContainerIcon.Caneca
+    amountMl <= 1000 -> ContainerIcon.Garrafa
+    else -> ContainerIcon.Galao
+}

@@ -80,4 +80,17 @@ class WaterTest {
     fun `recipiente valido tem nome sem espacos extras`() {
         assertEquals(ContainerValidation.Valid("Squeeze", 750), validateContainer(" Squeeze ", "750"))
     }
+
+    @Test
+    fun `icone sugerido acompanha o volume`() {
+        assertEquals(ContainerIcon.Copo, suggestedIcon(250))
+        assertEquals(ContainerIcon.Caneca, suggestedIcon(300))
+        assertEquals(ContainerIcon.Garrafa, suggestedIcon(750))
+        assertEquals(ContainerIcon.Galao, suggestedIcon(1500))
+    }
+
+    @Test
+    fun `chave de icone desconhecida cai no copo`() {
+        assertEquals(ContainerIcon.Copo, ContainerIcon.fromKey("water.balde"))
+    }
 }

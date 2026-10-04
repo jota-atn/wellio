@@ -24,7 +24,8 @@ data class WaterContainerEntity(
     val name: String,
     val amountMl: Int,
     val isQuick: Boolean,
-    val position: Int
+    val position: Int,
+    val iconKey: String
 )
 
 /** Uma pesagem por dia (índice único em `date`). */

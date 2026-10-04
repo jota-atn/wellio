@@ -1,5 +1,6 @@
 package com.projeto.wellio.domain.model
 
+import com.projeto.wellio.domain.water.ContainerIcon
 import java.time.Instant
 import java.time.LocalDate
 
@@ -17,5 +18,6 @@ data class WaterContainer(
     val name: String,
     val amountMl: Int,
     val isQuick: Boolean,
-    val position: Int
+    val position: Int,
+    val iconKey: String = ContainerIcon.Copo.key
 )

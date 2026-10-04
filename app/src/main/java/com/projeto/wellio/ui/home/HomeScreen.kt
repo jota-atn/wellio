@@ -14,6 +14,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
@@ -34,6 +38,8 @@ import com.projeto.wellio.ui.components.DashboardDetailsDialog
 import com.projeto.wellio.ui.components.DashboardHalfCard
 import com.projeto.wellio.ui.components.GoalSettingDialog
 import com.projeto.wellio.ui.module.Modules
+import com.projeto.wellio.ui.module.OneTapAction
+import kotlinx.coroutines.launch
 import com.projeto.wellio.ui.module.WellioModule
 
 @Composable
@@ -89,6 +95,18 @@ fun HomeScreen(
 ) {
     // Módulo com o registro rápido aberto pelo FAB
     var registering by remember { mutableStateOf<WellioModule?>(null) }
+    val snackbar = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    /** Ação de 1 toque do FAB: registra na hora e oferece desfazer. */
+    fun runOneTap(action: OneTapAction) {
+        scope.launch {
+            val undo = action.perform()
+            snackbar.currentSnackbarData?.dismiss()
+            val result = snackbar.showSnackbar("${action.label} registrado", actionLabel = "Desfazer", duration = SnackbarDuration.Short)
+            if (result == SnackbarResult.ActionPerformed) undo()
+        }
+    }
     var goalBeingEdited by remember { mutableStateOf<GoalType?>(null) }
     var showDetails by remember { mutableStateOf(false) }
     // Modo de edição: o layout sendo mexido (null = fora da edição)
@@ -112,7 +130,7 @@ fun HomeScreen(
     }
 
     Box(Modifier.fillMaxSize()) {
-        Scaffold(containerColor = MaterialTheme.colorScheme.background) { innerPadding ->
+        Scaffold(containerColor = MaterialTheme.colorScheme.background, snackbarHost = { SnackbarHost(snackbar) }) { innerPadding ->
             Column(Modifier.padding(innerPadding).fillMaxSize()) {
                 Box(Modifier.height(56.dp), contentAlignment = Alignment.CenterStart) {
                     if (editing) {
@@ -172,7 +190,13 @@ fun HomeScreen(
                 }
             }
         }
-        RegisterFab(modules = Modules.all, visible = !editing, onPick = { registering = it })
+        RegisterFab(
+            modules = Modules.all,
+            visible = !editing,
+            oneTap = state.oneTap,
+            onPick = { registering = it },
+            onOneTap = ::runOneTap
+        )
     }
 
     registering?.let { module -> register(module) { registering = null } }

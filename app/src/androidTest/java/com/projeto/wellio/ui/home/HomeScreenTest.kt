@@ -20,7 +20,10 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.projeto.wellio.domain.home.CardSize
+import com.projeto.wellio.R
 import com.projeto.wellio.domain.home.HomeCard
+import com.projeto.wellio.ui.module.ModuleId
+import com.projeto.wellio.ui.module.OneTapAction
 import com.projeto.wellio.ui.theme.WellioTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -36,13 +39,13 @@ class HomeScreenTest {
     private var dismissed = false
     private var registered: String? = null
 
-    private fun show(layout: List<HomeCard>, showSuggestion: Boolean = false) {
+    private fun show(layout: List<HomeCard>, showSuggestion: Boolean = false, oneTap: Map<ModuleId, List<OneTapAction>> = emptyMap()) {
         // Como no app: o que é salvo volta como o layout da Home
         val current = mutableStateOf(layout)
         compose.setContent {
             WellioTheme {
                 HomeScreen(
-                    state = HomeUiState(layout = current.value, showSuggestion = showSuggestion),
+                    state = HomeUiState(layout = current.value, showSuggestion = showSuggestion, oneTap = oneTap),
                     onMenuClick = {},
                     onUpdateGoal = { _, _, _ -> },
                     onSaveLayout = {
@@ -310,5 +313,22 @@ class HomeScreenTest {
         enterEditing()
 
         compose.onNodeWithContentDescription("Registrar").assertDoesNotExist()
+    }
+
+    @Test
+    fun segurarAPilulaDoFabMostraAsAcoesDe1ToqueQueRegistramNaHora() {
+        var performed = false
+        val copo = OneTapAction("Copo 200 ml", R.drawable.ic_container_copo) {
+            performed = true
+            suspend {}
+        }
+        show(listOf(agua), oneTap = mapOf(ModuleId.Water to listOf(copo)))
+
+        compose.onNodeWithContentDescription("Registrar").performClick()
+        compose.onNodeWithContentDescription("Registrar Água").performTouchInput { longClick() }
+        compose.onNodeWithContentDescription("Registrar Copo 200 ml").performClick()
+
+        compose.waitUntil(timeoutMillis = 2_000) { performed }
+        compose.onNodeWithText("Copo 200 ml registrado").assertIsDisplayed()
     }
 }

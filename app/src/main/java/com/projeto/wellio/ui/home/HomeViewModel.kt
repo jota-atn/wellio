@@ -26,7 +26,9 @@ import com.projeto.wellio.domain.home.encodeLayout
 import kotlinx.coroutines.flow.map
 import com.projeto.wellio.domain.goals.dayScore
 import com.projeto.wellio.domain.goals.lastDays
+import com.projeto.wellio.ui.module.ModuleId
 import com.projeto.wellio.ui.module.Modules
+import com.projeto.wellio.ui.module.OneTapAction
 import com.projeto.wellio.ui.module.Summary
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -49,7 +51,9 @@ data class HomeUiState(
     /** Cards da Home, na ordem do usuário. */
     val layout: List<HomeCard> = DefaultHomeLayout,
     /** Mostrar "+ Adicionar card" nas linhas vazias (até ser dispensada). */
-    val showSuggestion: Boolean = true
+    val showSuggestion: Boolean = true,
+    /** Ações de 1 toque de cada módulo, para o FAB. */
+    val oneTap: Map<ModuleId, List<OneTapAction>> = emptyMap()
 )
 
 /** Cards que a Home sabe desenhar: o Dashboard e o de cada módulo. */
@@ -69,6 +73,9 @@ class HomeViewModel(container: AppContainer) : ViewModel() {
     }
 
     private val today = todayFlow(container.clock)
+
+    private val oneTap: Flow<Map<ModuleId, List<OneTapAction>>> =
+        combine(Modules.all.map { module -> module.oneTapActions(container).map { module.id to it } }) { it.toMap() }
 
     private val summaries: Flow<List<Summary>> =
         combine(Modules.all.map { it.summary(container) }) { it.toList() }
@@ -94,9 +101,9 @@ class HomeViewModel(container: AppContainer) : ViewModel() {
         today.flatMapLatest { day -> totals(day..day) },
         today.flatMapLatest { day -> totals(weekOf(day)) },
         combine(summaries, lastWeek, ::Pair),
-        combine(layout, layoutStore.suggestionDismissed, ::Pair)
-    ) { goals, todayTotals, weekTotals, (summaries, lastWeek), (layout, dismissed) ->
-        HomeUiState(goals, todayTotals, weekTotals, summaries, lastWeek, layout, showSuggestion = !dismissed)
+        combine(layout, layoutStore.suggestionDismissed, oneTap, ::Triple)
+    ) { goals, todayTotals, weekTotals, (summaries, lastWeek), (layout, dismissed, oneTap) ->
+        HomeUiState(goals, todayTotals, weekTotals, summaries, lastWeek, layout, showSuggestion = !dismissed, oneTap = oneTap)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
 
     private fun totals(days: ClosedRange<LocalDate>): Flow<Totals> = combine(

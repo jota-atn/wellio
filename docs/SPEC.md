@@ -176,7 +176,9 @@ Cada tela de funcionalidade tem **personalidade própria**, com um elemento ilus
 
 Com "Remover animações" ligado, os elementos ficam parados (§2.8).
 
-**Transições entre telas**: deslize com mola solta ("gelatina"): passa do ponto, volta e assenta devagar. O **gesto de voltar** dispara a mesma animação ao ser concluído; durante o arrasto a tela não acompanha o dedo (sem a prévia do voltar preditivo), porque a prévia comprime a mola e a volta fica rápida demais.
+**Transições entre telas** dependem de por onde se entra:
+- **Pela sidebar**: deslize com mola solta ("gelatina"): passa do ponto, volta e assenta devagar.
+- **Pelo card da Home**: o **card vira a tela** (transformação de container): o card cresce com mola até ocupar a tela, e os elementos ilustrativos voam do card para a tela (a gota do card vira a gota grande da Água; o visor do card vira o visor da balança do Peso). Voltar faz o caminho inverso: a tela encolhe de volta para dentro do card. O **gesto de voltar** dispara a mesma animação ao ser concluído; durante o arrasto a tela não acompanha o dedo (sem a prévia do voltar preditivo), porque a prévia comprime a mola e a volta fica rápida demais.
 
 ## 3. Regras gerais
 

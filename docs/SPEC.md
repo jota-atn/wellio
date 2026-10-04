@@ -288,7 +288,7 @@ A Home é pensada para **caber na tela sem rolar**. O número de linhas que cabe
 | Card | Na Home por padrão | Inteiro | Metade | Mini |
 |---|---|---|---|---|
 | Dashboard | ✅ inteiro | progresso das 3 metas + mini-gráfico dos últimos 7 dias (barra por dia = média do % atingido das 3 metas, limitado a 100% por meta; hoje destacado) + atalho para detalhes | 3 anéis de progresso + % do dia | — |
-| Água | ✅ inteiro | gota pequena à esquerda (com onda e transbordar), total/meta, barra e %, recipientes rápidos com ícone e "Desfazer último" | gota + total/meta + o primeiro recipiente rápido | total/meta + botão rápido |
+| Água | ✅ inteiro | gota pequena à esquerda (com onda e transbordar), total/meta, barra e %, recipientes rápidos com ícone e "Desfazer último" | gota + total/meta + o primeiro recipiente rápido + "Desfazer último" | total/meta + botão rápido |
 | Alimentação | ✅ metade | kcal/meta com barra, últimas refeições do dia, atalho para registrar | kcal/meta + atalho para registrar | kcal/meta |
 | Exercício | ✅ metade | progresso na unidade da meta, o outro valor menor, treinos do dia, atalho para registrar | progresso na unidade da meta + atalho | progresso |
 | Peso | ✅ metade | visor da balança (fita com agulha vermelha) e peso atual à esquerda; à direita, mini-curva de 30 dias, variação na semana e o alvo | visor pequeno + peso + seta de tendência | peso + seta |
@@ -470,7 +470,7 @@ Quando as kcal consumidas passam da faixa da meta (+10%), o card de Alimentaçã
 
 ### 8.0 Tela, registro e card (decidido para o M1a)
 
-- **Fogueira** no topo (elemento ilustrativo, §2.9): a chama cresce com o progresso do dia: brasa no começo, labaredas que dançam no meio, faíscas ao bater a meta. Ao registrar, a chama "aviva" com mola. Ao lado, o valor na unidade da meta em destaque e o outro menor (ex.: `320 de 500 kcal · 45 min`); tocar na meta abre o sheet de meta.
+- **Fogueira** no topo (elemento ilustrativo, §2.9): a chama cresce com o progresso do dia: brasa no começo, labaredas que dançam no meio, faíscas ao bater a meta. Ao registrar, a chama "aviva" com mola. Registrar com a meta batida (ou batendo agora) faz uma **labareda**: a chama cresce muito, brilha mais e solta brasas para os lados, depois volta ao normal (como o transbordar da Água). O card de Exercício tem a mesma fogueira. Ao lado, o valor na unidade da meta em destaque e o outro menor (ex.: `320 de 500 kcal · 45 min`); tocar na meta abre o sheet de meta.
 - **Meta à escolha**: kcal queimadas ou minutos ativos, no sheet da meta (também editável no Dashboard).
 - **Fileira de favoritos** abaixo da fogueira (como os recipientes da Água): favoritos (★) e mais recentes, cada um com ícone e a última duração usada (`Corrida · 30 min`). Tocar registra na hora, com desfazer; segurar abre o registro já preenchido; "+" abre o registro vazio.
 - **Registro** em sheet de tela cheia:

@@ -1,6 +1,8 @@
 package com.projeto.wellio.domain.exercise
 
+import com.projeto.wellio.domain.model.ExerciseEntry
 import com.projeto.wellio.domain.model.ExerciseType
+import com.projeto.wellio.domain.model.ExerciseUnit
 import com.projeto.wellio.domain.model.ExerciseUse
 import java.text.Normalizer
 import kotlin.math.roundToInt
@@ -20,6 +22,15 @@ enum class ExerciseCategory(val label: String, val iconKey: String) {
         fun of(label: String): ExerciseCategory = entries.firstOrNull { it.label == label } ?: Other
     }
 }
+
+/** kcal e minutos somados de um dia. */
+data class ExerciseTotals(val kcal: Int, val minutes: Int) {
+    /** Total na unidade da meta. */
+    fun toward(unit: ExerciseUnit): Int = if (unit == ExerciseUnit.Minutes) minutes else kcal
+}
+
+fun exerciseTotals(entries: List<ExerciseEntry>): ExerciseTotals =
+    ExerciseTotals(entries.sumOf { it.kcal }, entries.sumOf { it.minutes })
 
 /** Duração padrão de uma atividade nunca usada. */
 const val DEFAULT_EXERCISE_MINUTES = 30

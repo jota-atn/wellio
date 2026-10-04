@@ -1,6 +1,8 @@
 package com.projeto.wellio.domain.exercise
 
+import com.projeto.wellio.domain.model.ExerciseEntry
 import com.projeto.wellio.domain.model.ExerciseType
+import com.projeto.wellio.domain.model.ExerciseUnit
 import com.projeto.wellio.domain.model.ExerciseUse
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -143,5 +145,20 @@ class ExerciseTest {
     fun `fogueira cresce ate a meta e solta faiscas ao passar dela`() {
         assertEquals(FireLevel(0.5f, sparks = false), fireLevel(0.5f))
         assertEquals(FireLevel(1f, sparks = true), fireLevel(1.3f))
+    }
+
+    @Test
+    fun `totais do dia somam kcal e minutos e respondem na unidade da meta`() {
+        val day = java.time.LocalDate.of(2026, 10, 4)
+        val entries = listOf(
+            ExerciseEntry("a", day, Instant.EPOCH, "corrida", minutes = 30, kcal = 300),
+            ExerciseEntry("b", day, Instant.EPOCH, "yoga", minutes = 20, kcal = 60)
+        )
+
+        val totals = exerciseTotals(entries)
+
+        assertEquals(ExerciseTotals(kcal = 360, minutes = 50), totals)
+        assertEquals(50, totals.toward(ExerciseUnit.Minutes))
+        assertEquals(360, totals.toward(ExerciseUnit.Kcal))
     }
 }

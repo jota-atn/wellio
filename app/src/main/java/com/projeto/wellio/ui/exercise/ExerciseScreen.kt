@@ -314,7 +314,7 @@ private fun ExerciseHero(
             }
     ) {
         Row(Modifier.padding(start = 8.dp, end = 20.dp, top = 12.dp, bottom = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Campfire(fraction, additions, Modifier.sharedHero("hero-exercise", enabled = fromCard).size(width = 136.dp, height = 168.dp))
+            Campfire(value, goal, additions, Modifier.sharedHero("hero-exercise", enabled = fromCard).size(width = 136.dp, height = 168.dp))
             Spacer(Modifier.width(12.dp))
             Column {
                 Text(main, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)

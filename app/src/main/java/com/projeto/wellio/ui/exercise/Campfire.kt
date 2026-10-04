@@ -14,6 +14,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -24,6 +25,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.rotate
 import com.projeto.wellio.domain.exercise.fireLevel
+import com.projeto.wellio.domain.goals.progress
 import kotlinx.coroutines.launch
 import kotlin.math.PI
 import kotlin.math.sin
@@ -38,22 +40,41 @@ private val Ember = Color(0xFFFF6A3D)
 
 /**
  * Fogueira (SPEC §8.0): a chama cresce com o progresso do dia, de brasa (0) a labareda (1);
- * as línguas de fogo dançam sem parar e, passada a meta, sobem faíscas. Quando o total
- * aumenta por um registro feito aqui ([additions] muda), a chama "aviva" com mola.
+ * as línguas de fogo dançam sem parar e, passada a meta, sobem faíscas. Quando o [total]
+ * sobe por um registro feito aqui ([additions] conta esses registros; abrir a tela ou
+ * trocar de dia não conta), a chama "aviva" com mola; se o total chega à [goal] ou passa
+ * dela, vira uma labareda: cresce muito, brilha mais e solta brasas para os lados, depois
+ * volta ao normal.
  */
 @Composable
-fun Campfire(progress: Float, additions: Int, modifier: Modifier = Modifier) {
-    val level = fireLevel(progress)
+fun Campfire(total: Int, goal: Int, additions: Int, modifier: Modifier = Modifier) {
+    val level = fireLevel(progress(total, goal))
     val intensity = remember { Animatable(0f) }
     val boost = remember { Animatable(1f) }
+    // Labareda: de 0 a 1 enquanto dura; 1 = parada
+    val flare = remember { Animatable(1f) }
+    val flareSeed = remember { mutableIntStateOf(0) }
     val handled = remember { mutableIntStateOf(additions) }
+    val previousTotal = remember { mutableIntStateOf(total) }
+    // Escopo próprio: as animações terminam mesmo se o total mudar no meio (ex.: desfazer)
+    val scope = rememberCoroutineScope()
 
-    LaunchedEffect(level.intensity, additions) {
-        if (additions != handled.intValue) {
+    LaunchedEffect(total, goal, additions) {
+        // O registro conta quando o total novo chega do banco (o contador muda antes)
+        val added = additions != handled.intValue && total > previousTotal.intValue
+        previousTotal.intValue = total
+        if (added) {
             handled.intValue = additions
-            launch {
+            scope.launch {
                 boost.snapTo(1.25f)
                 boost.animateTo(1f, spring(dampingRatio = 0.35f, stiffness = Spring.StiffnessLow))
+            }
+            if (goal in 1..total) {
+                flareSeed.intValue++
+                scope.launch {
+                    flare.snapTo(0f)
+                    flare.animateTo(1f, tween(durationMillis = 1700, easing = LinearEasing))
+                }
             }
         }
         intensity.animateTo(level.intensity, spring(dampingRatio = 0.6f, stiffness = Spring.StiffnessVeryLow))
@@ -71,16 +92,20 @@ fun Campfire(progress: Float, additions: Int, modifier: Modifier = Modifier) {
         val h = size.height
         val base = Offset(w / 2, h * 0.86f)
         val i = intensity.value
+        // Labareda: sobe rápido e desce devagar (0 → 1 → 0 ao longo da animação)
+        val f = flare.value
+        val surge = if (f < 1f) sin(PI.toFloat() * (if (f < 0.25f) f * 2f else 0.5f + (f - 0.25f) / 1.5f)) else 0f
 
-        // Brilho no chão, maior com a chama
+        // Brilho no chão, maior com a chama (e muito maior na labareda)
+        val glowRadius = w * (0.35f + 0.3f * i + 0.35f * surge)
         drawCircle(
-            Brush.radialGradient(listOf(Ember.copy(alpha = 0.18f + 0.3f * i), Color.Transparent), center = base, radius = w * (0.35f + 0.3f * i)),
-            radius = w * (0.35f + 0.3f * i),
+            Brush.radialGradient(listOf(Ember.copy(alpha = (0.18f + 0.3f * i + 0.4f * surge).coerceAtMost(0.9f)), Color.Transparent), center = base, radius = glowRadius),
+            radius = glowRadius,
             center = base
         )
 
         // Chamas: três línguas, cada uma com fase e altura próprias
-        val flameHeight = h * (0.12f + 0.62f * i) * boost.value
+        val flameHeight = h * (0.12f + 0.62f * i) * boost.value * (1f + 0.45f * surge)
         if (i > 0.02f) {
             listOf(-0.16f to 0.75f, 0.16f to 0.8f, 0f to 1f).forEachIndexed { index, (dx, rel) ->
                 val phase = time * 2 * PI.toFloat() + index * 2.1f
@@ -104,6 +129,22 @@ fun Campfire(progress: Float, additions: Int, modifier: Modifier = Modifier) {
 
         // Faíscas subindo, passada a meta
         if (level.sparks) drawSparks(base, w, h, flameHeight, time)
+        // Brasas voando para os lados na labareda
+        if (f < 1f) drawBurst(base, w, h, flameHeight, f, flareSeed.intValue)
+    }
+}
+
+/** Brasas que saltam da chama em arco, para os lados e para cima, e caem apagando; [t] de 0 a 1. */
+private fun DrawScope.drawBurst(base: Offset, w: Float, h: Float, flameHeight: Float, t: Float, seed: Int) {
+    val random = Random(seed)
+    val origin = Offset(base.x, base.y - flameHeight * 0.5f)
+    repeat(16) {
+        val vx = (random.nextFloat() * 2 - 1) * w * 0.9f
+        val vy = -(0.4f + random.nextFloat() * 0.6f) * h
+        val gravity = h * 1.4f
+        val center = Offset(origin.x + vx * t, origin.y + vy * t + gravity * t * t / 2)
+        val color = if (random.nextBoolean()) FlameCore else FlameMiddle
+        drawCircle(color.copy(alpha = (1f - t) * 0.95f), w * (0.018f + 0.018f * random.nextFloat()) * (1f - t * 0.5f), center)
     }
 }
 

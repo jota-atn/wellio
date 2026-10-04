@@ -16,7 +16,6 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.projeto.wellio.AppContainer
 import com.projeto.wellio.WellioApp
 import com.projeto.wellio.domain.model.ExerciseType
-import com.projeto.wellio.ui.components.ExerciseDialog
 import com.projeto.wellio.ui.components.GoalCard
 import com.projeto.wellio.domain.home.CardSize
 import com.projeto.wellio.ui.module.ExerciseModule
@@ -28,6 +27,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.time.LocalTime
 
 class ExerciseCardViewModel(private val container: AppContainer) : ViewModel() {
     val state: StateFlow<Pair<Summary, List<ExerciseType>>> = combine(
@@ -65,22 +65,30 @@ fun ExerciseHomeCard(
         onRegister = { registering = true },
         modifier = modifier
     )
-    if (registering) ExerciseRegister(onClose = { registering = false }, viewModel = viewModel)
+    if (registering) ExerciseRegister(onClose = { registering = false })
 }
 
-/** Registrar exercício (dialog antigo até a tela de Exercício); usado pelo card e pelo FAB. */
+/** Registrar exercício (SPEC §8.0): o sheet com busca, mostrador e kcal; usado pelo card e pelo FAB. */
 @Composable
 fun ExerciseRegister(
     onClose: () -> Unit,
-    viewModel: ExerciseCardViewModel = viewModel(factory = ExerciseCardViewModel.Factory)
+    viewModel: ExerciseViewModel = viewModel(factory = ExerciseViewModel.Factory)
 ) {
-    val types = viewModel.state.collectAsStateWithLifecycle().value.second
-    ExerciseDialog(
-        exercises = types,
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    ExerciseSheet(
+        types = state.types,
+        uses = state.uses,
+        weightKg = state.weightKg,
+        initial = null,
+        editing = false,
+        defaultTime = LocalTime.now(viewModel.zone),
         onDismiss = onClose,
-        onConfirm = { type, minutes ->
-            viewModel.add(type, minutes)
+        onSave = {
+            viewModel.add(it)
             onClose()
-        }
+        },
+        onDelete = null,
+        onToggleFavorite = viewModel::toggleFavorite,
+        onCreateCustom = viewModel::createCustom
     )
 }

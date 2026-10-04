@@ -6,6 +6,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.performTouchInput
 import com.projeto.wellio.domain.model.WaterContainer
@@ -159,7 +160,7 @@ class WaterScreenTest {
 
         compose.onNodeWithText("de 2.000 ml").performClick()
         compose.onNodeWithText("Meta (ml)").performTextReplacement("2500")
-        compose.onNodeWithText("Salvar").performClick()
+        compose.onNodeWithText("Salvar").performScrollTo().performClick()
 
         assertEquals(2500, goal)
     }

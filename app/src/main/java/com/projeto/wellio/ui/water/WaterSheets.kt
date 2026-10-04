@@ -1,6 +1,8 @@
 package com.projeto.wellio.ui.water
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -58,8 +60,9 @@ fun WaterEntrySheet(
     var pickingTime by remember { mutableStateOf(false) }
     val amount = parseWaterAmount(amountText)
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(Modifier.padding(horizontal = 24.dp).padding(bottom = 24.dp)) {
+    // Abre inteiro e rola: com o teclado aberto, o Salvar continua alcançável
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+        Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 24.dp).padding(bottom = 24.dp)) {
             Text(
                 if (entry == null) "Registrar água" else "Editar registro",
                 style = MaterialTheme.typography.titleLarge
@@ -175,8 +178,9 @@ fun ContainerSheet(
     val icon = pickedIcon ?: suggestedIcon(parseWaterAmount(amountText) ?: 0)
     var error by remember { mutableStateOf<String?>(null) }
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(Modifier.padding(horizontal = 24.dp).padding(bottom = 24.dp)) {
+    // Abre inteiro e rola: com o teclado aberto, o Salvar continua alcançável
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+        Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 24.dp).padding(bottom = 24.dp)) {
             Text(
                 if (container == null) "Novo recipiente" else "Editar recipiente",
                 style = MaterialTheme.typography.titleLarge
@@ -283,8 +287,9 @@ fun WaterGoalSheet(
     var text by remember { mutableStateOf(currentMl.toString()) }
     val goal = parseWaterGoal(text)
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(Modifier.padding(horizontal = 24.dp).padding(bottom = 24.dp)) {
+    // Abre inteiro e rola: com o teclado aberto, o Salvar continua alcançável
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+        Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 24.dp).padding(bottom = 24.dp)) {
             Text("Meta diária de água", style = MaterialTheme.typography.titleLarge)
             Spacer(Modifier.height(16.dp))
             OutlinedTextField(

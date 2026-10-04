@@ -18,7 +18,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.projeto.wellio.ui.module.CardSize
+import com.projeto.wellio.domain.home.CardSize
 import com.projeto.wellio.ui.module.Summary
 import com.projeto.wellio.ui.theme.ModuleColors
 

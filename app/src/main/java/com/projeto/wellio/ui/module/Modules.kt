@@ -1,5 +1,6 @@
 package com.projeto.wellio.ui.module
 
+import com.projeto.wellio.domain.home.CardSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.projeto.wellio.AppContainer

@@ -18,7 +18,7 @@ import com.projeto.wellio.WellioApp
 import com.projeto.wellio.domain.model.ExerciseType
 import com.projeto.wellio.ui.components.ExerciseDialog
 import com.projeto.wellio.ui.components.GoalCard
-import com.projeto.wellio.ui.module.CardSize
+import com.projeto.wellio.domain.home.CardSize
 import com.projeto.wellio.ui.module.ExerciseModule
 import com.projeto.wellio.ui.module.Summary
 import com.projeto.wellio.ui.module.exerciseSummary

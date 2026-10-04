@@ -18,7 +18,7 @@ import com.projeto.wellio.WellioApp
 import com.projeto.wellio.domain.model.Food
 import com.projeto.wellio.ui.components.FoodDialog
 import com.projeto.wellio.ui.components.GoalCard
-import com.projeto.wellio.ui.module.CardSize
+import com.projeto.wellio.domain.home.CardSize
 import com.projeto.wellio.ui.module.FoodModule
 import com.projeto.wellio.ui.module.Summary
 import com.projeto.wellio.ui.module.foodSummary

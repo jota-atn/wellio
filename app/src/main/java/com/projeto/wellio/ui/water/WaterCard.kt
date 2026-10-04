@@ -37,7 +37,7 @@ import com.projeto.wellio.domain.water.totalMl
 import com.projeto.wellio.ui.format.formatMl
 import com.projeto.wellio.ui.icons.WellioIcons
 import com.projeto.wellio.ui.icons.containerIconRes
-import com.projeto.wellio.ui.module.CardSize
+import com.projeto.wellio.domain.home.CardSize
 import com.projeto.wellio.ui.theme.WellioTheme
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.SharingStarted

@@ -44,7 +44,7 @@ import com.projeto.wellio.domain.weight.remainingKg
 import com.projeto.wellio.domain.weight.weekChange
 import com.projeto.wellio.domain.weight.weightTrend
 import com.projeto.wellio.ui.format.formatKg
-import com.projeto.wellio.ui.module.CardSize
+import com.projeto.wellio.domain.home.CardSize
 import com.projeto.wellio.ui.module.weightSummary
 import com.projeto.wellio.ui.theme.NeedleRed
 import com.projeto.wellio.ui.theme.WellioTheme

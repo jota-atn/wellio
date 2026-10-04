@@ -18,7 +18,7 @@ import com.projeto.wellio.domain.model.GoalType
 import com.projeto.wellio.ui.components.DashboardCard
 import com.projeto.wellio.ui.components.DashboardDetailsDialog
 import com.projeto.wellio.ui.components.GoalSettingDialog
-import com.projeto.wellio.ui.module.CardSize
+import com.projeto.wellio.domain.home.CardSize
 import com.projeto.wellio.ui.module.ExerciseModule
 import com.projeto.wellio.ui.module.FoodModule
 import com.projeto.wellio.ui.module.WaterModule

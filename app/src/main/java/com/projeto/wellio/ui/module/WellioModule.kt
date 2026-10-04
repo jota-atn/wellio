@@ -1,5 +1,6 @@
 package com.projeto.wellio.ui.module
 
+import com.projeto.wellio.domain.home.CardSize
 import androidx.annotation.DrawableRes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier

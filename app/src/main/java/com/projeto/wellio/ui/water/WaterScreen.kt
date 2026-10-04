@@ -5,30 +5,35 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.projeto.wellio.domain.goals.progress
 import com.projeto.wellio.domain.model.WaterContainer
 import com.projeto.wellio.domain.model.WaterEntry
+import com.projeto.wellio.domain.water.ContainerIcon
 import com.projeto.wellio.ui.components.DayNavigator
 import com.projeto.wellio.ui.components.swipeBetweenDays
 import com.projeto.wellio.ui.format.formatMl
 import com.projeto.wellio.ui.format.formatTime
+import com.projeto.wellio.ui.icons.containerIconRes
 import com.projeto.wellio.ui.theme.WellioTheme
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -47,6 +52,8 @@ fun WaterRoute(
         onBack = onBack,
         onDayChange = viewModel::selectDay,
         onAdd = viewModel::add,
+        onQuickAdd = viewModel::quickAdd,
+        onUndoQuickAdd = viewModel::undoQuickAdd,
         onUpdate = viewModel::update,
         onDelete = viewModel::delete,
         onRestore = viewModel::restore,
@@ -55,10 +62,10 @@ fun WaterRoute(
     )
 }
 
-/** O que a folha de registro está editando: um registro novo ou um existente. */
-private sealed interface EntryEditing {
-    data object New : EntryEditing
-    data class Existing(val entry: WaterEntry) : EntryEditing
+/** O que uma folha está editando: um item novo ou um existente. */
+private sealed interface Editing<out T> {
+    data object New : Editing<Nothing>
+    data class Existing<T>(val item: T) : Editing<T>
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -69,29 +76,37 @@ fun WaterScreen(
     onBack: () -> Unit,
     onDayChange: (LocalDate) -> Unit,
     onAdd: (Int, String?, LocalTime) -> Unit,
+    onQuickAdd: (WaterContainer) -> Unit,
+    onUndoQuickAdd: () -> Unit,
     onUpdate: (WaterEntry, Int, String?, LocalTime) -> Unit,
     onDelete: (WaterEntry) -> Unit,
     onRestore: (WaterEntry) -> Unit,
-    onSaveContainer: (String?, String, Int, Boolean) -> Unit,
+    onSaveContainer: (id: String?, name: String, amountMl: Int, isQuick: Boolean, iconKey: String) -> Unit,
     onDeleteContainer: (WaterContainer) -> Unit
 ) {
     val colors = WellioTheme.colors.water
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-    var editing by remember { mutableStateOf<EntryEditing?>(null) }
-    var managingContainers by remember { mutableStateOf(false) }
+    var editingEntry by remember { mutableStateOf<Editing<WaterEntry>?>(null) }
+    var editingContainer by remember { mutableStateOf<Editing<WaterContainer>?>(null) }
+    var managingContainers by rememberSaveable { mutableStateOf(false) }
+
+    fun showUndo(message: String, onUndo: () -> Unit) {
+        scope.launch {
+            snackbar.currentSnackbarData?.dismiss()
+            val result = snackbar.showSnackbar(message, actionLabel = "Desfazer", duration = SnackbarDuration.Short)
+            if (result == SnackbarResult.ActionPerformed) onUndo()
+        }
+    }
 
     fun deleteWithUndo(entry: WaterEntry) {
         onDelete(entry)
-        scope.launch {
-            snackbar.currentSnackbarData?.dismiss()
-            val result = snackbar.showSnackbar(
-                message = "${formatMl(entry.amountMl)} apagado",
-                actionLabel = "Desfazer",
-                duration = SnackbarDuration.Short
-            )
-            if (result == SnackbarResult.ActionPerformed) onRestore(entry)
-        }
+        showUndo("${formatMl(entry.amountMl)} apagado") { onRestore(entry) }
+    }
+
+    fun drink(container: WaterContainer) {
+        onQuickAdd(container)
+        showUndo("${container.name} ${formatMl(container.amountMl)} registrado", onUndoQuickAdd)
     }
 
     Scaffold(
@@ -102,17 +117,12 @@ fun WaterScreen(
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar")
                     }
-                },
-                actions = {
-                    IconButton(onClick = { managingContainers = true }) {
-                        Icon(Icons.Default.Settings, contentDescription = "Recipientes")
-                    }
                 }
             )
         },
         floatingActionButton = {
             ExtendedFloatingActionButton(
-                onClick = { editing = EntryEditing.New },
+                onClick = { editingEntry = Editing.New },
                 containerColor = colors.accent,
                 contentColor = colors.onAccent,
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
@@ -122,101 +132,139 @@ fun WaterScreen(
         snackbarHost = { SnackbarHost(snackbar) },
         containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .padding(innerPadding)
                 .fillMaxSize()
-                .swipeBetweenDays(state.day, state.today, onDayChange)
+                .swipeBetweenDays(state.day, state.today, onDayChange),
+            contentPadding = PaddingValues(bottom = 96.dp)
         ) {
-            DayNavigator(state.day, state.today, onDayChange, Modifier.padding(horizontal = 8.dp))
-            WaterSummary(state.totalMl, state.goalMl, Modifier.padding(horizontal = 16.dp))
-            Spacer(Modifier.height(16.dp))
-
+            item(key = "dia") {
+                DayNavigator(state.day, state.today, onDayChange, Modifier.padding(horizontal = 8.dp))
+            }
+            item(key = "gota") {
+                WaterHero(state.totalMl, state.goalMl, Modifier.padding(horizontal = 16.dp))
+            }
+            item(key = "recipientes") {
+                ContainersSection(
+                    containers = state.containers,
+                    editing = managingContainers,
+                    onEditingChange = { managingContainers = it },
+                    onDrink = ::drink,
+                    onEdit = { editingContainer = Editing.Existing(it) },
+                    onNew = { editingContainer = Editing.New },
+                    modifier = Modifier.padding(top = 20.dp)
+                )
+            }
+            item(key = "titulo-registros") {
+                Text(
+                    "Registros",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(start = 20.dp, top = 24.dp, bottom = 8.dp)
+                )
+            }
             if (state.entries.isEmpty()) {
-                Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                item(key = "vazio") {
                     Text(
                         "Nenhum registro neste dia",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.fillMaxWidth().padding(24.dp),
+                        textAlign = TextAlign.Center
                     )
                 }
             } else {
-                LazyColumn(
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 96.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(state.entries.sortedByDescending { it.timestamp }, key = { it.id }) { entry ->
-                        WaterEntryRow(
-                            entry = entry,
-                            zone = zone,
-                            onClick = { editing = EntryEditing.Existing(entry) },
-                            onDelete = { deleteWithUndo(entry) }
-                        )
-                    }
+                items(state.entries.sortedByDescending { it.timestamp }, key = { it.id }) { entry ->
+                    WaterEntryRow(
+                        entry = entry,
+                        iconKey = state.containers.find { it.name == entry.containerName }?.iconKey,
+                        zone = zone,
+                        onClick = { editingEntry = Editing.Existing(entry) },
+                        onDelete = { deleteWithUndo(entry) },
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp).animateItem()
+                    )
                 }
             }
         }
     }
 
-    editing?.let { current ->
-        val existing = (current as? EntryEditing.Existing)?.entry
+    editingEntry?.let { current ->
+        val existing = (current as? Editing.Existing)?.item
         WaterEntrySheet(
             entry = existing,
             containers = state.containers,
             zone = zone,
-            onDismiss = { editing = null },
+            onDismiss = { editingEntry = null },
             onSave = { amount, name, time ->
                 if (existing == null) onAdd(amount, name, time) else onUpdate(existing, amount, name, time)
-                editing = null
+                editingEntry = null
             },
             onDelete = existing?.let { entry ->
                 {
-                    editing = null
+                    editingEntry = null
                     deleteWithUndo(entry)
                 }
             }
         )
     }
 
-    if (managingContainers) {
-        ContainersSheet(
-            containers = state.containers,
-            onDismiss = { managingContainers = false },
-            onSave = onSaveContainer,
-            onDelete = onDeleteContainer
+    editingContainer?.let { current ->
+        val existing = (current as? Editing.Existing)?.item
+        ContainerSheet(
+            container = existing,
+            onDismiss = { editingContainer = null },
+            onSave = { name, amount, isQuick, iconKey ->
+                onSaveContainer(existing?.id, name, amount, isQuick, iconKey)
+                editingContainer = null
+            },
+            onDelete = existing?.let { container ->
+                {
+                    editingContainer = null
+                    onDeleteContainer(container)
+                }
+            }
         )
     }
 }
 
+/** Topo da tela: a gota enchendo e os números do dia. */
 @Composable
-private fun WaterSummary(totalMl: Int, goalMl: Int, modifier: Modifier = Modifier) {
+private fun WaterHero(totalMl: Int, goalMl: Int, modifier: Modifier = Modifier) {
     val colors = WellioTheme.colors.water
     val fraction = progress(totalMl, goalMl)
-    Card(
+    Surface(
+        shape = RoundedCornerShape(32.dp),
+        color = colors.container,
+        contentColor = colors.onContainer,
         modifier = modifier
             .fillMaxWidth()
             .semantics(mergeDescendants = true) {
                 contentDescription = "Água: ${formatMl(totalMl)} de ${formatMl(goalMl)}, ${(fraction * 100).toInt()} por cento"
-            },
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = colors.container, contentColor = colors.onContainer)
-    ) {
-        Column(Modifier.padding(20.dp)) {
-            Row(verticalAlignment = Alignment.Bottom) {
-                Text(formatMl(totalMl), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-                Spacer(Modifier.width(8.dp))
-                Text("de ${formatMl(goalMl)}", style = MaterialTheme.typography.bodyLarge)
-                Spacer(Modifier.weight(1f))
-                Text("${(fraction * 100).toInt()}%", style = MaterialTheme.typography.titleMedium)
             }
-            Spacer(Modifier.height(12.dp))
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .height(12.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(colors.track)
-            ) {
-                Box(Modifier.fillMaxWidth(fraction).fillMaxHeight().background(colors.accent))
+    ) {
+        Row(Modifier.padding(24.dp), verticalAlignment = Alignment.CenterVertically) {
+            WaterDrop(fraction, Modifier.size(width = 120.dp, height = 156.dp))
+            Spacer(Modifier.width(24.dp))
+            Column {
+                Text(
+                    formatMl(totalMl),
+                    style = MaterialTheme.typography.displaySmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Text("de ${formatMl(goalMl)}", style = MaterialTheme.typography.bodyLarge)
+                Spacer(Modifier.height(12.dp))
+                Surface(shape = RoundedCornerShape(50), color = colors.accent, contentColor = colors.onAccent) {
+                    Text(
+                        "${(fraction * 100).toInt()}%",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                    )
+                }
+                if (goalMl in 1..<totalMl) {
+                    Spacer(Modifier.height(8.dp))
+                    Text("+${formatMl(totalMl - goalMl)} além da meta", style = MaterialTheme.typography.bodyMedium)
+                }
             }
         }
     }
@@ -226,13 +274,17 @@ private fun WaterSummary(totalMl: Int, goalMl: Int, modifier: Modifier = Modifie
 @Composable
 private fun WaterEntryRow(
     entry: WaterEntry,
+    iconKey: String?,
     zone: ZoneId,
     onClick: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
+    val colors = WellioTheme.colors.water
     val dismissState = rememberSwipeToDismissBoxState()
     SwipeToDismissBox(
         state = dismissState,
+        modifier = modifier,
         enableDismissFromStartToEnd = false,
         onDismiss = { onDelete() },
         backgroundContent = {
@@ -261,12 +313,21 @@ private fun WaterEntryRow(
                 }
         ) {
             Row(
-                Modifier.padding(start = 16.dp, top = 4.dp, bottom = 4.dp),
+                Modifier.padding(start = 12.dp, top = 8.dp, bottom = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(time, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Spacer(Modifier.width(16.dp))
-                Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                Surface(shape = CircleShape, color = colors.container, contentColor = colors.onContainer, modifier = Modifier.size(40.dp)) {
+                    Icon(
+                        painterResource(containerIconRes(iconKey ?: ContainerIcon.Copo.key)),
+                        contentDescription = null,
+                        modifier = Modifier.padding(9.dp)
+                    )
+                }
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(label, style = MaterialTheme.typography.bodyLarge)
+                    Text(time, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
                 Text(formatMl(entry.amountMl), style = MaterialTheme.typography.titleMedium)
                 IconButton(onClick = onDelete) {
                     Icon(Icons.Default.Delete, contentDescription = "Apagar registro das $time")

@@ -3,23 +3,31 @@ package com.projeto.wellio.ui.water
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.projeto.wellio.domain.model.WaterContainer
 import com.projeto.wellio.domain.model.WaterEntry
+import com.projeto.wellio.domain.water.ContainerIcon
 import com.projeto.wellio.domain.water.ContainerValidation
+import com.projeto.wellio.domain.water.MAX_QUICK_BUTTONS
 import com.projeto.wellio.domain.water.MAX_WATER_AMOUNT_ML
 import com.projeto.wellio.domain.water.parseWaterAmount
+import com.projeto.wellio.domain.water.suggestedIcon
 import com.projeto.wellio.domain.water.validateContainer
 import com.projeto.wellio.ui.format.formatMl
+import com.projeto.wellio.ui.icons.containerIconRes
 import com.projeto.wellio.ui.theme.WellioTheme
 import java.time.LocalTime
 import java.time.ZoneId
@@ -62,6 +70,13 @@ fun WaterEntrySheet(
                             amountText = container.amountMl.toString()
                         },
                         label = { Text("${container.name} ${formatMl(container.amountMl)}") },
+                        leadingIcon = {
+                            Icon(
+                                painterResource(containerIconRes(container.iconKey)),
+                                contentDescription = null,
+                                modifier = Modifier.size(FilterChipDefaults.IconSize)
+                            )
+                        },
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = colors.container,
                             selectedLabelColor = colors.onContainer
@@ -137,68 +152,57 @@ private fun TimePickerDialog(initial: LocalTime, onDismiss: () -> Unit, onConfir
     )
 }
 
-/** Criar, editar e remover recipientes, e escolher quais viram botões rápidos no card. */
+/** Criar ([container] = null) ou editar um recipiente: ícone, nome, volume e se vira botão no card. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ContainersSheet(
-    containers: List<WaterContainer>,
+fun ContainerSheet(
+    container: WaterContainer?,
     onDismiss: () -> Unit,
-    onSave: (id: String?, name: String, amountMl: Int, isQuick: Boolean) -> Unit,
-    onDelete: (WaterContainer) -> Unit
+    onSave: (name: String, amountMl: Int, isQuick: Boolean, iconKey: String) -> Unit,
+    onDelete: (() -> Unit)?
 ) {
     val colors = WellioTheme.colors.water
-    var editingId by remember { mutableStateOf<String?>(null) }
-    var name by remember { mutableStateOf("") }
-    var amountText by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf(container?.name.orEmpty()) }
+    var amountText by remember { mutableStateOf(container?.amountMl?.toString().orEmpty()) }
+    var isQuick by remember { mutableStateOf(container?.isQuick ?: false) }
+    // Recipiente novo segue o ícone sugerido pelo volume até o usuário escolher um
+    var pickedIcon by remember { mutableStateOf(container?.let { ContainerIcon.fromKey(it.iconKey) }) }
+    val icon = pickedIcon ?: suggestedIcon(parseWaterAmount(amountText) ?: 0)
     var error by remember { mutableStateOf<String?>(null) }
-
-    fun clearForm() {
-        editingId = null
-        name = ""
-        amountText = ""
-        error = null
-    }
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(Modifier.padding(horizontal = 24.dp).padding(bottom = 24.dp)) {
-            Text("Recipientes", style = MaterialTheme.typography.titleLarge)
             Text(
-                "Os marcados como rápidos viram botões no card de Água (até 3).",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                if (container == null) "Novo recipiente" else "Editar recipiente",
+                style = MaterialTheme.typography.titleLarge
             )
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(16.dp))
 
-            containers.forEach { container ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text(container.name, style = MaterialTheme.typography.bodyLarge)
-                        Text(formatMl(container.amountMl), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    Text("Rápido", style = MaterialTheme.typography.labelMedium)
-                    Spacer(Modifier.width(4.dp))
-                    Switch(
-                        checked = container.isQuick,
-                        onCheckedChange = { onSave(container.id, container.name, container.amountMl, it) },
-                        colors = SwitchDefaults.colors(checkedTrackColor = colors.accent, checkedThumbColor = colors.onAccent)
-                    )
-                    IconButton(onClick = {
-                        editingId = container.id
-                        name = container.name
-                        amountText = container.amountMl.toString()
-                        error = null
-                    }) { Icon(Icons.Default.Edit, contentDescription = "Editar ${container.name}") }
-                    IconButton(onClick = { onDelete(container) }) {
-                        Icon(Icons.Default.Delete, contentDescription = "Remover ${container.name}")
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(ContainerIcon.entries) { option ->
+                    val selected = option == icon
+                    Surface(
+                        onClick = { pickedIcon = option },
+                        shape = CircleShape,
+                        color = if (selected) colors.accent else colors.container,
+                        contentColor = if (selected) colors.onAccent else colors.onContainer,
+                        modifier = Modifier
+                            .size(52.dp)
+                            .semantics {
+                                contentDescription = "Ícone ${option.label}"
+                                this.selected = selected
+                            }
+                    ) {
+                        Icon(
+                            painterResource(containerIconRes(option.key)),
+                            contentDescription = null,
+                            modifier = Modifier.padding(13.dp)
+                        )
                     }
                 }
             }
+            Spacer(Modifier.height(16.dp))
 
-            HorizontalDivider(Modifier.padding(vertical = 12.dp))
-            Text(
-                if (editingId == null) "Novo recipiente" else "Editar recipiente",
-                style = MaterialTheme.typography.titleMedium
-            )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = name,
@@ -218,23 +222,43 @@ fun ContainersSheet(
             }
             error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
             Spacer(Modifier.height(8.dp))
-            Row {
-                if (editingId != null) TextButton(onClick = ::clearForm) { Text("Cancelar") }
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Botão no card da Home", style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        "Aparecem até $MAX_QUICK_BUTTONS",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = isQuick,
+                    onCheckedChange = { isQuick = it },
+                    colors = SwitchDefaults.colors(checkedTrackColor = colors.accent, checkedThumbColor = colors.onAccent)
+                )
+            }
+            Spacer(Modifier.height(16.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (onDelete != null) {
+                    TextButton(onClick = onDelete) {
+                        Icon(Icons.Default.Delete, contentDescription = null)
+                        Spacer(Modifier.width(4.dp))
+                        Text("Apagar")
+                    }
+                }
                 Spacer(Modifier.weight(1f))
                 Button(
                     onClick = {
                         when (val result = validateContainer(name, amountText)) {
-                            is ContainerValidation.Valid -> {
-                                val isQuick = containers.find { it.id == editingId }?.isQuick ?: false
-                                onSave(editingId, result.name, result.amountMl, isQuick)
-                                clearForm()
-                            }
+                            is ContainerValidation.Valid -> onSave(result.name, result.amountMl, isQuick, icon.key)
                             ContainerValidation.BlankName -> error = "Dê um nome ao recipiente"
                             ContainerValidation.InvalidAmount -> error = "Quantidade entre 1 e ${formatMl(MAX_WATER_AMOUNT_ML)}"
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = colors.accent, contentColor = colors.onAccent)
-                ) { Text(if (editingId == null) "Adicionar" else "Salvar") }
+                ) { Text("Salvar") }
             }
         }
     }

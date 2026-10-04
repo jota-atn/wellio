@@ -70,6 +70,24 @@ class WaterViewModel(
         }
     }
 
+    /** Último registro feito pelo toque num recipiente, para o "Desfazer". */
+    private var lastQuickAddId: String? = null
+
+    /** Toque num recipiente: registra na hora, no dia aberto. */
+    fun quickAdd(container: WaterContainer) {
+        val day = selectedDay.value
+        val time = LocalTime.now(clock)
+        viewModelScope.launch {
+            lastQuickAddId = repository.add(container.amountMl, container.name, day, instantAt(day, time, clock.zone))
+        }
+    }
+
+    fun undoQuickAdd() {
+        val id = lastQuickAddId ?: return
+        lastQuickAddId = null
+        viewModelScope.launch { repository.delete(id) }
+    }
+
     fun update(entry: WaterEntry, amountMl: Int, containerName: String?, time: LocalTime) {
         viewModelScope.launch {
             repository.update(
@@ -90,16 +108,17 @@ class WaterViewModel(
         viewModelScope.launch { repository.restore(entry.id) }
     }
 
-    fun saveContainer(id: String?, name: String, amountMl: Int, isQuick: Boolean) {
+    fun saveContainer(id: String?, name: String, amountMl: Int, isQuick: Boolean, iconKey: String) {
         val containers = uiState.value.containers
         val existing = containers.find { it.id == id }
-        val container = existing?.copy(name = name, amountMl = amountMl, isQuick = isQuick)
+        val container = existing?.copy(name = name, amountMl = amountMl, isQuick = isQuick, iconKey = iconKey)
             ?: WaterContainer(
                 id = UUID.randomUUID().toString(),
                 name = name,
                 amountMl = amountMl,
                 isQuick = isQuick,
-                position = (containers.maxOfOrNull { it.position } ?: -1) + 1
+                position = (containers.maxOfOrNull { it.position } ?: -1) + 1,
+                iconKey = iconKey
             )
         viewModelScope.launch { repository.saveContainers(listOf(container)) }
     }

@@ -4,11 +4,14 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
 import com.projeto.wellio.domain.model.WaterContainer
 import com.projeto.wellio.domain.model.WaterEntry
 import com.projeto.wellio.ui.theme.WellioTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import java.time.Instant
@@ -28,6 +31,8 @@ class WaterScreenTest {
     private fun show(
         entries: List<WaterEntry> = emptyList(),
         onAdd: (Int, String?, LocalTime) -> Unit = { _, _, _ -> },
+        onQuickAdd: (WaterContainer) -> Unit = {},
+        onUndoQuickAdd: () -> Unit = {},
         onDelete: (WaterEntry) -> Unit = {},
         onRestore: (WaterEntry) -> Unit = {}
     ) {
@@ -39,10 +44,12 @@ class WaterScreenTest {
                     onBack = {},
                     onDayChange = {},
                     onAdd = onAdd,
+                    onQuickAdd = onQuickAdd,
+                    onUndoQuickAdd = onUndoQuickAdd,
                     onUpdate = { _, _, _, _ -> },
                     onDelete = onDelete,
                     onRestore = onRestore,
-                    onSaveContainer = { _, _, _, _ -> },
+                    onSaveContainer = { _, _, _, _, _ -> },
                     onDeleteContainer = {}
                 )
             }
@@ -86,5 +93,37 @@ class WaterScreenTest {
 
         assertEquals(manha, deleted)
         assertEquals(manha, restored)
+    }
+
+    @Test
+    fun tocarNoRecipienteRegistraNaHoraComDesfazer() {
+        var drunk: WaterContainer? = null
+        var undone = false
+        show(onQuickAdd = { drunk = it }, onUndoQuickAdd = { undone = true })
+
+        compose.onNodeWithContentDescription("Copo, 200 ml").performClick()
+        compose.onNodeWithText("Desfazer").performClick()
+
+        assertEquals(copo, drunk)
+        assertTrue(undone)
+    }
+
+    @Test
+    fun segurarORecipienteAbreAEdicaoDele() {
+        show()
+
+        compose.onNodeWithContentDescription("Copo, 200 ml").performTouchInput { longClick() }
+
+        compose.onNodeWithText("Editar recipiente").assertIsDisplayed()
+    }
+
+    @Test
+    fun editarMostraMeusRecipientes() {
+        show()
+
+        compose.onNodeWithText("Editar").performClick()
+
+        compose.onNodeWithText("Meus recipientes").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Editar Copo, 200 ml").assertIsDisplayed()
     }
 }

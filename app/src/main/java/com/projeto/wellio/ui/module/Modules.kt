@@ -17,6 +17,7 @@ import com.projeto.wellio.data.time.todayFlow
 import com.projeto.wellio.domain.model.GoalType
 import com.projeto.wellio.domain.weight.latestWeight
 import com.projeto.wellio.domain.weight.weekChange
+import com.projeto.wellio.ui.navigation.ExerciseDestination
 import com.projeto.wellio.ui.navigation.WaterDestination
 import com.projeto.wellio.ui.navigation.WeightDestination
 import com.projeto.wellio.ui.theme.WellioColors
@@ -88,7 +89,7 @@ object ExerciseModule : WellioModule {
     override val icon = R.drawable.ic_module_exercise
     override fun colors(palette: WellioColors) = palette.exercise
     override val goalType = GoalType.EXERCISE
-    override fun destination(fromCard: Boolean): Any? = null
+    override fun destination(fromCard: Boolean): Any = ExerciseDestination(fromCard)
 
     override fun summary(container: AppContainer): Flow<Summary> = combine(
         todayFlow(container.clock).flatMapLatest { container.exerciseRepository.kcal(it..it) },

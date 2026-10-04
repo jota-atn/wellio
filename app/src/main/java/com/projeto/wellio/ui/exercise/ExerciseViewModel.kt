@@ -12,6 +12,10 @@ import com.projeto.wellio.data.repository.WeightRepository
 import com.projeto.wellio.data.time.todayFlow
 import com.projeto.wellio.domain.exercise.ExerciseCategory
 import com.projeto.wellio.domain.exercise.ExerciseFamily
+import com.projeto.wellio.domain.exercise.QuickExercise
+import com.projeto.wellio.domain.model.ExerciseUnit
+import com.projeto.wellio.domain.model.Goal
+import com.projeto.wellio.domain.model.GoalType
 import com.projeto.wellio.domain.exercise.Intensity
 import com.projeto.wellio.domain.model.ExerciseEntry
 import com.projeto.wellio.domain.model.ExerciseType
@@ -83,6 +87,32 @@ class ExerciseViewModel(
         val day = selectedDay.value
         viewModelScope.launch {
             repository.add(draft.type, draft.minutes, draft.manualKcal, day, instantAt(day, draft.time, clock.zone))
+        }
+    }
+
+    /** Último treino feito pelo toque num favorito, para o "Desfazer". */
+    private var lastQuickAddId: String? = null
+
+    /** Toque num favorito: registra na hora, no dia aberto, com o nível e a duração dele. */
+    fun quickAdd(quick: QuickExercise) {
+        val day = selectedDay.value
+        val time = LocalTime.now(clock)
+        viewModelScope.launch {
+            lastQuickAddId = repository.add(quick.type, quick.minutes, null, day, instantAt(day, time, clock.zone))
+        }
+    }
+
+    fun undoQuickAdd() {
+        val id = lastQuickAddId ?: return
+        lastQuickAddId = null
+        viewModelScope.launch { repository.delete(id) }
+    }
+
+    /** Meta diária de exercício em [unit]; trocar de unidade grava a unidade antes. */
+    fun setGoal(unit: ExerciseUnit, daily: Int) {
+        viewModelScope.launch {
+            goalsStore.setExerciseUnit(unit)
+            goalsStore.setGoal(GoalType.EXERCISE, Goal(daily = daily))
         }
     }
 

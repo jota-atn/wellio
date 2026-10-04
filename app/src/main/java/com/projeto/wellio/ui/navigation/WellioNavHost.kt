@@ -37,6 +37,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.projeto.wellio.ui.exercise.ExerciseRoute
 import com.projeto.wellio.ui.home.HomeRoute
 import com.projeto.wellio.ui.water.WaterRoute
 import com.projeto.wellio.ui.weight.WeightRoute
@@ -110,6 +111,15 @@ fun WellioNavHost() {
                 JellyBack(navController)
                 NavScope {
                     WeightRoute(fromCard = entry.toRoute<WeightDestination>().fromCard, onBack = { navController.popBackStack() })
+                }
+            }
+            composable<ExerciseDestination>(
+                enterTransition = { if (targetState.openedFromCard()) EnterTransition.None else enterFromRight() },
+                popExitTransition = { if (initialState.openedFromCard()) ExitTransition.None else popExitToRight() }
+            ) { entry ->
+                JellyBack(navController)
+                NavScope {
+                    ExerciseRoute(fromCard = entry.toRoute<ExerciseDestination>().fromCard, onBack = { navController.popBackStack() })
                 }
             }
             composable<ComingSoonDestination> { entry ->

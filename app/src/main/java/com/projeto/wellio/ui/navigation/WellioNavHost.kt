@@ -38,10 +38,16 @@ fun WellioNavHost() {
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
-            WellioDrawerContent(onItemClick = { title ->
-                scope.launch { drawerState.close() }
-                navController.navigate(destinationFor(title))
-            })
+            WellioDrawerContent(
+                onModuleClick = { module ->
+                    scope.launch { drawerState.close() }
+                    navController.navigate(module.destination ?: ComingSoonDestination(module.title))
+                },
+                onItemClick = { title ->
+                    scope.launch { drawerState.close() }
+                    navController.navigate(ComingSoonDestination(title))
+                }
+            )
         }
     ) {
         NavHost(
@@ -86,13 +92,6 @@ fun WellioNavHost() {
 @Composable
 private fun JellyBack(navController: NavHostController) {
     BackHandler { navController.popBackStack() }
-}
-
-/** Item da sidebar → destino; o que ainda não existe cai em "Em breve". */
-private fun destinationFor(title: String): Any = when (title) {
-    "Água" -> WaterDestination
-    "Peso" -> WeightDestination
-    else -> ComingSoonDestination(title)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

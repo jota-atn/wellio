@@ -79,29 +79,47 @@ class HomeScreenTest {
     private val peso = HomeCard("weight", CardSize.Half)
 
     private fun enterEditing() {
-        compose.onNodeWithTag("card-water").performTouchInput { longClick() }
-        compose.onNodeWithText("Editar Home").performClick()
+        compose.onNodeWithContentDescription("Editar Home").performClick()
     }
 
     @Test
-    fun segurarESoltarAbreOLeque() {
+    fun segurarESoltarAbreOEditorDoCard() {
         show(listOf(agua))
 
         compose.onNodeWithTag("card-water").performTouchInput { longClick() }
 
+        compose.onNodeWithContentDescription("Editando Água, inteiro").assertIsDisplayed()
         compose.onNodeWithText("Ocultar").assertIsDisplayed()
-        compose.onNodeWithText("Deixar metade").assertIsDisplayed()
-        compose.onNodeWithText("Editar Home").assertIsDisplayed()
     }
 
     @Test
-    fun lequeOcultaNaHora() {
+    fun editorDoCardOcultaNaHora() {
         show(listOf(agua, peso))
 
         compose.onNodeWithTag("card-water").performTouchInput { longClick() }
         compose.onNodeWithText("Ocultar").performClick()
 
         assertEquals(listOf(peso), saved)
+    }
+
+    @Test
+    fun editorDoCardMudaOTamanhoNaHora() {
+        show(listOf(agua, peso))
+
+        compose.onNodeWithTag("card-water").performTouchInput { longClick() }
+        val actions = compose.onNodeWithContentDescription("Editando Água, inteiro").fetchSemanticsNode().config[SemanticsActions.CustomActions]
+        compose.runOnUiThread { actions.first { it.label == "Deixar metade" }.action() }
+
+        assertEquals(listOf(HomeCard("water", CardSize.Half), peso), saved)
+    }
+
+    @Test
+    fun lapisEntraNaEdicaoDaHome() {
+        show(listOf(agua))
+
+        enterEditing()
+
+        compose.onNodeWithText("Concluir").assertIsDisplayed()
     }
 
     @Test

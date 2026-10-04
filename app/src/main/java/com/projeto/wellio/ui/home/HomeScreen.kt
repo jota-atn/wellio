@@ -8,6 +8,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -110,8 +111,14 @@ fun HomeScreen(
                 if (editing) {
                     EditBar(onAddCard = { showCatalog = true }, onDone = ::finishEditing)
                 } else {
-                    IconButton(onClick = onMenuClick, modifier = Modifier.padding(start = 4.dp)) {
-                        Icon(Icons.Default.Menu, contentDescription = "Abrir menu")
+                    Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = onMenuClick) {
+                            Icon(Icons.Default.Menu, contentDescription = "Abrir menu")
+                        }
+                        Spacer(Modifier.weight(1f))
+                        IconButton(onClick = { draft = state.layout }) {
+                            Icon(Icons.Default.Edit, contentDescription = "Editar Home")
+                        }
                     }
                 }
             }
@@ -144,7 +151,6 @@ fun HomeScreen(
                             when (action) {
                                 QuickAction.Hide -> onSaveLayout(hideCard(state.layout, index))
                                 QuickAction.ToggleSize -> onSaveLayout(toggleSize(state.layout, index))
-                                QuickAction.EditHome -> draft = state.layout
                             }
                         },
                         cardTitle = ::titleOf,

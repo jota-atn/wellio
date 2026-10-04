@@ -1,5 +1,6 @@
 package com.projeto.wellio.ui.home
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.animateBounds
 import androidx.compose.animation.core.Animatable
@@ -11,17 +12,24 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -33,8 +41,12 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.PointerEventPass
@@ -60,10 +72,10 @@ import com.projeto.wellio.domain.home.homeRows
 import com.projeto.wellio.domain.home.moveCard
 import com.projeto.wellio.domain.home.toggleSize
 import com.projeto.wellio.ui.icons.WellioIcons
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.math.PI
 import kotlin.math.sin
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 /** Retângulo de cada card (na ordem de [cards]) dentro do grid, seguindo as linhas da SPEC §5.1. */
 internal fun cardRects(cards: List<HomeCard>, width: Float, rowHeight: Float, gutter: Float): List<Rect> {
@@ -86,14 +98,16 @@ internal fun gridHeight(cards: List<HomeCard>, rowHeight: Float, gutter: Float):
     return if (rows == 0) 0f else rows * rowHeight + (rows - 1) * gutter
 }
 
-/** O que o leque de um card pode fazer (SPEC §5.2). */
-enum class QuickAction { Hide, ToggleSize, EditHome }
+/** O que o editor de um card pode fazer (SPEC §5.2). */
+enum class QuickAction { Hide, ToggleSize }
 
 /**
  * Cards da Home num layout único, para a troca de posição e de tamanho animar (SPEC §5.2).
  *
- * Fora da edição, segurar um card e soltar abre o leque de ações ([onQuickAction]);
- * segurar e arrastar entra na edição ([onStartEditing]) já levando o card. Na edição
+ * Fora da edição, segurar um card e soltar abre o editor daquele card, como nos widgets do
+ * Android: moldura com uma alça para esticar/encolher (inteiro/metade) e Ocultar
+ * ([onQuickAction]); os outros escurecem. Segurar e arrastar entra na edição
+ * ([onStartEditing]) já levando o card. Na edição
  * ([editing]), os cards tremem, ganham os selos ⊖ e ⇔, e arrastar de qualquer ponto move
  * o card; [onChange] recebe o layout novo a cada mudança.
  */
@@ -121,8 +135,9 @@ fun HomeGrid(
     // Card solto voltando para o lugar com mola
     var settling by remember { mutableStateOf<String?>(null) }
     val drop = remember { Animatable(Offset.Zero, Offset.VectorConverter) }
-    // Card com o leque aberto
-    var menuFor by remember { mutableStateOf<String?>(null) }
+    // Card com o editor aberto (segurar e soltar)
+    var focused by remember { mutableStateOf<String?>(null) }
+    BackHandler(enabled = focused != null) { focused = null }
     val latestCards by rememberUpdatedState(cards)
     val latestOnChange by rememberUpdatedState(onChange)
     val latestEditing by rememberUpdatedState(editing)
@@ -183,7 +198,10 @@ fun HomeGrid(
 
     LookaheadScope {
         Layout(
-            modifier = modifier,
+            // Tocar no espaço entre os cards fecha o editor do card
+            modifier = modifier.pointerInput(focused) {
+                if (focused != null) detectTapGestures { focused = null }
+            },
             content = {
                 cards.forEachIndexed { index, homeCard ->
                     key(homeCard.key) {
@@ -191,9 +209,29 @@ fun HomeGrid(
                         val isSettling = settling == homeCard.key
                         val boundsAnimation = if (isDragged || isSettling) Modifier else Modifier.animateBounds(this@LookaheadScope)
                         Box(
-                            boundsAnimation
-                                .zIndex(if (isDragged || isSettling) 1f else 0f)
+                            // O gesto de segurar vem primeiro: o Compose compara os modificadores por posição,
+                            // e tirar o animateBounds do card arrastado recriaria o que vem depois dele,
+                            // cancelando o gesto no meio (o card ficava travado)
+                            Modifier
+                                .holdToEdit(
+                                    enabled = { !latestEditing },
+                                    onHold = {
+                                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        focused = null
+                                    },
+                                    onHoldReleased = { focused = homeCard.key },
+                                    onHoldDragStart = { offset ->
+                                        onStartEditing()
+                                        startDrag(homeCard.key, offset)
+                                    },
+                                    onHoldDrag = ::dragBy,
+                                    onHoldDragEnd = ::endDrag
+                                )
+                                .then(boundsAnimation)
+                                .zIndex(if (isDragged || isSettling || focused == homeCard.key) 1f else 0f)
                                 .graphicsLayer {
+                                    // Editando um card: os outros escurecem
+                                    if (focused != null && focused != homeCard.key) alpha = 0.35f
                                     if (editing && !isDragged) {
                                         // Tremidinha, cada card numa fase diferente
                                         rotationZ = 0.7f * sin((wiggle + index * 0.37f) * 2 * PI.toFloat())
@@ -205,25 +243,10 @@ fun HomeGrid(
                                         shadowElevation = 12.dp.toPx()
                                     }
                                 }
-                                // Fica ligado mesmo quando a edição começa no meio do gesto (segurar e arrastar)
-                                .holdToEdit(
-                                    enabled = { !latestEditing },
-                                    onHold = {
-                                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        menuFor = null
-                                    },
-                                    onHoldReleased = { menuFor = homeCard.key },
-                                    onHoldDragStart = { offset ->
-                                        onStartEditing()
-                                        startDrag(homeCard.key, offset)
-                                    },
-                                    onHoldDrag = ::dragBy,
-                                    onHoldDragEnd = ::endDrag
-                                )
                                 .then(
                                     if (editing) Modifier
                                     else Modifier.semantics {
-                                        onLongClick("Opções do card") { menuFor = homeCard.key; true }
+                                        onLongClick("Editar card") { focused = homeCard.key; true }
                                     }
                                 )
                         ) {
@@ -260,15 +283,26 @@ fun HomeGrid(
                                         }
                                 )
                             }
-                            if (menuFor == homeCard.key && !editing) {
-                                QuickMenu(
-                                    size = homeCard.size,
-                                    onDismiss = { menuFor = null },
-                                    onAction = { action ->
-                                        menuFor = null
-                                        onQuickAction(homeCard, action)
-                                    }
-                                )
+                            if (focused != null && !editing) {
+                                if (focused == homeCard.key) {
+                                    val rect = cardRects(cards, gridWidth, rowPx, gutterPx).getOrNull(index)
+                                    ResizeOverlay(
+                                        title = cardTitle(homeCard),
+                                        size = homeCard.size,
+                                        // A alça fica do lado livre: card da coluna da direita estica para a esquerda
+                                        handleOnLeft = rect != null && rect.left > 0f,
+                                        widthStepPx = (gridWidth + gutterPx) / 2,
+                                        onToggleSize = { onQuickAction(homeCard, QuickAction.ToggleSize) },
+                                        onHide = {
+                                            focused = null
+                                            onQuickAction(homeCard, QuickAction.Hide)
+                                        },
+                                        modifier = Modifier.matchParentSize()
+                                    )
+                                } else {
+                                    // Tocar num card escurecido fecha o editor
+                                    Box(Modifier.matchParentSize().pointerInput(Unit) { detectTapGestures { focused = null } })
+                                }
                             }
                         }
                     }
@@ -336,6 +370,103 @@ private fun EditOverlay(
             modifier = Modifier.align(Alignment.TopEnd).offset(4.dp, (-4).dp),
             error = false
         ) { Icon(WellioIcons.SwapHoriz, contentDescription = null, modifier = Modifier.size(12.dp)) }
+    }
+}
+
+/**
+ * Editor de um card, como o redimensionamento dos widgets do Android: moldura em volta do
+ * card, uma alça na lateral livre e o botão Ocultar. Arrastar a alça estica ou encolhe; ao
+ * passar da metade do caminho ([widthStepPx] = diferença entre inteiro e metade), o card
+ * encaixa no outro tamanho, com vibração.
+ */
+@Composable
+private fun ResizeOverlay(
+    title: String,
+    size: CardSize,
+    handleOnLeft: Boolean,
+    widthStepPx: Float,
+    onToggleSize: () -> Unit,
+    onHide: () -> Unit,
+    modifier: Modifier
+) {
+    val scheme = MaterialTheme.colorScheme
+    val haptics = LocalHapticFeedback.current
+    val currentSize by rememberUpdatedState(size)
+    val growsLeft by rememberUpdatedState(handleOnLeft)
+    Box(
+        modifier
+            // Toques no card em edição não abrem a tela
+            .pointerInput(Unit) { detectTapGestures { } }
+            .drawWithContent {
+                drawContent()
+                val inset = 4.dp.toPx()
+                drawRoundRect(
+                    color = scheme.primary,
+                    topLeft = Offset(-inset, -inset),
+                    size = Size(this.size.width + 2 * inset, this.size.height + 2 * inset),
+                    cornerRadius = CornerRadius(32.dp.toPx()),
+                    style = Stroke(2.5.dp.toPx())
+                )
+            }
+            .semantics {
+                contentDescription = "Editando $title, ${if (size == CardSize.Full) "inteiro" else "metade"}"
+                customActions = listOf(
+                    CustomAccessibilityAction(if (size == CardSize.Full) "Deixar metade" else "Deixar inteiro") { onToggleSize(); true },
+                    CustomAccessibilityAction("Ocultar") { onHide(); true }
+                )
+            }
+    ) {
+        // Alça: arrastar para fora estica, para dentro encolhe
+        var stretch by remember { mutableFloatStateOf(0f) }
+        Box(
+            Modifier
+                .align(if (handleOnLeft) Alignment.CenterStart else Alignment.CenterEnd)
+                .offset(x = if (handleOnLeft) (-15).dp else 15.dp)
+                .size(44.dp)
+                .pointerInput(Unit) {
+                    detectHorizontalDragGestures(
+                        onDragStart = { stretch = 0f },
+                        onHorizontalDrag = { change, amount ->
+                            change.consume()
+                            stretch += if (growsLeft) -amount else amount
+                            val full = currentSize == CardSize.Full
+                            // Metade estica até passar da metade do caminho; inteiro encolhe até lá
+                            if (!full && stretch > widthStepPx / 2 || full && stretch < -widthStepPx / 2) {
+                                stretch += if (full) widthStepPx else -widthStepPx
+                                haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                                onToggleSize()
+                            }
+                        },
+                        onDragEnd = { stretch = 0f }
+                    )
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            Surface(
+                shape = CircleShape,
+                color = scheme.primary,
+                border = BorderStroke(3.dp, scheme.surface),
+                shadowElevation = 3.dp,
+                modifier = Modifier.size(22.dp)
+            ) {}
+        }
+        Surface(
+            onClick = onHide,
+            shape = RoundedCornerShape(50),
+            color = scheme.errorContainer,
+            contentColor = scheme.onErrorContainer,
+            shadowElevation = 4.dp,
+            modifier = Modifier.align(Alignment.BottomCenter).offset(y = 18.dp)
+        ) {
+            Row(
+                Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(WellioIcons.Minus, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.size(6.dp))
+                Text("Ocultar", style = MaterialTheme.typography.labelLarge)
+            }
+        }
     }
 }
 

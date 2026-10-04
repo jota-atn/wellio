@@ -170,8 +170,9 @@ Regras:
 Cada tela de funcionalidade tem **personalidade própria**, com um elemento ilustrativo animado no topo, em vez de só cards e listas:
 
 - **Água**: uma gota grande que enche até a % do dia, com onda suave contínua; ao registrar, o nível sobe com um "chacoalhão" elástico. Ao registrar com a meta já batida (ou ao batê-la), a gota **transborda**: gotinhas pulam para fora e escorrem pela lateral.
-- **Peso**: uma **balança de banheiro** vista de cima; no visor, uma fita numerada gira com mola até o peso atual ao abrir a tela (a balança "afunda" de leve, como se alguém subisse). Registro por **régua deslizante** de 0,1 kg, com vibração a cada 0,5 kg (mais forte a cada 1 kg), botões −/+ e opção de digitar.
+- **Peso**: uma **balança de banheiro** vista de cima, com **agulha vermelha** no visor. Ao abrir a tela, duas pegadas aparecem uma de cada vez, cada uma afundando a balança, e a fita numerada gira com mola até o peso atual. Uma pesagem nova faz a balança quicar e a fita rolar do peso antigo para o novo. Bater o peso alvo solta um confete discreto. A área sob a curva de evolução "respira" de leve. Registro por **régua deslizante** de 0,1 kg, com vibração a cada 0,5 kg (mais forte a cada 1 kg), botões −/+ e opção de digitar.
 - Exercício e Alimentação seguem a mesma ideia quando chegarem.
+- **O card de cada funcionalidade na Home usa o mesmo elemento ilustrativo e os mesmos ícones da tela** (a gota no card de Água, a balança no card de Peso), em versão compacta (M4).
 
 Com "Remover animações" ligado, os elementos ficam parados (§2.8).
 
@@ -395,7 +396,7 @@ Junta **até 3 resumos** escolhidos pelo usuário num card só, com visual capri
 ## 6.1 Peso
 
 - Tela própria, com a balança de banheiro no topo (§2.9).
-- **Peso alvo** definido na própria tela: barra de progresso desde o peso do momento em que o alvo foi definido, quanto falta e linha tracejada na curva. No M2 o peso alvo aparece também no perfil (mesmo dado).
+- **Peso alvo** definido na própria tela, **dentro da balança**: com alvo, uma linha compacta com quanto falta, barrinha de progresso (desde o peso do momento em que o alvo foi definido) e data estimada, que abre a edição ao tocar; sem alvo, um botão "Definir alvo". Linha tracejada na curva. No M2 o peso alvo aparece também no perfil (mesmo dado).
 - **Curva de evolução** por período (30 dias, 90 dias, tudo); segurar o dedo e arrastar mostra o peso e o dia de cada pesagem.
 - **Resumo do período**: menor, maior e média.
 - **Ritmo** médio em kg por semana (com pelo menos 7 dias entre a primeira e a última pesagem do período) e, com peso alvo, a **data estimada** para chegar lá, se o ritmo for na direção certa.

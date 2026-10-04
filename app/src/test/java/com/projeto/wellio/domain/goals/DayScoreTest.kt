@@ -1,5 +1,6 @@
 package com.projeto.wellio.domain.goals
 
+import com.projeto.wellio.domain.model.ExerciseUnit
 import com.projeto.wellio.domain.model.Goals
 import com.projeto.wellio.domain.model.Totals
 import org.junit.Assert.assertEquals
@@ -29,5 +30,20 @@ class DayScoreTest {
         assertEquals(7, days.size)
         assertEquals(LocalDate.of(2026, 9, 28), days.first())
         assertEquals(today, days.last())
+    }
+
+    @Test
+    fun `exercicio conta na unidade da meta`() {
+        val inMinutes = goals.withExerciseUnit(ExerciseUnit.Minutes) // meta de 30 min
+
+        assertEquals(1f / 6, dayScore(Totals(kcalBurned = 500, exerciseMinutes = 15), inMinutes), 0.001f)
+    }
+
+    @Test
+    fun `trocar a unidade volta a meta ao padrao dela`() {
+        val inMinutes = goals.withExerciseUnit(ExerciseUnit.Minutes)
+
+        assertEquals(30, inMinutes.exercise.daily)
+        assertEquals(inMinutes, inMinutes.withExerciseUnit(ExerciseUnit.Minutes))
     }
 }

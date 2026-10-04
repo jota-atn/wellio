@@ -5,6 +5,8 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
+import com.projeto.wellio.domain.model.ExerciseUnit
 import com.projeto.wellio.domain.model.Goal
 import com.projeto.wellio.domain.model.GoalType
 import com.projeto.wellio.domain.model.Goals
@@ -16,7 +18,8 @@ import kotlinx.coroutines.flow.map
 class GoalsStore(private val dataStore: DataStore<Preferences>) {
 
     val goals: Flow<Goals> = dataStore.data.map { prefs ->
-        GoalType.entries.fold(Goals.Default) { goals, type ->
+        val unit = ExerciseUnit.entries.firstOrNull { it.name == prefs[exerciseUnitKey] } ?: ExerciseUnit.Kcal
+        GoalType.entries.fold(Goals.Default.copy(exerciseUnit = unit)) { goals, type ->
             val default = Goals.Default[type]
             goals.with(
                 type,
@@ -35,6 +38,19 @@ class GoalsStore(private val dataStore: DataStore<Preferences>) {
             if (weekly == null) prefs.remove(weeklyKey(type)) else prefs[weeklyKey(type)] = weekly
         }
     }
+
+    /** Meta de exercício em kcal ou minutos (SPEC §8.0); trocar de unidade volta a meta ao padrão dela. */
+    suspend fun setExerciseUnit(unit: ExerciseUnit) {
+        dataStore.edit { prefs ->
+            val current = ExerciseUnit.entries.firstOrNull { it.name == prefs[exerciseUnitKey] } ?: ExerciseUnit.Kcal
+            if (current == unit) return@edit
+            prefs[exerciseUnitKey] = unit.name
+            prefs[dailyKey(GoalType.EXERCISE)] = unit.defaultDaily
+            prefs.remove(weeklyKey(GoalType.EXERCISE))
+        }
+    }
+
+    private val exerciseUnitKey = stringPreferencesKey("goal_exercise_unit")
 
     /** Peso alvo (SPEC §6.1); null enquanto não houver. */
     val weightGoal: Flow<WeightGoal?> = dataStore.data.map { prefs ->

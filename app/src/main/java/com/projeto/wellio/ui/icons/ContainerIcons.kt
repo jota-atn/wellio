@@ -4,7 +4,7 @@ import androidx.annotation.DrawableRes
 import com.projeto.wellio.R
 import com.projeto.wellio.domain.water.ContainerIcon
 
-/** Desenho de cada ícone de recipiente (fonte em tools/icons/recipientes.py). */
+/** Desenho de cada ícone de recipiente (fonte em tools/icons/icones.py). */
 @DrawableRes
 fun containerIconRes(iconKey: String): Int = when (ContainerIcon.fromKey(iconKey)) {
     ContainerIcon.Copo -> R.drawable.ic_container_copo

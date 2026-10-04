@@ -1,11 +1,15 @@
 """
-Ícones dos recipientes de água (SPEC §6): fonte única dos desenhos.
+Ícones desenhados do Wellio (SPEC §2.3): fonte única dos desenhos.
 
-Gera os vector drawables em app/src/main/res/drawable e SVGs de prévia em
-tools/icons/svg. Traço de 1,75 em grade 24x24, pontas arredondadas, sem
-preenchimento; a cor vem do tint no app.
+Gera os vector drawables em app/src/main/res/drawable (ic_<grupo>_<nome>.xml)
+e SVGs de prévia em tools/icons/svg/<grupo>. Traço de 1,75 em grade 24x24,
+pontas arredondadas, sem preenchimento; a cor vem do tint no app.
 
-Uso: python3 tools/icons/recipientes.py
+Grupos:
+- container: recipientes de água (SPEC §6)
+- module: ícone de cada funcionalidade (sidebar, FAB, resumos)
+
+Uso: python3 tools/icons/icones.py
 """
 from pathlib import Path
 
@@ -14,7 +18,7 @@ DRAWABLE = ROOT / "app/src/main/res/drawable"
 SVG = ROOT / "tools/icons/svg"
 STROKE = 1.75
 
-ICONS = {
+CONTAINER = {
     "copo": [
         "M6,4 H18 L16.5,19.9 Q16.4,21 15.3,21 H8.7 Q7.6,21 7.5,19.9 Z",
         "M6.6,10 H17.4",
@@ -61,6 +65,29 @@ ICONS = {
     ],
 }
 
+MODULE = {
+    "water": [
+        "M12,3 C12,3 5.5,10 5.5,14.5 A6.5,6.5 0 0 0 18.5,14.5 C18.5,10 12,3 12,3 Z",
+        "M9,15 A3,3 0 0 0 11.5,17.8",
+    ],
+    "weight": [
+        "M5,4 H19 A2,2 0 0 1 21,6 V19 A2,2 0 0 1 19,21 H5 A2,2 0 0 1 3,19 V6 A2,2 0 0 1 5,4 Z",
+        "M7.5,11.5 A4.5,4.5 0 0 1 16.5,11.5 Z",
+        "M12,11.5 L13.6,8.6",
+    ],
+    "exercise": [
+        "M12,3 C12,3 18,8 18,14 A6,6 0 0 1 6,14 C6,10.5 8.5,8.5 8.5,8.5 C8.5,11 10,12 10,12 C10,8 12,3 12,3 Z",
+        "M12,20 A2.5,2.5 0 0 1 9.5,17.5 C9.5,15.5 12,13.5 12,13.5 C12,13.5 14.5,15.5 14.5,17.5 A2.5,2.5 0 0 1 12,20 Z",
+    ],
+    "food": [
+        "M12,7.5 C10,6 5,6 5,11.5 C5,16 8,21 10,21 C11,21 11.5,20.5 12,20.5 C12.5,20.5 13,21 14,21 C16,21 19,16 19,11.5 C19,6 14,6 12,7.5 Z",
+        "M12,7.5 C12,5.5 13,4 14.5,3",
+        "M12.6,5.2 C13.6,3.7 16,3.6 17,4.6 C16,5.9 13.9,6.1 12.6,5.2 Z",
+    ],
+}
+
+GROUPS = {"container": CONTAINER, "module": MODULE}
+
 
 def vector_drawable(paths: list[str]) -> str:
     body = "\n".join(
@@ -73,7 +100,7 @@ def vector_drawable(paths: list[str]) -> str:
         for d in paths
     )
     return f'''<?xml version="1.0" encoding="utf-8"?>
-<!-- Gerado por tools/icons/recipientes.py: edite lá, não aqui. -->
+<!-- Gerado por tools/icons/icones.py: edite lá, não aqui. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
@@ -94,8 +121,11 @@ def svg(paths: list[str]) -> str:
 
 
 if __name__ == "__main__":
-    SVG.mkdir(parents=True, exist_ok=True)
-    for name, paths in ICONS.items():
-        (DRAWABLE / f"ic_container_{name}.xml").write_text(vector_drawable(paths))
-        (SVG / f"{name}.svg").write_text(svg(paths))
-    print(f"{len(ICONS)} ícones gerados")
+    total = 0
+    for group, icons in GROUPS.items():
+        (SVG / group).mkdir(parents=True, exist_ok=True)
+        for name, paths in icons.items():
+            (DRAWABLE / f"ic_{group}_{name}.xml").write_text(vector_drawable(paths))
+            (SVG / group / f"{name}.svg").write_text(svg(paths))
+            total += 1
+    print(f"{total} ícones gerados")

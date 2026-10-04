@@ -2,6 +2,8 @@ package com.projeto.wellio.domain.weight
 
 import com.projeto.wellio.domain.model.WeightEntry
 import java.time.LocalDate
+import java.time.temporal.ChronoUnit
+import kotlin.math.ceil
 import kotlin.math.roundToInt
 
 const val MIN_WEIGHT_KG = 20.0
@@ -46,4 +48,47 @@ fun weightTrend(entries: List<WeightEntry>, today: LocalDate, period: WeightPeri
 fun trendChange(trend: List<WeightEntry>): Double? {
     if (trend.size < 2) return null
     return ((trend.last().weightKg - trend.first().weightKg) * 10).roundToInt() / 10.0
+}
+
+/** Peso alvo e o peso de quando ele foi definido (início da barra de progresso). */
+data class WeightGoal(val targetKg: Double, val startKg: Double)
+
+/** Fração do caminho entre o início e o alvo já percorrida, entre 0 e 1. */
+fun goalProgress(goal: WeightGoal, currentKg: Double): Float {
+    val total = goal.targetKg - goal.startKg
+    if (total == 0.0) return 1f
+    return ((currentKg - goal.startKg) / total).toFloat().coerceIn(0f, 1f)
+}
+
+/** Quanto falta até o alvo, sempre positivo; 0 quando já chegou (ou passou). */
+fun remainingKg(goal: WeightGoal, currentKg: Double): Double {
+    val losing = goal.targetKg <= goal.startKg
+    val left = if (losing) currentKg - goal.targetKg else goal.targetKg - currentKg
+    return (left.coerceAtLeast(0.0) * 10).roundToInt() / 10.0
+}
+
+data class WeightSummary(val minKg: Double, val maxKg: Double, val averageKg: Double)
+
+/** Menor, maior e média das pesagens; null sem pesagens. */
+fun summarize(trend: List<WeightEntry>): WeightSummary? {
+    if (trend.isEmpty()) return null
+    val weights = trend.map { it.weightKg }
+    return WeightSummary(weights.min(), weights.max(), (weights.average() * 10).roundToInt() / 10.0)
+}
+
+/** Ritmo em kg por semana, entre a primeira e a última pesagem; null com menos de 7 dias entre elas. */
+fun weeklyRate(trend: List<WeightEntry>): Double? {
+    if (trend.size < 2) return null
+    val days = ChronoUnit.DAYS.between(trend.first().date, trend.last().date)
+    if (days < 7) return null
+    return (trend.last().weightKg - trend.first().weightKg) / days * 7
+}
+
+/** Dia estimado para chegar ao alvo no ritmo atual; null se o ritmo não leva até lá (ou leva mais de 2 anos). */
+fun projectedDate(goal: WeightGoal, currentKg: Double, ratePerWeek: Double?, today: LocalDate): LocalDate? {
+    if (ratePerWeek == null || ratePerWeek == 0.0) return null
+    if (remainingKg(goal, currentKg) == 0.0) return null
+    val days = (goal.targetKg - currentKg) / ratePerWeek * 7
+    if (days <= 0 || days > 730) return null
+    return today.plusDays(ceil(days).toLong())
 }

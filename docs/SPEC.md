@@ -419,6 +419,19 @@ Junta **até 3 resumos** escolhidos pelo usuário num card só, com visual capri
 
 ## 7. Alimentação
 
+### 7.0 Tela, registro e card (decidido para o M1b)
+
+- **Prato** no topo (elemento ilustrativo, §2.9): um prato visto de cima que se enche ao longo do dia; cada refeição é uma fatia colorida proporcional às kcal (café, almoço, lanche, jantar, ceia). Ao lado, `1.250 de 2.000 kcal` (tocar na meta edita) e as macros do dia, se houver dados.
+- **Acima da meta**: além do âmbar, do excedente e da mensagem leve (§7.3), registrar passando da meta faz o **prato transbordar**: uma tremidinha, farelos/grãos pulam para fora e a borda fica âmbar; depois assenta. Tom neutro, nunca de bronca.
+- **Base resumida em famílias** (como no Exercício): cada alimento aparece uma vez ("Arroz", "Feijão", "Frango") e, nos detalhes, escolhe-se o tipo/preparo (branco ou integral; cozido, grelhado, frito…). Só o que se come no dia a dia (~200 alimentos da TACO + extras); os crus de ingrediente saem. A lista curada vai para revisão (`docs/ALIMENTOS.md`) antes de virar seed.
+- **Montar o prato**: o registro é um prato em montagem: adicionar vários alimentos (cada um com medida e quantidade), ver o total subindo e registrar tudo de uma vez na refeição sugerida pelo horário (trocável).
+- **Pratos prontos**:
+  - **do app**: pratos brasileiros comuns já montados com alimentos da base (prato feito, feijoada, strogonoff de frango, macarronada, salada completa…), que entram no prato de uma vez e podem ser ajustados item a item (lista em `docs/ALIMENTOS.md` para revisão);
+  - **meus pratos**: salvar um prato montado ("Meu almoço de sempre") e registrar de novo com um toque, ajustando se quiser.
+- **Quantidade**: chips das medidas do alimento (1 concha, 1 colher de sopa, 100 g…) e um seletor com −/+ em meios (½, 1, 1½, 2…), com opção de digitar gramas; kcal e macros ao vivo.
+- **Card**: inteiro com o prato pequeno, kcal/meta com barra, as refeições do dia com subtotal (`Café 320 · Almoço 640`) e o +; metade com prato, kcal/meta e o +.
+- **FAB**: segurar a pílula Alimento mostra "Repetir [refeição da hora] de ontem" e os pratos salvos mais usados; tocar registra na hora, com desfazer.
+
 ### 7.1 Registro
 
 Abre em bottom sheet de tela cheia (§2.2).

@@ -66,7 +66,7 @@ O pacote declarado nos arquivos deve bater com a pasta (hoje `ui/components` dec
 
 ```
 Sidebar (drawer)
-├── Cabeçalho: foto + nome + rank + informações  → modal de Perfil
+├── Cabeçalho: foto + nome + rank + informações  → tela de Perfil
 ├── Registros
 │   ├── Água
 │   ├── Alimentação
@@ -216,7 +216,7 @@ Com "Remover animações" ligado, os elementos ficam parados (§2.8).
 
 ### 4.2 DataStore
 
-- **Perfil**: nome, fotoUri?, dataNascimento?, sexo?, alturaCm?, nivelAtividade?, biotipo?, objetivo?, pesoAlvoKg?, tituloExibido?, onboardingConcluido
+- **Perfil**: nome, fotoUri?, dataNascimento?, sexo?, alturaCm?, nivelAtividade?, tituloExibido?, onboardingConcluido (objetivo derivado do peso alvo, que fica nas metas; §9.1)
 - **Metas diárias e semanais**: água (ml), kcal consumidas, exercício (unidade: kcal ou minutos); para cada uma, semanal automática (×7) ou valor próprio
 - **Configurações**: ver §9.3
 - **Layout da Home e do painel rápido**: listas ordenadas de instâncias de card `{instanceId, cardType, size, config}`; `config` guarda o que é próprio da instância (ex.: lista do Checklist, linhas e nome do Combinado)
@@ -240,13 +240,22 @@ Na primeira abertura, um onboarding curto em etapas, com indicador de progresso:
 1. **Boas-vindas**: o que o app faz.
 2. **Você**: nome* e foto.
 3. **Corpo**: data de nascimento, sexo, altura, peso atual*.
-4. **Estilo de vida**: nível de atividade, biotipo, objetivo (perder / manter / ganhar peso), peso alvo.
+4. **Estilo de vida**: nível de atividade e peso alvo (o objetivo sai do alvo).
 5. **Metas diárias**: água, kcal consumidas (com a sugestão calculada a partir das etapas anteriores) e exercício (em kcal queimadas ou minutos ativos, à escolha).
-6. **Lembretes**: oferece ligar o lembrete de água (a cada 2 h, das 8h às 22h). Se aceito, pede a permissão de notificação nesse momento.
+6. **Lembretes** (entra no M3, com as notificações): oferece ligar o lembrete de água (a cada 2 h, das 8h às 22h). Se aceito, pede a permissão de notificação nesse momento.
 
 \* Obrigatórios: **nome** e **peso**. Os outros campos podem ficar em branco e as etapas 4–6 podem ser puladas (ficam os valores padrão).
 
-Tudo que é preenchido aqui vai para o perfil e pode ser editado depois pelo modal de Perfil. O onboarding não aparece de novo depois de concluído.
+Tudo que é preenchido aqui vai para o perfil e pode ser editado depois na tela de Perfil. O onboarding não aparece de novo depois de concluído.
+
+#### Decidido para o M2a
+
+- Chega no M2a com as etapas 1 a 5; a etapa 6 entra no M3.
+- **Uma ilustração própria por etapa**, desenhada no estilo dos ícones do app (nada de emoji): nas boas-vindas, a gota, a fogueira e o prato juntos; no corpo, a balança; nas metas, os três elementos pequenos ao lado de cada meta. Campos abaixo da ilustração; indicador de progresso no rodapé.
+- As etapas usam os mesmos campos e sheets da tela de Perfil (§9.1).
+- **Etapa Corpo**: o peso digitado vira o primeiro registro de peso (`weight_entry`). **Etapa Estilo de vida**: nível de atividade e peso alvo (o mesmo alvo da tela de Peso, §6.1); o objetivo não é perguntado, sai do alvo (§9.1).
+- **Etapa Metas**: água com a sugestão de 35 ml por kg, kcal com a sugestão do perfil (quando houver dados) e exercício em kcal ou minutos; cada uma já vem preenchida com a sugestão.
+- **Quem já usa o app** (há registros ou metas salvas e o onboarding nunca foi concluído): na primeira abertura depois da atualização, o onboarding aparece com o que já existe preenchido (peso mais recente, alvo, metas), para completar nome e corpo.
 
 ### 5.1 Layout e catálogo de cards
 
@@ -412,7 +421,7 @@ Junta **até 3 resumos** escolhidos pelo usuário num card só, com visual capri
 ## 6.1 Peso
 
 - Tela própria, com a balança de banheiro no topo (§2.9).
-- **Peso alvo** definido na própria tela, **dentro da balança**: com alvo, uma linha compacta com quanto falta, barrinha de progresso (desde o peso do momento em que o alvo foi definido) e data estimada, que abre a edição ao tocar; sem alvo, um botão "Definir alvo". Linha tracejada na curva. No M2 o peso alvo aparece também no perfil (mesmo dado).
+- **Peso alvo** definido na própria tela, **dentro da balança**: com alvo, uma linha compacta com quanto falta, barrinha de progresso (desde o peso do momento em que o alvo foi definido) e data estimada, que abre a edição ao tocar; sem alvo, um botão "Definir alvo". Linha tracejada na curva. No M2a o peso alvo aparece também no perfil, como objetivo (mesmo dado, §9.1).
 - **Curva de evolução** por período (30 dias, 90 dias, tudo); segurar o dedo e arrastar mostra o peso e o dia de cada pesagem.
 - **Resumo do período**: menor, maior e média.
 - **Ritmo** médio em kg por semana (com pelo menos 7 dias entre a primeira e a última pesagem do período) e, com peso alvo, a **data estimada** para chegar lá, se o ritmo for na direção certa.
@@ -514,9 +523,9 @@ Baseado no esboço em papel do usuário.
 └────────────────────────────────────┴──────────────────────────┘
 ```
 
-- **Foto**: grande, circular; tocar abre o modal de Perfil (§9.1).
-- **Nome + rank**: nome do usuário e, ao lado, o **nível** e o **título** escolhido (§9.5).
-- **Caixa de informações**: resumo do perfil (peso, altura, idade, objetivo); tocar abre o modal de Perfil.
+- **Foto**: grande, circular; tocar abre a tela de Perfil (§9.1). Sem foto, a **inicial do nome** sobre a cor base do app; sem nome, um ícone de pessoa desenhado.
+- **Nome + rank**: nome do usuário e, ao lado, o **nível** e o **título** escolhido (§9.5). Até o M6, só o nome.
+- **Caixa de informações**: "72,4 kg · 1,78 m · 27 anos", só com o que estiver preenchido (peso mais recente, altura, idade); tocar abre a tela de Perfil.
 - **Menu**: itens da navegação (§2.2).
 - A sidebar é mais estreita que o padrão do Material 3 (~60% da largura), para sobrar espaço ao painel rápido.
 
@@ -529,18 +538,34 @@ A Home fica **embaçada** atrás da sidebar, e à direita aparece uma coluna com
 - Tocar num mini-card abre a tela correspondente; tocar no espaço vazio do embaçado, deslizar para a esquerda ou voltar fecha a sidebar.
 - Em telas estreitas (< 360dp de largura), o painel rápido não aparece.
 
-### 9.1 Perfil
+### 9.1 Perfil (decidido para o M2a)
 
-Editado num **modal (bottom sheet)** que abre ao tocar no cabeçalho da sidebar, sem tela própria. O gráfico de evolução do peso fica em Estatísticas (§9.4); o modal mostra o peso atual e um atalho "ver evolução".
+**Tela própria** (§2.2), aberta pelo cabeçalho da sidebar: a **foto do cabeçalho voa e cresce** até o lugar dela no topo da tela enquanto a sidebar fecha, no espírito do card que vira tela (§2.9). Mesma linguagem visual das outras telas.
 
-- **Foto**: escolhida pelo Photo Picker e copiada para o armazenamento interno do app; recorte circular.
-- **Nome**.
-- **Peso atual**: cada alteração cria um `weight_entry`, gerando o histórico mostrado em Estatísticas.
-- Opcionais: data de nascimento, sexo, altura, objetivo (perder / manter / ganhar peso), peso alvo e:
-  - **nível de atividade**: sedentário, levemente ativo, moderado, muito ativo, atleta. Entra no cálculo da meta calórica;
-  - **biotipo**: ectomorfo, mesomorfo, endomorfo. Só informativo, não entra em cálculos.
-- Derivados exibidos: idade, IMC, e **meta calórica sugerida** pela fórmula de Mifflin-St Jeor × fator do nível de atividade (1,2 / 1,375 / 1,55 / 1,725 / 1,9), ajustada pelo objetivo (−500 kcal para perder, +300 para ganhar). O usuário pode aceitar a sugestão como meta diária. Sem sexo, idade ou altura, a sugestão não aparece.
-- O cabeçalho da sidebar mostra foto, nome e um resumo (ex.: peso atual e sequência de dias).
+```
+        ╭──────╮
+        │ FOTO │
+        ╰──────╯
+         João
+┌────────┬────────┬────────┐
+│ 27     │ 22,9   │ 2.350  │
+│ anos   │ IMC ●  │ kcal   │  [usar]
+└────────┴────────┴────────┘
+ Corpo        1,78 m · 72,4 kg ›
+ Objetivo     perder peso      ›
+ Atividade    moderado         ›
+```
+
+- **Elemento ilustrativo**: a foto grande e, abaixo, uma **ficha** com os derivados em destaque: idade, IMC (com um ponto na cor da faixa: abaixo do peso, normal, sobrepeso, obesidade) e a meta calórica sugerida. O que não puder ser calculado mostra o que falta ("informe a altura").
+- **Edição**: tocar numa linha abre um sheet pequeno só para aquele campo, como nas metas. A tela sempre mostra os valores.
+- **Foto**: escolhida pelo Photo Picker; em seguida, uma tela com a foto atrás de uma **máscara circular** para arrastar e pinçar até enquadrar, e Confirmar. O recorte é salvo no armazenamento interno do app. Dá para trocar ou remover.
+- **Nome** (obrigatório).
+- **Opcionais**: data de nascimento, sexo (**Masculino**, **Feminino** ou **Prefiro não informar**), altura e **nível de atividade** (sedentário, levemente ativo, moderado, muito ativo, atleta). Biotipo saiu.
+- **Peso**: o perfil mostra o peso mais recente, mas não edita; tocar abre a tela de Peso (§6.1), que continua sendo o único lugar de pesar.
+- **Objetivo**: **derivado do peso alvo** da tela de Peso: alvo abaixo do peso atual = perder, acima = ganhar, sem alvo ou a menos de 1 kg = manter. A linha Objetivo abre a edição do alvo (o mesmo sheet da tela de Peso).
+- **Meta calórica sugerida**: Mifflin-St Jeor × fator do nível de atividade (1,2 / 1,375 / 1,55 / 1,725 / 1,9; sem nível, 1,2), ajustada pelo objetivo (−500 kcal para perder, +300 para ganhar). Precisa de sexo, idade, altura e peso; sem algum deles, a ficha diz o que falta (com "Prefiro não informar", explica que a fórmula depende do sexo).
+- **Botão "Usar"** ao lado da sugestão: aplica a sugestão como meta diária de kcal. A meta só muda quando o usuário toca; se o peso ou o perfil mudarem, a sugestão se atualiza mas a meta fica. Quando a meta já é igual à sugestão, o botão some.
+- O gráfico de evolução do peso continua na tela de Peso.
 
 ### 9.2 Metas
 
@@ -776,7 +801,9 @@ O tipo define o editor, mas todas compartilham a mesma tela de listagem.
 | **M1b — Alimentação** | Tela de Alimentação com refeições (sugeridas pelo horário: café até 10h, almoço 10–15h, lanche 15–18h, jantar 18–22h, ceia depois das 22h); TACO + extras; medidas caseiras; favoritos/recentes; cadastro de alimentos próprios; repetir refeição; acima da meta |
 | **M1c — Extras do registro** | Leitor de código de barras (Open Food Facts); modelos de treino |
 | **M1 — Registros completos (visão geral)** | Telas de detalhe com editar/remover/desfazer; navegação entre dias; favoritos/recentes; bases TACO + extras e Compendium curado; medidas caseiras; resumos de cada funcionalidade; cadastro de alimentos e exercícios próprios; **leitor de código de barras**; **modelos de treino**; peso do perfil no cálculo; correções da §12 |
-| **M2 — Perfil e Metas** | Modal de perfil (foto, nome, peso); metas diárias, semanais e de período; Dashboard com dados reais; **widget na tela inicial** |
+| **M2a — Perfil e onboarding** | Tela de Perfil (foto com recorte, nome, corpo, atividade, objetivo derivado do alvo, ficha com idade/IMC/meta sugerida); cabeçalho da sidebar; onboarding (etapas 1–5) |
+| **M2b — Metas e Dashboard** | Tela de Metas (diárias, semanais e de período); tela da Visão geral do Dashboard |
+| **M2c — Widget** | **Widget na tela inicial** |
 | **M3 — Configurações e integrações** | Tema; notificações e lembretes; sons; backup/exportação; **Health Connect** |
 | **M4 — Home personalizável** | Catálogo de cards (inteiro/metade/mini), grid arrastável, painel rápido configurável, card Combinado, restaurar padrão |
 | **M5 — Anotações** | Notas, listas, receitas, lembretes, diário, tags, fixadas |
@@ -878,7 +905,7 @@ Modelo de dados adicional: `plan_item` (id, date, time?, kind: exercise/template
 - **FAB "+"** na Home com menu de registro (§5.1).
 - **Idioma**: pt-BR, com textos em `strings.xml` (§2.4).
 - **Onboarding**: nome e peso obrigatórios; resto pulável; lembrete de água oferecido no fim (§5.0).
-- **Tipo de corpo**: nível de atividade (usado no cálculo) + biotipo (informativo) (§9.1).
+- **Tipo de corpo**: nível de atividade (usado no cálculo); biotipo saiu no M2a (§9.1).
 - **Meta de exercício**: em kcal ou minutos, à escolha do usuário (§9.2).
 - **Anotações**: formatação básica com barra de ferramentas, guardada em Markdown; diário com uma entrada por dia (§10).
 - **Health Connect**: importação automática com aviso; kcal do dispositivo quando houver (§13.1).
@@ -908,6 +935,9 @@ Modelo de dados adicional: `plan_item` (id, date, time?, kind: exercise/template
 - **Metas editáveis na tela de cada módulo e no Dashboard**, gravando no mesmo lugar (§6, §6.1).
 - **M1.5 antes de Exercício**: a estrutura da Home (contrato de módulo, catálogo, grid, modo de edição, FAB) vem antes, para cada módulo novo chegar completo (§11).
 - **Telas próprias para tudo** e personalidade visual por tela (gota na Água, curva + régua no Peso); transição "gelatina"; recipientes na tela de Água com fileira + modo edição e ícones desenhados (§2.2, §2.9, §6).
+- **M2 dividido em M2a/M2b/M2c**, cada parte especificada, implementada e mergeada antes da próxima (§11).
+- **Perfil**: tela própria, aberta com a foto crescendo a partir da sidebar; editar tocando em cada linha; sem biotipo; peso só na tela de Peso; objetivo derivado do peso alvo; meta sugerida aplicada pelo botão "Usar" (§9.1).
+- **Onboarding**: entra no M2a sem a etapa de lembretes (M3); ilustração por etapa; quem já usa o app vê o onboarding preenchido uma vez (§5.0).
 - **Tom dos textos**: zoeiro e épico, sem ser brega; trilhas com nomes evocativos (Caudal, Fornalha...) (§9.5, `TEXTOS.md`).
 
 ## 15. Decisões em aberto

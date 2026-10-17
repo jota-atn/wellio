@@ -6,6 +6,8 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.projeto.wellio.data.db.AppDatabase
 import com.projeto.wellio.data.prefs.GoalsStore
 import com.projeto.wellio.data.prefs.HomeLayoutStore
+import com.projeto.wellio.data.prefs.ProfilePhotoStore
+import com.projeto.wellio.data.prefs.ProfileStore
 import com.projeto.wellio.data.repository.ExerciseRepository
 import com.projeto.wellio.data.repository.FoodRepository
 import com.projeto.wellio.data.repository.WaterRepository
@@ -13,6 +15,7 @@ import com.projeto.wellio.data.repository.WeightRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import java.io.File
 import java.time.Clock
 
 class WellioApp : Application() {
@@ -36,6 +39,8 @@ class AppContainer(context: Context) {
     val clock: Clock = Clock.systemDefaultZone()
     val goalsStore = GoalsStore(context.preferences)
     val homeLayoutStore = HomeLayoutStore(context.preferences)
+    val profileStore = ProfileStore(context.preferences)
+    val profilePhotoStore = ProfilePhotoStore(File(context.filesDir, "profile"))
     val waterRepository = WaterRepository(database.waterDao(), clock)
     val foodRepository = FoodRepository(database.foodDao(), clock)
     val weightRepository = WeightRepository(database.weightDao(), clock)

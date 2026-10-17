@@ -31,6 +31,28 @@ MEDIDAS = {
 }
 
 
+def plural(word):
+    if word.endswith("ão"):
+        return word[:-2] + "ões"
+    if word.endswith(("r", "z")):
+        return word + "es"
+    return word + "s"
+
+
+def measure_label(measure, qty):
+    """Medida com a quantidade concordando: "1 colher de sopa", "4 colheres de sopa"."""
+    text = MEDIDAS[measure]
+    if qty <= 1:
+        return text
+    # Pluraliza o nome e os adjetivos colados a ele, até o primeiro "de" ou parêntese
+    words = text.split(" ")
+    for i, word in enumerate(words):
+        if word == "de" or word.startswith("("):
+            break
+        words[i] = plural(word)
+    return " ".join(words)
+
+
 def nutrients(ref, table):
     """(kcal, proteína, carboidrato, gordura, é extra?) por 100 g."""
     if isinstance(ref, str):
@@ -81,13 +103,13 @@ def main():
     lines += ["", f"## Pratos prontos do app ({len(PRATOS)})", "", "Entram no prato de uma vez; cada item pode ser ajustado.", ""]
     for dish, meal, items in PRATOS:
         parts, total = [], 0.0
-        for food_name, label, measure, qty in items:
+        for food_name, label, measure, qty, *shown in items:
             variants, grams = families[food_name]
             ref = dict(variants)[label]
             kcal = nutrients(ref, table)[0] * grams[measure] * qty / 100
             total += kcal
-            what = f"{food_name} {label}".strip()
-            parts.append(f"{fmt(qty) if qty == int(qty) else fmt(qty, 1)} {MEDIDAS[measure]} de {what.lower()}")
+            what = shown[0] if shown else f"{food_name} {label}".strip().lower()
+            parts.append(f"{fmt(qty) if qty == int(qty) else fmt(qty, 1)} {measure_label(measure, qty)} de {what}")
         lines.append(f"- **{dish}** ({meal}, ~{fmt(total)} kcal): " + "; ".join(parts))
 
     lines += ["", "## Extras ⚠️ e de onde vieram os valores", ""]

@@ -438,20 +438,20 @@ preparo é escolhido nos detalhes do registro.
 
 Entram no prato de uma vez; cada item pode ser ajustado.
 
-- **Prato feito** (Almoço, ~574 kcal): 4 colher de sopa de arroz branco; 1 concha de feijão carioca; 1 bife de bife patinho; 3 folha de folhas alface; 3 fatia de tomate
-- **Feijoada completa** (Almoço, ~878 kcal): 2 concha de feijoada; 4 colher de sopa de arroz branco; 2 colher de sopa de couve refogada; 2 colher de sopa de farofa pronta; 1 unidade de laranja
-- **Strogonoff de frango com arroz** (Almoço, ~316 kcal): 2 colher de servir de strogonoff de frango; 4 colher de sopa de arroz branco
-- **Macarronada à bolonhesa** (Almoço, ~354 kcal): 2 pegador de macarrão à bolonhesa; 1 fatia de queijo parmesão
-- **Frango com batata-doce e brócolis** (Almoço, ~439 kcal): 1 filé de frango peito grelhado; 1 unidade de batata-doce cozida; 3 colher de sopa de brócolis cozido
-- **Peixe com arroz e legumes** (Jantar, ~290 kcal): 1 filé de peixe tilápia grelhada; 3 colher de sopa de arroz branco; 3 colher de sopa de salada de legumes no vapor
-- **Churrasco** (Almoço, ~829 kcal): 1 bife de picanha com gordura; 1 unidade de linguiça de porco grelhada; 2 colher de sopa de farofa pronta; 3 colher de sopa de arroz branco
-- **Salada completa** (Almoço, ~91 kcal): 4 folha de folhas alface; 3 fatia de tomate; 3 fatia de pepino; 2 colher de sopa de cenoura crua; 1 colher de sopa de azeite de oliva
-- **Omelete com salada** (Jantar, ~128 kcal): 1 unidade de ovo omelete de queijo; 3 folha de folhas alface; 2 fatia de tomate
+- **Prato feito** (Almoço, ~574 kcal): 4 colheres de sopa de arroz branco; 1 concha de feijão carioca; 1 bife de patinho; 3 folhas de alface; 3 fatias de tomate
+- **Feijoada completa** (Almoço, ~878 kcal): 2 conchas de feijoada; 4 colheres de sopa de arroz branco; 2 colheres de sopa de couve refogada; 2 colheres de sopa de farofa pronta; 1 unidade de laranja
+- **Strogonoff de frango com arroz** (Almoço, ~316 kcal): 2 colheres de servir de strogonoff de frango; 4 colheres de sopa de arroz branco
+- **Macarronada à bolonhesa** (Almoço, ~354 kcal): 2 pegadores de macarrão à bolonhesa; 1 fatia de queijo parmesão
+- **Frango com batata-doce e brócolis** (Almoço, ~439 kcal): 1 filé de peito de frango grelhado; 1 unidade de batata-doce cozida; 3 colheres de sopa de brócolis cozido
+- **Peixe com arroz e legumes** (Jantar, ~290 kcal): 1 filé de tilápia grelhada; 3 colheres de sopa de arroz branco; 3 colheres de sopa de salada de legumes no vapor
+- **Churrasco** (Almoço, ~829 kcal): 1 bife de picanha com gordura; 1 unidade de linguiça de porco grelhada; 2 colheres de sopa de farofa pronta; 3 colheres de sopa de arroz branco
+- **Salada completa** (Almoço, ~91 kcal): 4 folhas de alface; 3 fatias de tomate; 3 fatias de pepino; 2 colheres de sopa de cenoura crua; 1 colher de sopa de azeite de oliva
+- **Omelete com salada** (Jantar, ~128 kcal): 1 unidade de omelete de queijo; 3 folhas de alface; 2 fatias de tomate
 - **Pão com manteiga e café com leite** (Café da manhã, ~262 kcal): 1 unidade de pão francês; 1 ponta de faca de manteiga com sal; 1 xícara de chá de café com leite
 - **Pão com ovo** (Café da manhã, ~258 kcal): 1 unidade de pão francês; 1 unidade de ovo frito
-- **Misto quente** (Lanche, ~287 kcal): 2 fatia de pão de forma integral; 2 fatia de queijo mussarela; 2 fatia de frios presunto
-- **Iogurte com granola e banana** (Café da manhã, ~240 kcal): 1 pote de iogurte natural; 2 colher de sopa de granola; 1 unidade pequena de banana prata
-- **Açaí na tigela** (Lanche, ~360 kcal): 1 tigela de açaí com guaraná; 2 colher de sopa de granola; 1 unidade pequena de banana prata
+- **Misto quente** (Lanche, ~287 kcal): 2 fatias de pão de forma integral; 2 fatias de queijo mussarela; 2 fatias de presunto
+- **Iogurte com granola e banana** (Café da manhã, ~240 kcal): 1 pote de iogurte natural; 2 colheres de sopa de granola; 1 unidade pequena de banana prata
+- **Açaí na tigela** (Lanche, ~360 kcal): 1 tigela de açaí com guaraná; 2 colheres de sopa de granola; 1 unidade pequena de banana prata
 - **Vitamina de banana** (Café da manhã, ~279 kcal): 1 copo de leite integral; 1 unidade de banana prata; 1 colher de sopa de aveia em flocos
 - **Tapioca com queijo** (Café da manhã, ~227 kcal): 1 unidade de tapioca com manteiga; 1 fatia de queijo minas frescal
 

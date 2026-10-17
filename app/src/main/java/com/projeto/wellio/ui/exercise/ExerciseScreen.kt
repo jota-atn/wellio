@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -357,6 +358,10 @@ private fun QuickRow(
     modifier: Modifier = Modifier
 ) {
     val colors = WellioTheme.colors.exercise
+    // A tela abre com a fileira vazia (só o +) e os treinos chegam depois: sem isto, a fileira
+    // seguiria o + até o fim. Volta ao começo quando chegam e quando outro treino vai para a frente.
+    val rowState = rememberLazyListState()
+    LaunchedEffect(items.firstOrNull()?.type?.id) { rowState.scrollToItem(0) }
     Column(modifier) {
         Row(Modifier.padding(start = 20.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("Treinar", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
@@ -364,7 +369,7 @@ private fun QuickRow(
                 Icon(WellioIcons.Undo, contentDescription = "Desfazer último", tint = if (canUndo) colors.accent else LocalContentColor.current.copy(alpha = 0.38f))
             }
         }
-        LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        LazyRow(state = rowState, contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             items(items, key = { it.type.id }) { item ->
                 Surface(
                     shape = RoundedCornerShape(20.dp),

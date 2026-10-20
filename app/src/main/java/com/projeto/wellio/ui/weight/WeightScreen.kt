@@ -267,7 +267,8 @@ private fun TargetLine(state: WeightUiState, onClick: () -> Unit) {
                     listOfNotNull(
                         "Alvo ${formatKg(goal.targetKg)}",
                         if (remaining == 0.0) "chegou lá!" else "faltam ${formatKg(remaining)}",
-                        eta?.let { "~${shortDate(it, state.today)}" }
+                        // Com prazo (meta de período, SPEC §9.2) mostra o prazo; sem, a data estimada
+                        goal.deadline?.let { "até ${shortDate(it, state.today)}" } ?: eta?.let { "~${shortDate(it, state.today)}" }
                     ).joinToString(" · "),
                     style = MaterialTheme.typography.labelLarge
                 )

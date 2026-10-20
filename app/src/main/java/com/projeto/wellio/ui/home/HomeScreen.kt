@@ -34,9 +34,10 @@ import com.projeto.wellio.domain.home.toggleSize
 import com.projeto.wellio.domain.home.rowLayout
 import com.projeto.wellio.domain.model.GoalType
 import com.projeto.wellio.ui.components.DashboardCard
-import com.projeto.wellio.ui.components.DashboardDetailsDialog
 import com.projeto.wellio.ui.components.DashboardHalfCard
-import com.projeto.wellio.ui.components.GoalSettingDialog
+import com.projeto.wellio.ui.goals.DailyGoalSheet
+import com.projeto.wellio.domain.model.ExerciseUnit
+import com.projeto.wellio.domain.model.Goal
 import com.projeto.wellio.ui.module.Modules
 import com.projeto.wellio.ui.module.OneTapAction
 import kotlinx.coroutines.launch
@@ -46,6 +47,7 @@ import com.projeto.wellio.ui.module.WellioModule
 fun HomeRoute(
     onMenuClick: () -> Unit,
     onOpenModule: (WellioModule) -> Unit,
+    onOpenDashboard: () -> Unit,
     onEditingChange: (Boolean) -> Unit,
     viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory)
 ) {
@@ -53,7 +55,8 @@ fun HomeRoute(
     HomeScreen(
         state = state,
         onMenuClick = onMenuClick,
-        onUpdateGoal = viewModel::updateGoal,
+        onSaveGoal = viewModel::saveGoal,
+        onOpenDashboard = onOpenDashboard,
         onSaveLayout = viewModel::saveLayout,
         onDismissSuggestion = viewModel::dismissSuggestion,
         onEditingChange = onEditingChange,
@@ -86,7 +89,8 @@ private fun titleOf(card: HomeCard) = catalog.firstOrNull { it.key == card.key }
 fun HomeScreen(
     state: HomeUiState,
     onMenuClick: () -> Unit,
-    onUpdateGoal: (GoalType, Int, Int) -> Unit,
+    onSaveGoal: (GoalType, Goal, ExerciseUnit) -> Unit,
+    onOpenDashboard: () -> Unit,
     onSaveLayout: (List<HomeCard>) -> Unit,
     onDismissSuggestion: () -> Unit,
     onEditingChange: (Boolean) -> Unit = {},
@@ -108,7 +112,6 @@ fun HomeScreen(
         }
     }
     var goalBeingEdited by remember { mutableStateOf<GoalType?>(null) }
-    var showDetails by remember { mutableStateOf(false) }
     // Modo de edição: o layout sendo mexido (null = fora da edição)
     var draft by remember { mutableStateOf<List<HomeCard>?>(null) }
     var showCatalog by remember { mutableStateOf(false) }
@@ -126,7 +129,7 @@ fun HomeScreen(
     LaunchedEffect(editing, cardEditorOpen) { onEditingChange(editing || cardEditorOpen) }
 
     val slot: @Composable (HomeCard, Modifier) -> Unit = { card, modifier ->
-        HomeCardSlot(card, state, moduleCard, onDashboardClick = { showDetails = true }, onGoalClick = { goalBeingEdited = it }, modifier)
+        HomeCardSlot(card, state, moduleCard, onDashboardClick = onOpenDashboard, onGoalClick = { goalBeingEdited = it }, modifier)
     }
 
     Box(Modifier.fillMaxSize()) {
@@ -217,27 +220,15 @@ fun HomeScreen(
     }
 
     goalBeingEdited?.let { type ->
-        val goal = state.goals[type]
-        GoalSettingDialog(
+        DailyGoalSheet(
             type = type,
-            currentDaily = goal.daily,
-            currentWeekly = goal.weekly,
+            goals = state.goals,
+            suggestion = state.goalSuggestions[type],
             onDismiss = { goalBeingEdited = null },
-            onConfirm = { newDaily, newWeekly ->
-                onUpdateGoal(type, newDaily, newWeekly)
+            onSave = { goal, unit ->
+                onSaveGoal(type, goal, unit)
                 goalBeingEdited = null
             }
-        )
-    }
-
-    if (showDetails) {
-        DashboardDetailsDialog(
-            onDismiss = { showDetails = false },
-            getDataForType = { type ->
-                val goal = state.goals[type]
-                Triple(state.today[type], goal.daily, goal.weekly)
-            },
-            getWeekTotal = { type -> state.week[type] }
         )
     }
 }

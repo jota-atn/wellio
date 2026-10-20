@@ -12,7 +12,9 @@ import com.projeto.wellio.data.repository.ExerciseRepository
 import com.projeto.wellio.data.repository.FoodRepository
 import com.projeto.wellio.data.repository.WaterRepository
 import com.projeto.wellio.data.time.todayFlow
+import com.projeto.wellio.domain.model.ExerciseUnit
 import com.projeto.wellio.domain.model.Goal
+import com.projeto.wellio.ui.goals.goalSuggestions
 import com.projeto.wellio.domain.model.GoalType
 import com.projeto.wellio.domain.model.Goals
 import com.projeto.wellio.domain.model.Totals
@@ -25,6 +27,7 @@ import com.projeto.wellio.domain.home.decodeLayout
 import com.projeto.wellio.domain.home.encodeLayout
 import kotlinx.coroutines.flow.map
 import com.projeto.wellio.domain.goals.dayScore
+import com.projeto.wellio.domain.goals.goalsOn
 import com.projeto.wellio.domain.goals.lastDays
 import com.projeto.wellio.ui.module.ModuleId
 import com.projeto.wellio.ui.module.Modules
@@ -53,7 +56,9 @@ data class HomeUiState(
     /** Mostrar "+ Adicionar card" nas linhas vazias (até ser dispensada). */
     val showSuggestion: Boolean = true,
     /** Ações de 1 toque de cada módulo, para o FAB. */
-    val oneTap: Map<ModuleId, List<OneTapAction>> = emptyMap()
+    val oneTap: Map<ModuleId, List<OneTapAction>> = emptyMap(),
+    /** Sugestões do sheet de metas (água pelo peso, kcal pelo perfil). */
+    val goalSuggestions: Map<GoalType, Int> = emptyMap()
 )
 
 /** Cards que a Home sabe desenhar: o Dashboard e o de cada módulo. */
@@ -66,6 +71,7 @@ class HomeViewModel(container: AppContainer) : ViewModel() {
     private val foodRepository: FoodRepository = container.foodRepository
     private val exerciseRepository: ExerciseRepository = container.exerciseRepository
     private val goalsStore: GoalsStore = container.goalsStore
+    private val goalRepository = container.goalRepository
     private val layoutStore = container.homeLayoutStore
 
     private val layout: Flow<List<HomeCard>> = layoutStore.layout.map { saved ->
@@ -87,10 +93,12 @@ class HomeViewModel(container: AppContainer) : ViewModel() {
             waterRepository.totalsByDay(range),
             foodRepository.kcalByDay(range),
             combine(exerciseRepository.kcalByDay(range), exerciseRepository.minutesByDay(range), ::Pair),
-            goalsStore.goals
-        ) { water, food, (burned, minutes), goals ->
+            combine(goalsStore.goals, goalRepository.history, ::Pair)
+        ) { water, food, (burned, minutes), (goals, history) ->
             days.map { date ->
-                DayScore(date, dayScore(Totals(water[date] ?: 0, food[date] ?: 0, burned[date] ?: 0, minutes[date] ?: 0), goals))
+                // Cada dia com a meta que valia nele (SPEC §9.2)
+                val totals = Totals(water[date] ?: 0, food[date] ?: 0, burned[date] ?: 0, minutes[date] ?: 0)
+                DayScore(date, dayScore(totals, goalsOn(date, history, goals)))
             }
         }
     }
@@ -100,10 +108,13 @@ class HomeViewModel(container: AppContainer) : ViewModel() {
         goalsStore.goals,
         today.flatMapLatest { day -> totals(day..day) },
         today.flatMapLatest { day -> totals(weekOf(day)) },
-        combine(summaries, lastWeek, ::Pair),
+        combine(summaries, lastWeek, goalSuggestions(container), ::Triple),
         combine(layout, layoutStore.suggestionDismissed, oneTap, ::Triple)
-    ) { goals, todayTotals, weekTotals, (summaries, lastWeek), (layout, dismissed, oneTap) ->
-        HomeUiState(goals, todayTotals, weekTotals, summaries, lastWeek, layout, showSuggestion = !dismissed, oneTap = oneTap)
+    ) { goals, todayTotals, weekTotals, (summaries, lastWeek, suggestions), (layout, dismissed, oneTap) ->
+        HomeUiState(
+            goals, todayTotals, weekTotals, summaries, lastWeek, layout,
+            showSuggestion = !dismissed, oneTap = oneTap, goalSuggestions = suggestions
+        )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
 
     private fun totals(days: ClosedRange<LocalDate>): Flow<Totals> = combine(
@@ -120,10 +131,8 @@ class HomeViewModel(container: AppContainer) : ViewModel() {
         viewModelScope.launch { layoutStore.dismissSuggestion() }
     }
 
-    fun updateGoal(type: GoalType, daily: Int, weekly: Int) {
-        // Semanal igual a diária × 7 continua automática; qualquer outro valor vira meta própria
-        val goal = Goal(daily = daily, weeklyOverride = weekly.takeIf { it != daily * 7 })
-        viewModelScope.launch { goalsStore.setGoal(type, goal) }
+    fun saveGoal(type: GoalType, goal: Goal, unit: ExerciseUnit) {
+        viewModelScope.launch { goalsStore.saveDaily(type, goal, unit) }
     }
 
     companion object {

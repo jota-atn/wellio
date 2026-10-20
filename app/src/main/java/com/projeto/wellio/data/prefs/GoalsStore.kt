@@ -62,6 +62,12 @@ class GoalsStore(
         onDailyGoalsChanged(goals.first())
     }
 
+    /** Salva uma meta do sheet de metas (SPEC §9.2): troca a unidade do exercício antes, se mudou. */
+    suspend fun saveDaily(type: GoalType, goal: Goal, unit: ExerciseUnit) {
+        if (type == GoalType.EXERCISE) setExerciseUnit(unit)
+        setGoal(type, goal)
+    }
+
     /** Dia em que a semana começa (SPEC §9.2); padrão segunda. */
     val weekStart: Flow<DayOfWeek> = dataStore.data.map { prefs ->
         DayOfWeek.entries.firstOrNull { it.name == prefs[weekStartKey] } ?: DayOfWeek.MONDAY

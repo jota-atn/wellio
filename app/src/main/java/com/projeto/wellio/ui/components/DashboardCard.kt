@@ -34,6 +34,7 @@ import com.projeto.wellio.domain.model.GoalType
 import com.projeto.wellio.ui.module.Modules
 import com.projeto.wellio.ui.module.Summary
 import com.projeto.wellio.ui.theme.DarkWellioColors
+import com.projeto.wellio.ui.navigation.sharedContainer
 import com.projeto.wellio.ui.theme.WellioTheme
 import kotlinx.coroutines.delay
 import java.time.LocalDate
@@ -69,7 +70,7 @@ fun DashboardCard(
         shape = RoundedCornerShape(28.dp),
         color = colors.container,
         contentColor = colors.onContainer,
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth().sharedContainer("card-dashboard", RoundedCornerShape(28.dp))
     ) {
         Row(Modifier.fillMaxSize().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(
@@ -135,6 +136,7 @@ fun DashboardHalfCard(
         contentColor = colors.onContainer,
         modifier = modifier
             .fillMaxWidth()
+            .sharedContainer("card-dashboard", RoundedCornerShape(28.dp))
             .clearAndSetSemantics {
                 contentDescription = "Dashboard: hoje ${percent(todayScore)} por cento das metas. " +
                     goalSummaries(summaries).joinToString(". ") { it.spoken }

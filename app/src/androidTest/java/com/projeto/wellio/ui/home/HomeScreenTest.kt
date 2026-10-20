@@ -47,7 +47,8 @@ class HomeScreenTest {
                 HomeScreen(
                     state = HomeUiState(layout = current.value, showSuggestion = showSuggestion, oneTap = oneTap),
                     onMenuClick = {},
-                    onUpdateGoal = { _, _, _ -> },
+                    onSaveGoal = { _, _, _ -> },
+                    onOpenDashboard = {},
                     onSaveLayout = {
                         saved = it
                         current.value = it

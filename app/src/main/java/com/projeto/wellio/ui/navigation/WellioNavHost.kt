@@ -34,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
+import com.projeto.wellio.ui.goals.DashboardRoute
 import com.projeto.wellio.ui.onboarding.OnboardingRoute
 import com.projeto.wellio.ui.profile.ProfileRoute
 import com.projeto.wellio.ui.profile.ProfileViewModel
@@ -119,6 +120,7 @@ fun WellioNavHost() {
                         // Pelo card: o card vira a tela (SPEC §2.9)
                         navController.navigate(module.destination(fromCard = true) ?: ComingSoonDestination(module.title))
                     },
+                    onOpenDashboard = { navController.navigate(DashboardDestination(fromCard = true)) },
                     onEditingChange = { homeEditing = it }
                 )
                 }
@@ -148,6 +150,15 @@ fun WellioNavHost() {
                 JellyBack(navController)
                 NavScope {
                     ExerciseRoute(fromCard = entry.toRoute<ExerciseDestination>().fromCard, onBack = { navController.popBackStack() })
+                }
+            }
+            composable<DashboardDestination>(
+                enterTransition = { if (targetState.openedFromCard()) EnterTransition.None else enterFromRight() },
+                popExitTransition = { if (initialState.openedFromCard()) ExitTransition.None else popExitToRight() }
+            ) { entry ->
+                JellyBack(navController)
+                NavScope {
+                    DashboardRoute(fromCard = entry.toRoute<DashboardDestination>().fromCard, onBack = { navController.popBackStack() })
                 }
             }
             composable<ProfileDestination> {

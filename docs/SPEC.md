@@ -251,7 +251,9 @@ Tudo que é preenchido aqui vai para o perfil e pode ser editado depois na tela 
 #### Decidido para o M2a
 
 - Chega no M2a com as etapas 1 a 5; a etapa 6 entra no M3.
-- **Uma ilustração própria por etapa**, desenhada no estilo dos ícones do app (nada de emoji): nas boas-vindas, a gota, a fogueira e o prato juntos; no corpo, a balança; nas metas, os três elementos pequenos ao lado de cada meta. Campos abaixo da ilustração; indicador de progresso no rodapé.
+- **Uma ilustração própria por etapa**, com os elementos do app (nada de emoji): nas boas-vindas, a gota, a fogueira e a balança juntas (o prato entra quando a Alimentação chegar); em "Você", a própria foto, com a inicial aparecendo enquanto o nome é digitado; no corpo, a balança da tela de Peso, que abre o seletor de peso; no estilo de vida, a fogueira, que cresce (e aviva) conforme o nível de atividade; nas metas, o elemento pequeno de cada uma ao lado do valor. Campos abaixo da ilustração.
+- **Navegação**: botão no rodapé ("Começar", "Continuar", "Concluir"), desabilitado sem os obrigatórios; "Pular" no topo do estilo de vida e das metas; deslizar para os lados entre as etapas já liberadas; bolinhas de progresso acima do botão.
+- **Metas no onboarding**: −/+ em cada uma (água de 100 em 100 ml, kcal de 50 em 50, exercício de 50 kcal ou 5 min), com "Usar a sugestão" quando o valor for diferente dela.
 - As etapas usam os mesmos campos e sheets da tela de Perfil (§9.1).
 - **Etapa Corpo**: o peso digitado vira o primeiro registro de peso (`weight_entry`). **Etapa Estilo de vida**: nível de atividade e peso alvo (o mesmo alvo da tela de Peso, §6.1); o objetivo não é perguntado, sai do alvo (§9.1).
 - **Etapa Metas**: água com a sugestão de 35 ml por kg, kcal com a sugestão do perfil (quando houver dados) e exercício em kcal ou minutos; cada uma já vem preenchida com a sugestão.

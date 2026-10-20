@@ -35,6 +35,11 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import com.projeto.wellio.ui.profile.ProfileRoute
+import com.projeto.wellio.ui.profile.ProfileViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
@@ -52,12 +57,21 @@ fun WellioNavHost() {
 
     // Na edição da Home, arrastar card para o lado não pode abrir a sidebar
     var homeEditing by remember { mutableStateOf(false) }
+    // Cabeçalho da sidebar (SPEC §9.0)
+    val profileViewModel: ProfileViewModel = viewModel(factory = ProfileViewModel.Factory)
+    val profile by profileViewModel.uiState.collectAsStateWithLifecycle()
+    val onProfile = navController.currentBackStackEntryAsState().value?.destination?.hasRoute<ProfileDestination>() == true
 
+    // A sidebar fica dentro da camada de transição para a foto dela voar até o Perfil
+    SharedTransitionLayout {
+    CompositionLocalProvider(LocalSharedTransitionScope provides this) {
     ModalNavigationDrawer(
         drawerState = drawerState,
         gesturesEnabled = !homeEditing || drawerState.isOpen,
         drawerContent = {
             WellioDrawerContent(
+                profile = profile,
+                photoVisible = drawerState.targetValue == DrawerValue.Open && !onProfile,
                 onProfileClick = {
                     scope.launch { drawerState.close() }
                     navController.navigate(ProfileDestination)
@@ -73,8 +87,6 @@ fun WellioNavHost() {
             )
         }
     ) {
-        SharedTransitionLayout {
-        CompositionLocalProvider(LocalSharedTransitionScope provides this) {
         NavHost(
             modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
             navController = navController,
@@ -129,10 +141,12 @@ fun WellioNavHost() {
             }
             composable<ProfileDestination> {
                 JellyBack(navController)
-                ProfileRoute(
-                    onBack = { navController.popBackStack() },
-                    onOpenWeight = { navController.navigate(WeightDestination()) }
-                )
+                NavScope {
+                    ProfileRoute(
+                        onBack = { navController.popBackStack() },
+                        onOpenWeight = { navController.navigate(WeightDestination()) }
+                    )
+                }
             }
             composable<ComingSoonDestination> { entry ->
                 JellyBack(navController)

@@ -58,3 +58,10 @@ fun formatLiters(ml: Int): String =
 
 /** "1.250" */
 fun formatInt(value: Int): String = NumberFormat.getIntegerInstance(ptBR).format(value)
+
+/** "1,78 m" */
+fun formatHeight(cm: Int): String =
+    NumberFormat.getNumberInstance(ptBR).apply {
+        minimumFractionDigits = 2
+        maximumFractionDigits = 2
+    }.format(cm / 100.0) + " m"

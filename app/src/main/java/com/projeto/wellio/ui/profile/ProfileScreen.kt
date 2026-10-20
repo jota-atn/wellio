@@ -37,8 +37,10 @@ import com.projeto.wellio.domain.profile.BmiRange
 import com.projeto.wellio.domain.profile.CalorieSuggestion
 import com.projeto.wellio.domain.weight.DEFAULT_WEIGHT_KG
 import com.projeto.wellio.ui.components.DayPickerDialog
+import com.projeto.wellio.ui.format.formatHeight
 import com.projeto.wellio.ui.format.formatInt
 import com.projeto.wellio.ui.format.formatKg
+import com.projeto.wellio.ui.navigation.sharedHero
 import com.projeto.wellio.ui.theme.WellioTheme
 import com.projeto.wellio.ui.weight.TargetSheet
 import kotlinx.coroutines.launch
@@ -228,7 +230,8 @@ fun ProfileScreen(
 
 private val birthFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
 
-private fun formatHeight(cm: Int): String = String.format(Locale.forLanguageTag("pt-BR"), "%.2f m", cm / 100.0)
+/** A foto do cabeçalho da sidebar voa e cresce até a do Perfil (SPEC §9.1). */
+const val PROFILE_PHOTO_KEY = "profile-photo"
 
 /** Foto grande com o selo de câmera e o nome logo abaixo. */
 @Composable
@@ -242,6 +245,7 @@ private fun PhotoHeader(state: ProfileUiState, onPhotoClick: () -> Unit, onNameC
                 name,
                 size = 136.dp,
                 modifier = Modifier
+                    .sharedHero(PROFILE_PHOTO_KEY)
                     .clip(CircleShape)
                     .clickable(onClickLabel = if (state.photo == null) "Escolher foto" else "Trocar foto", onClick = onPhotoClick)
             )

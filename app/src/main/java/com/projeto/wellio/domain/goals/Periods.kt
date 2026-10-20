@@ -223,3 +223,12 @@ fun weightPeriodProgress(goal: WeightGoal, currentKg: Double, ratePerWeek: Doubl
         projection = projection
     )
 }
+
+/** O período igual logo antes de [range] (semana, mês ou ano anterior; datas: o mesmo tanto de dias antes). */
+fun previousPeriod(kind: PeriodKind, range: ClosedRange<LocalDate>, weekStart: DayOfWeek): ClosedRange<LocalDate> =
+    if (kind == PeriodKind.Custom) {
+        val days = daysIn(range).toLong()
+        range.start.minusDays(days)..range.start.minusDays(1)
+    } else {
+        periodContaining(kind, range.start.minusDays(1), weekStart)
+    }

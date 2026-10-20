@@ -177,4 +177,11 @@ class PeriodsTest {
     fun `alvo sem prazo nao e meta de periodo`() {
         assertNull(weightPeriodProgress(WeightGoal(70.0, 75.0), 73.0, null, day(20)))
     }
+
+    @Test
+    fun `periodo anterior igual`() {
+        assertEquals(day(1, 9)..day(30, 9), previousPeriod(PeriodKind.Month, day(1)..day(31), DayOfWeek.MONDAY))
+        assertEquals(day(12)..day(18), previousPeriod(PeriodKind.Week, day(19)..day(25), DayOfWeek.MONDAY))
+        assertEquals(day(10)..day(19), previousPeriod(PeriodKind.Custom, day(20)..day(29), DayOfWeek.MONDAY))
+    }
 }

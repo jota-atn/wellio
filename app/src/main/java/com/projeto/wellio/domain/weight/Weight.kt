@@ -52,9 +52,14 @@ fun trendChange(trend: List<WeightEntry>): Double? {
 
 /**
  * Peso alvo e o peso de quando ele foi definido (início da barra de progresso). Com
- * [deadline], o alvo é também uma meta de período (SPEC §9.2).
+ * [deadline], o alvo é também uma meta de período (SPEC §9.2), que conta desde [since].
  */
-data class WeightGoal(val targetKg: Double, val startKg: Double, val deadline: LocalDate? = null)
+data class WeightGoal(
+    val targetKg: Double,
+    val startKg: Double,
+    val deadline: LocalDate? = null,
+    val since: LocalDate? = null
+)
 
 /** Fração do caminho entre o início e o alvo já percorrida, entre 0 e 1. */
 fun goalProgress(goal: WeightGoal, currentKg: Double): Float {

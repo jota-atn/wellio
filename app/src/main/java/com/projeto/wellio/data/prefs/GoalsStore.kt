@@ -88,7 +88,8 @@ class GoalsStore(
         WeightGoal(
             targetKg = target,
             startKg = prefs[weightStartKey] ?: target,
-            deadline = prefs[weightDeadlineKey]?.let(LocalDate::parse)
+            deadline = prefs[weightDeadlineKey]?.let(LocalDate::parse),
+            since = prefs[weightSinceKey]?.let(LocalDate::parse)
         )
     }
 
@@ -99,11 +100,13 @@ class GoalsStore(
                 prefs.remove(weightTargetKey)
                 prefs.remove(weightStartKey)
                 prefs.remove(weightDeadlineKey)
+                prefs.remove(weightSinceKey)
                 prefs.remove(weightCelebratedKey)
             } else {
                 prefs[weightTargetKey] = goal.targetKg
                 prefs[weightStartKey] = goal.startKg
                 if (goal.deadline == null) prefs.remove(weightDeadlineKey) else prefs[weightDeadlineKey] = goal.deadline.toString()
+                if (goal.since == null) prefs.remove(weightSinceKey) else prefs[weightSinceKey] = goal.since.toString()
             }
         }
     }
@@ -130,6 +133,7 @@ class GoalsStore(
     private val weightTargetKey = doublePreferencesKey("goal_weight_target_kg")
     private val weightStartKey = doublePreferencesKey("goal_weight_start_kg")
     private val weightDeadlineKey = stringPreferencesKey("goal_weight_deadline")
+    private val weightSinceKey = stringPreferencesKey("goal_weight_since")
     private val weightCelebratedKey = booleanPreferencesKey("goal_weight_celebrated")
 
     private fun dailyKey(type: GoalType) = intPreferencesKey("goal_${type.name.lowercase()}_daily")

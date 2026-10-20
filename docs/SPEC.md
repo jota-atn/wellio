@@ -668,7 +668,7 @@ Dois níveis:
 - **Cartão com ritmo**: barra de progresso com uma **marca de "onde deveria estar hoje"** (proporcional aos dias passados), valor atual e alvo, dias restantes e a **projeção** pelo ritmo médio diário até agora ("No ritmo atual: ~52 L"). Métricas de "dias batendo" projetam pela proporção de dias batidos até agora. Peso projeta pelo ritmo da tela de Peso (§6.1).
 - Tocar no cartão abre a edição (valor, nome, recorrência; métrica e período não mudam) com "Apagar" (com desfazer).
 - **Recorrência**: ao terminar o período, a meta vai para o histórico (concluída ou não) e uma **nova igual começa sozinha** no período seguinte, com o mesmo valor.
-- **Ao concluir** (até o M6, que traz a parabenização de verdade): o cartão vira "Concluída" e, na próxima abertura da tela de Metas ou do Dashboard, **comemora**: o elemento do módulo anima (gota transbordando, fogueira em labareda, balança com confete) e um confete discreto cai. Uma vez só (`celebrated`). Depois a meta fica como concluída até o fim do período (ou vai para o histórico, se não recorrente).
+- **Ao concluir** (até o M6, que traz a parabenização de verdade): o cartão vira "Concluída" e, na próxima abertura da tela de Metas, **comemora**: o elemento do módulo anima (gota transbordando, fogueira em labareda; a de peso, só o confete) e um confete discreto cai pela tela. Uma vez só (`celebrated`). Depois a meta fica como concluída até o fim do período (ou vai para o histórico, se não recorrente).
 - **Histórico**: metas de período terminadas, da mais recente para a mais antiga, com o resultado final e o selo concluída / não concluída.
 - O Dashboard não mostra as metas de período; elas ficam só na tela de Metas.
 

@@ -72,7 +72,8 @@ enum class MissingField(val label: String) {
 
 /** Meta calórica sugerida, ou por que ela não pode ser calculada. */
 sealed interface CalorieSuggestion {
-    data class Ready(val kcal: Int) : CalorieSuggestion
+    /** [atFloor]: a conta deu menos que o mínimo recomendado, e a sugestão ficou no mínimo. */
+    data class Ready(val kcal: Int, val atFloor: Boolean = false) : CalorieSuggestion
     /** Faltam dados; [fields] na ordem em que aparecem no perfil. */
     data class Missing(val fields: List<MissingField>) : CalorieSuggestion
     /** "Prefiro não informar": a fórmula depende do sexo. */
@@ -81,7 +82,8 @@ sealed interface CalorieSuggestion {
 
 /**
  * Meta calórica sugerida (SPEC §9.1): Mifflin-St Jeor × fator do nível de atividade
- * (sedentário quando não informado), mais o ajuste do objetivo, arredondada para 50 kcal.
+ * (sedentário quando não informado), mais o ajuste do objetivo, arredondada para 50 kcal e
+ * nunca abaixo do mínimo recomendado (1.200 kcal para mulheres, 1.500 para homens).
  */
 fun suggestedCalories(profile: Profile, weightKg: Double?, objective: Objective, today: LocalDate): CalorieSuggestion {
     if (profile.sex == Sex.Undisclosed) return CalorieSuggestion.SexUndisclosed
@@ -96,6 +98,7 @@ fun suggestedCalories(profile: Profile, weightKg: Double?, objective: Objective,
     val sexConstant = if (profile.sex == Sex.Male) 5 else -161
     val basal = 10 * weightKg!! + 6.25 * profile.heightCm!! - 5 * age(profile.birthDate!!, today) + sexConstant
     val factor = profile.activity?.factor ?: 1.2
-    val kcal = basal * factor + objective.kcalAdjust
-    return CalorieSuggestion.Ready((kcal / 50).roundToInt() * 50)
+    val kcal = ((basal * factor + objective.kcalAdjust) / 50).roundToInt() * 50
+    val floor = if (profile.sex == Sex.Male) 1500 else 1200
+    return if (kcal < floor) CalorieSuggestion.Ready(floor, atFloor = true) else CalorieSuggestion.Ready(kcal)
 }

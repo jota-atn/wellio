@@ -88,6 +88,17 @@ class ProfileTest {
     }
 
     @Test
+    fun `sugestao nunca fica abaixo do minimo recomendado`() {
+        // 10 × 50 + 6,25 × 155 − 5 × 27 − 161 = 1172,75; × 1,2 − 500 = 907,3 → mínimo de 1.200
+        val small = complete.copy(sex = Sex.Female, heightCm = 155, activity = ActivityLevel.Sedentary)
+        assertEquals(CalorieSuggestion.Ready(1200, atFloor = true), suggestedCalories(small, 50.0, Objective.Lose, today))
+        assertEquals(
+            CalorieSuggestion.Ready(1500, atFloor = true),
+            suggestedCalories(small.copy(sex = Sex.Male), 50.0, Objective.Lose, today)
+        )
+    }
+
+    @Test
     fun `sem dados a sugestao diz o que falta`() {
         assertEquals(
             CalorieSuggestion.Missing(listOf(MissingField.BirthDate, MissingField.Sex, MissingField.Height, MissingField.Weight)),

@@ -13,14 +13,18 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeRight
 import com.projeto.wellio.MainActivity
+import com.projeto.wellio.testing.OnboardingDoneRule
 import org.junit.Rule
+import org.junit.rules.RuleChain
 import org.junit.Test
 
 /** A Home dentro do app de verdade (com a sidebar), para os gestos que dependem dela. */
 class HomeNavigationTest {
 
-    @get:Rule
     val compose = createAndroidComposeRule<MainActivity>()
+
+    @get:Rule
+    val rules: RuleChain = RuleChain.outerRule(OnboardingDoneRule()).around(compose)
 
     private fun swipeAcross() {
         compose.onRoot().performTouchInput {

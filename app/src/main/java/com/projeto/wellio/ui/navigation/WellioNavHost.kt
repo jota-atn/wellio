@@ -34,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
+import com.projeto.wellio.ui.onboarding.OnboardingRoute
 import com.projeto.wellio.ui.profile.ProfileRoute
 import com.projeto.wellio.ui.profile.ProfileViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -61,6 +62,16 @@ fun WellioNavHost() {
     val profileViewModel: ProfileViewModel = viewModel(factory = ProfileViewModel.Factory)
     val profile by profileViewModel.uiState.collectAsStateWithLifecycle()
     val onProfile = navController.currentBackStackEntryAsState().value?.destination?.hasRoute<ProfileDestination>() == true
+
+    // Primeira abertura: o onboarding vem antes de tudo (SPEC §5.0)
+    if (!profile.loaded) {
+        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background))
+        return
+    }
+    if (!profile.profile.onboardingDone) {
+        OnboardingRoute()
+        return
+    }
 
     // A sidebar fica dentro da camada de transição para a foto dela voar até o Perfil
     SharedTransitionLayout {

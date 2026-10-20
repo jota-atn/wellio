@@ -43,7 +43,9 @@ data class ProfileUiState(
     /** Pesagem mais recente; null sem pesagens. */
     val weightKg: Double? = null,
     val weightGoal: WeightGoal? = null,
-    val foodGoal: Goal = Goals.Default.food
+    val foodGoal: Goal = Goals.Default.food,
+    /** Os dados já chegaram (antes disso, o perfil vazio não quer dizer onboarding pendente). */
+    val loaded: Boolean = false
 ) {
     val age: Int? get() = profile.birthDate?.let { age(it, today) }
     val bmi: Double? get() = if (weightKg != null && profile.heightCm != null) bmi(weightKg, profile.heightCm) else null
@@ -75,7 +77,8 @@ class ProfileViewModel(
             photo = profile.photoFile?.let(photoStore::file),
             weightKg = latestWeight(weights)?.weightKg,
             weightGoal = weightGoal,
-            foodGoal = goals.food
+            foodGoal = goals.food,
+            loaded = true
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ProfileUiState(initialDay))
 

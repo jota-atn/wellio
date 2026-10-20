@@ -144,15 +144,15 @@ fun ProfileScreen(
             item(key = "campos") {
                 Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surface) {
                     Column(Modifier.padding(vertical = 8.dp)) {
-                        FieldRow("Nascimento", profile.birthDate?.format(birthFormatter)) { editing = ProfileField.BirthDate }
-                        FieldRow("Sexo", profile.sex?.label) { editing = ProfileField.Sex }
-                        FieldRow("Altura", profile.heightCm?.let(::formatHeight)) { editing = ProfileField.Height }
-                        FieldRow("Peso", state.weightKg?.let(::formatKg) ?: "Registrar", onClick = onOpenWeight)
-                        FieldRow(
+                        ProfileFieldRow("Nascimento", profile.birthDate?.format(birthFormatter)) { editing = ProfileField.BirthDate }
+                        ProfileFieldRow("Sexo", profile.sex?.label) { editing = ProfileField.Sex }
+                        ProfileFieldRow("Altura", profile.heightCm?.let(::formatHeight)) { editing = ProfileField.Height }
+                        ProfileFieldRow("Peso", state.weightKg?.let(::formatKg) ?: "Registrar", onClick = onOpenWeight)
+                        ProfileFieldRow(
                             "Objetivo",
                             listOfNotNull(state.objective.label, state.weightGoal?.let { "alvo ${formatKg(it.targetKg)}" }).joinToString(" · ")
                         ) { editing = ProfileField.Objective }
-                        FieldRow("Atividade", profile.activity?.label) { editing = ProfileField.Activity }
+                        ProfileFieldRow("Atividade", profile.activity?.label) { editing = ProfileField.Activity }
                     }
                 }
             }
@@ -228,7 +228,7 @@ fun ProfileScreen(
     }
 }
 
-private val birthFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+internal val birthFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
 
 /** A foto do cabeçalho da sidebar voa e cresce até a do Perfil (SPEC §9.1). */
 const val PROFILE_PHOTO_KEY = "profile-photo"
@@ -364,9 +364,9 @@ private fun SheetStat(value: String, caption: String, modifier: Modifier = Modif
     }
 }
 
-/** Uma linha de campo: rótulo, valor (ou "Não informado") e a setinha. */
+/** Uma linha de campo: rótulo, valor (ou "Não informado") e a setinha. Também no onboarding. */
 @Composable
-private fun FieldRow(label: String, value: String?, onClick: () -> Unit) {
+fun ProfileFieldRow(label: String, value: String?, onClick: () -> Unit) {
     Row(
         Modifier
             .fillMaxWidth()

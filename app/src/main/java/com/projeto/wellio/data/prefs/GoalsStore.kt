@@ -12,6 +12,7 @@ import com.projeto.wellio.domain.model.GoalType
 import com.projeto.wellio.domain.model.Goals
 import com.projeto.wellio.domain.weight.WeightGoal
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 /** Metas diárias e semanais, guardadas no DataStore. */
@@ -48,6 +49,13 @@ class GoalsStore(private val dataStore: DataStore<Preferences>) {
             prefs[dailyKey(GoalType.EXERCISE)] = unit.defaultDaily
             prefs.remove(weeklyKey(GoalType.EXERCISE))
         }
+    }
+
+    /** Alguma meta já foi salva pelo usuário (quem já usa o app, SPEC §5.0). */
+    suspend fun hasSavedGoals(): Boolean {
+        val prefs = dataStore.data.first()
+        return prefs.contains(exerciseUnitKey) || GoalType.entries.any { prefs.contains(dailyKey(it)) } ||
+            prefs.contains(weightTargetKey)
     }
 
     private val exerciseUnitKey = stringPreferencesKey("goal_exercise_unit")

@@ -35,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import com.projeto.wellio.ui.goals.DashboardRoute
+import com.projeto.wellio.ui.goals.GoalsRoute
 import com.projeto.wellio.ui.onboarding.OnboardingRoute
 import com.projeto.wellio.ui.profile.ProfileRoute
 import com.projeto.wellio.ui.profile.ProfileViewModel
@@ -94,7 +95,7 @@ fun WellioNavHost() {
                 },
                 onItemClick = { title ->
                     scope.launch { drawerState.close() }
-                    navController.navigate(ComingSoonDestination(title))
+                    navController.navigate(if (title == "Metas") GoalsDestination else ComingSoonDestination(title))
                 }
             )
         }
@@ -160,6 +161,13 @@ fun WellioNavHost() {
                 NavScope {
                     DashboardRoute(fromCard = entry.toRoute<DashboardDestination>().fromCard, onBack = { navController.popBackStack() })
                 }
+            }
+            composable<GoalsDestination> {
+                JellyBack(navController)
+                GoalsRoute(
+                    onBack = { navController.popBackStack() },
+                    onOpenDay = { day -> navController.navigate(DashboardDestination(day = day.toString())) }
+                )
             }
             composable<ProfileDestination> {
                 JellyBack(navController)

@@ -18,6 +18,9 @@ data class ExerciseDestination(val fromCard: Boolean = false)
 @Serializable
 data object ProfileDestination
 
+@Serializable
+data object GoalsDestination
+
 /** Tela do Dashboard (SPEC §5.4); [day] (ISO) abre num dia passado, vindo da semana em anéis. */
 @Serializable
 data class DashboardDestination(val fromCard: Boolean = false, val day: String? = null)

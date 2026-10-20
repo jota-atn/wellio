@@ -99,6 +99,9 @@ interface ExerciseDao {
     @Query("SELECT date, SUM(minutes) AS total FROM exercise_entry WHERE date BETWEEN :from AND :to AND deletedAt IS NULL GROUP BY date")
     fun minutesByDay(from: LocalDate, to: LocalDate): Flow<List<DayTotal>>
 
+    @Query("SELECT date, COUNT(*) AS total FROM exercise_entry WHERE date BETWEEN :from AND :to AND deletedAt IS NULL GROUP BY date")
+    fun workoutsByDay(from: LocalDate, to: LocalDate): Flow<List<DayTotal>>
+
     @Query("SELECT * FROM exercise_entry WHERE date = :day AND deletedAt IS NULL ORDER BY timestamp")
     fun entriesOn(day: LocalDate): Flow<List<ExerciseEntryEntity>>
 
@@ -157,5 +160,32 @@ interface WeightDao {
     suspend fun softDelete(id: String, at: Instant)
 
     @Query("UPDATE weight_entry SET deletedAt = NULL, updatedAt = :at WHERE id = :id")
+    suspend fun restore(id: String, at: Instant)
+}
+
+@Dao
+interface GoalDao {
+    @Query("SELECT * FROM daily_goal_history ORDER BY effectiveFrom")
+    fun history(): Flow<List<DailyGoalHistoryEntity>>
+
+    @Upsert
+    suspend fun upsertHistory(row: DailyGoalHistoryEntity)
+
+    @Query("SELECT * FROM goal WHERE deletedAt IS NULL ORDER BY endDate, createdAt")
+    fun periodGoals(): Flow<List<PeriodGoalEntity>>
+
+    @Query("SELECT * FROM goal WHERE id = :id")
+    suspend fun periodGoal(id: String): PeriodGoalEntity?
+
+    @Insert
+    suspend fun insert(goal: PeriodGoalEntity)
+
+    @Update
+    suspend fun update(goal: PeriodGoalEntity)
+
+    @Query("UPDATE goal SET deletedAt = :at, updatedAt = :at WHERE id = :id")
+    suspend fun softDelete(id: String, at: Instant)
+
+    @Query("UPDATE goal SET deletedAt = NULL, updatedAt = :at WHERE id = :id")
     suspend fun restore(id: String, at: Instant)
 }

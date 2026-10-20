@@ -40,6 +40,10 @@ class ExerciseRepository(
     fun kcalByDay(days: ClosedRange<LocalDate>): Flow<Map<LocalDate, Int>> =
         dao.kcalByDay(days.start, days.endInclusive).map { rows -> rows.associate { it.date to it.total } }
 
+    /** Treinos de cada dia do intervalo (dias sem registro ficam de fora). */
+    fun workoutsByDay(days: ClosedRange<LocalDate>): Flow<Map<LocalDate, Int>> =
+        dao.workoutsByDay(days.start, days.endInclusive).map { rows -> rows.associate { it.date to it.total } }
+
     /** Minutos de cada dia do intervalo (dias sem registro ficam de fora). */
     fun minutesByDay(days: ClosedRange<LocalDate>): Flow<Map<LocalDate, Int>> =
         dao.minutesByDay(days.start, days.endInclusive).map { rows -> rows.associate { it.date to it.total } }

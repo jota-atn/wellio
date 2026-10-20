@@ -10,6 +10,7 @@ import com.projeto.wellio.data.prefs.ProfilePhotoStore
 import com.projeto.wellio.data.prefs.ProfileStore
 import com.projeto.wellio.data.repository.ExerciseRepository
 import com.projeto.wellio.data.repository.FoodRepository
+import com.projeto.wellio.data.repository.GoalRepository
 import com.projeto.wellio.data.repository.WaterRepository
 import com.projeto.wellio.data.repository.WeightRepository
 import kotlinx.coroutines.CoroutineScope
@@ -37,7 +38,8 @@ class AppContainer(context: Context) {
     private val database = AppDatabase.build(context)
 
     val clock: Clock = Clock.systemDefaultZone()
-    val goalsStore = GoalsStore(context.preferences)
+    val goalRepository = GoalRepository(database.goalDao(), clock)
+    val goalsStore = GoalsStore(context.preferences, onDailyGoalsChanged = goalRepository::recordDaily)
     val homeLayoutStore = HomeLayoutStore(context.preferences)
     val profileStore = ProfileStore(context.preferences)
     val profilePhotoStore = ProfilePhotoStore(File(context.filesDir, "profile"))

@@ -98,7 +98,7 @@ class OnboardingViewModel(
             val target = draft.targetKg
             if (target != initialTarget?.targetKg) {
                 // Alvo novo começa a barra de progresso no peso de agora (SPEC §6.1)
-                goalsStore.setWeightGoal(target?.let { WeightGoal(it, initialTarget?.startKg ?: draft.weightKg ?: it) })
+                if (target == null) goalsStore.setWeightGoal(null) else goalsStore.setWeightTarget(target, draft.weightKg ?: target)
             }
             if (saveGoals) {
                 val goals = goalsStore.goals.first()

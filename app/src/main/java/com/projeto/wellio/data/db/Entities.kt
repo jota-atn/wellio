@@ -93,3 +93,40 @@ data class ExerciseEntryEntity(
     val updatedAt: Instant,
     val deletedAt: Instant? = null
 )
+
+/**
+ * Metas diárias valendo a partir de [effectiveFrom] (SPEC §9.2): os dias anteriores a uma
+ * mudança continuam avaliados pela meta da época. Semanais null = diária × 7.
+ */
+@Entity(tableName = "daily_goal_history")
+data class DailyGoalHistoryEntity(
+    @PrimaryKey val effectiveFrom: LocalDate,
+    val waterMl: Int,
+    val waterWeekly: Int?,
+    val kcal: Int,
+    val kcalWeekly: Int?,
+    val exerciseUnit: String,
+    val exercise: Int,
+    val exerciseWeekly: Int?
+)
+
+/** Meta de período (SPEC §9.2); a de peso vive no peso alvo e só entra aqui no histórico. */
+@Entity(tableName = "goal", indices = [Index("status")])
+data class PeriodGoalEntity(
+    @PrimaryKey val id: String,
+    val title: String,
+    val metric: String,
+    val target: Double,
+    val periodKind: String,
+    val startDate: LocalDate,
+    val endDate: LocalDate,
+    val recurring: Boolean,
+    val status: String,
+    val completedAt: Instant?,
+    val celebrated: Boolean,
+    /** Resultado ao terminar (o valor alcançado), para o histórico. */
+    val finalValue: Double?,
+    val createdAt: Instant,
+    val updatedAt: Instant,
+    val deletedAt: Instant? = null
+)

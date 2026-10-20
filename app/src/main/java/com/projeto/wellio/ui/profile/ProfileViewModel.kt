@@ -108,9 +108,7 @@ class ProfileViewModel(
 
     /** Mesmo alvo da tela de Peso: um alvo novo começa a barra de progresso no peso atual. */
     fun setTarget(targetKg: Double) {
-        val state = uiState.value
-        val startKg = state.weightGoal?.startKg ?: state.weightKg ?: DEFAULT_WEIGHT_KG
-        viewModelScope.launch { goalsStore.setWeightGoal(WeightGoal(targetKg, startKg)) }
+        viewModelScope.launch { goalsStore.setWeightTarget(targetKg, uiState.value.weightKg ?: DEFAULT_WEIGHT_KG) }
     }
 
     fun clearTarget() {

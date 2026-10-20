@@ -55,10 +55,9 @@ class WeightViewModel(
         viewModelScope.launch { repository.update(entry, day, weightKg) }
     }
 
-    /** Define o alvo; um alvo novo começa a barra de progresso no peso atual. */
+    /** Define o alvo; um alvo novo começa a barra de progresso no peso atual, e o prazo fica. */
     fun setTarget(targetKg: Double) {
-        val startKg = uiState.value.goal?.startKg ?: uiState.value.currentKg
-        viewModelScope.launch { goalsStore.setWeightGoal(WeightGoal(targetKg, startKg)) }
+        viewModelScope.launch { goalsStore.setWeightTarget(targetKg, uiState.value.currentKg) }
     }
 
     fun clearTarget() {

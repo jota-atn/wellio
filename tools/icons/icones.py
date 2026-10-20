@@ -9,6 +9,7 @@ Grupos:
 - container: recipientes de água (SPEC §6)
 - module: ícone de cada funcionalidade (sidebar, FAB, resumos)
 - exercise: categoria de exercício (SPEC §8.0); cada atividade usa o da sua categoria
+- profile: perfil sem foto e troca de foto (SPEC §9.1)
 
 Uso: python3 tools/icons/icones.py
 """
@@ -136,7 +137,18 @@ EXERCISE = {
     ],
 }
 
-GROUPS = {"container": CONTAINER, "module": MODULE, "exercise": EXERCISE}
+PROFILE = {
+    "person": [
+        "M12,4.5 A3.5,3.5 0 1 1 12,11.5 A3.5,3.5 0 1 1 12,4.5 Z",
+        "M4.5,20.5 C4.5,16.5 7.8,14 12,14 C16.2,14 19.5,16.5 19.5,20.5",
+    ],
+    "camera": [
+        "M4,8 A2,2 0 0 1 6,6 H8 L9.5,4 H14.5 L16,6 H18 A2,2 0 0 1 20,8 V17 A2,2 0 0 1 18,19 H6 A2,2 0 0 1 4,17 Z",
+        "M12,9 A3.5,3.5 0 1 1 12,16 A3.5,3.5 0 1 1 12,9 Z",
+    ],
+}
+
+GROUPS = {"container": CONTAINER, "module": MODULE, "exercise": EXERCISE, "profile": PROFILE}
 
 
 def vector_drawable(paths: list[str]) -> str:

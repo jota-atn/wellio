@@ -15,6 +15,9 @@ data class WeightDestination(val fromCard: Boolean = false)
 @Serializable
 data class ExerciseDestination(val fromCard: Boolean = false)
 
+@Serializable
+data object ProfileDestination
+
 /** Destino provisório das telas que ainda não existem. */
 @Serializable
 data class ComingSoonDestination(val title: String)

@@ -34,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
+import com.projeto.wellio.ui.profile.ProfileRoute
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
@@ -57,6 +58,10 @@ fun WellioNavHost() {
         gesturesEnabled = !homeEditing || drawerState.isOpen,
         drawerContent = {
             WellioDrawerContent(
+                onProfileClick = {
+                    scope.launch { drawerState.close() }
+                    navController.navigate(ProfileDestination)
+                },
                 onModuleClick = { module ->
                     scope.launch { drawerState.close() }
                     navController.navigate(module.destination() ?: ComingSoonDestination(module.title))
@@ -121,6 +126,13 @@ fun WellioNavHost() {
                 NavScope {
                     ExerciseRoute(fromCard = entry.toRoute<ExerciseDestination>().fromCard, onBack = { navController.popBackStack() })
                 }
+            }
+            composable<ProfileDestination> {
+                JellyBack(navController)
+                ProfileRoute(
+                    onBack = { navController.popBackStack() },
+                    onOpenWeight = { navController.navigate(WeightDestination()) }
+                )
             }
             composable<ComingSoonDestination> { entry ->
                 JellyBack(navController)

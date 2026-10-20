@@ -1,0 +1,131 @@
+package com.projeto.wellio.ui.profile
+
+import android.graphics.Bitmap
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.projeto.wellio.WellioApp
+import com.projeto.wellio.data.prefs.GoalsStore
+import com.projeto.wellio.data.prefs.ProfilePhotoStore
+import com.projeto.wellio.data.prefs.ProfileStore
+import com.projeto.wellio.data.repository.WeightRepository
+import com.projeto.wellio.data.time.todayFlow
+import com.projeto.wellio.domain.model.Goal
+import com.projeto.wellio.domain.model.GoalType
+import com.projeto.wellio.domain.model.Goals
+import com.projeto.wellio.domain.model.Profile
+import com.projeto.wellio.domain.profile.BmiRange
+import com.projeto.wellio.domain.profile.CalorieSuggestion
+import com.projeto.wellio.domain.profile.Objective
+import com.projeto.wellio.domain.profile.age
+import com.projeto.wellio.domain.profile.bmi
+import com.projeto.wellio.domain.profile.objective
+import com.projeto.wellio.domain.profile.suggestedCalories
+import com.projeto.wellio.domain.weight.DEFAULT_WEIGHT_KG
+import com.projeto.wellio.domain.weight.WeightGoal
+import com.projeto.wellio.domain.weight.latestWeight
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import java.io.File
+import java.time.Clock
+import java.time.LocalDate
+
+data class ProfileUiState(
+    val today: LocalDate,
+    val profile: Profile = Profile(),
+    /** Recorte salvo da foto, se houver. */
+    val photo: File? = null,
+    /** Pesagem mais recente; null sem pesagens. */
+    val weightKg: Double? = null,
+    val weightGoal: WeightGoal? = null,
+    val foodGoal: Goal = Goals.Default.food
+) {
+    val age: Int? get() = profile.birthDate?.let { age(it, today) }
+    val bmi: Double? get() = if (weightKg != null && profile.heightCm != null) bmi(weightKg, profile.heightCm) else null
+    val bmiRange: BmiRange? get() = bmi?.let(BmiRange::of)
+    val objective: Objective get() = objective(weightGoal, weightKg)
+    val suggestion: CalorieSuggestion get() = suggestedCalories(profile, weightKg, objective, today)
+}
+
+class ProfileViewModel(
+    private val profileStore: ProfileStore,
+    private val photoStore: ProfilePhotoStore,
+    private val goalsStore: GoalsStore,
+    weightRepository: WeightRepository,
+    clock: Clock
+) : ViewModel() {
+
+    private val initialDay = LocalDate.now(clock)
+
+    val uiState: StateFlow<ProfileUiState> = combine(
+        todayFlow(clock),
+        profileStore.profile,
+        weightRepository.entries,
+        goalsStore.weightGoal,
+        goalsStore.goals
+    ) { today, profile, weights, weightGoal, goals ->
+        ProfileUiState(
+            today = today,
+            profile = profile,
+            photo = profile.photoFile?.let(photoStore::file),
+            weightKg = latestWeight(weights)?.weightKg,
+            weightGoal = weightGoal,
+            foodGoal = goals.food
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ProfileUiState(initialDay))
+
+    fun update(transform: (Profile) -> Profile) {
+        viewModelScope.launch { profileStore.save(transform(uiState.value.profile)) }
+    }
+
+    /** Salva o recorte da foto (SPEC §9.1) e passa a usá-lo no perfil. */
+    fun setPhoto(cropped: Bitmap) {
+        viewModelScope.launch {
+            val name = photoStore.save { cropped.compress(Bitmap.CompressFormat.JPEG, 90, it) }
+            profileStore.save(uiState.value.profile.copy(photoFile = name))
+        }
+    }
+
+    fun removePhoto() {
+        viewModelScope.launch {
+            profileStore.save(uiState.value.profile.copy(photoFile = null))
+            photoStore.clear()
+        }
+    }
+
+    /** "Usar": a sugestão vira a meta diária de kcal; a semanal própria, se houver, fica. */
+    fun useSuggestion(kcal: Int) {
+        viewModelScope.launch { goalsStore.setGoal(GoalType.FOOD, uiState.value.foodGoal.copy(daily = kcal)) }
+    }
+
+    /** Mesmo alvo da tela de Peso: um alvo novo começa a barra de progresso no peso atual. */
+    fun setTarget(targetKg: Double) {
+        val state = uiState.value
+        val startKg = state.weightGoal?.startKg ?: state.weightKg ?: DEFAULT_WEIGHT_KG
+        viewModelScope.launch { goalsStore.setWeightGoal(WeightGoal(targetKg, startKg)) }
+    }
+
+    fun clearTarget() {
+        viewModelScope.launch { goalsStore.setWeightGoal(null) }
+    }
+
+    companion object {
+        val Factory = viewModelFactory {
+            initializer {
+                val container = (this[APPLICATION_KEY] as WellioApp).container
+                ProfileViewModel(
+                    container.profileStore,
+                    container.profilePhotoStore,
+                    container.goalsStore,
+                    container.weightRepository,
+                    container.clock
+                )
+            }
+        }
+    }
+}

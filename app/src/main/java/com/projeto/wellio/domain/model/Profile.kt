@@ -10,12 +10,12 @@ enum class Sex(val label: String) {
 }
 
 /** Nível de atividade e o fator que multiplica o metabolismo basal (SPEC §9.1). */
-enum class ActivityLevel(val label: String, val factor: Double) {
-    Sedentary("Sedentário", 1.2),
-    Light("Levemente ativo", 1.375),
-    Moderate("Moderado", 1.55),
-    VeryActive("Muito ativo", 1.725),
-    Athlete("Atleta", 1.9)
+enum class ActivityLevel(val label: String, val hint: String, val factor: Double) {
+    Sedentary("Sedentário", "Pouco ou nenhum exercício", 1.2),
+    Light("Levemente ativo", "Exercício leve 1 a 3 dias por semana", 1.375),
+    Moderate("Moderado", "Exercício 3 a 5 dias por semana", 1.55),
+    VeryActive("Muito ativo", "Exercício intenso 6 a 7 dias por semana", 1.725),
+    Athlete("Atleta", "Treino pesado todo dia ou trabalho físico", 1.9)
 }
 
 /**

@@ -1,6 +1,7 @@
 package com.projeto.wellio.ui.navigation
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -14,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.projeto.wellio.ui.icons.WellioIcon
@@ -28,7 +30,7 @@ private val menuItems = listOf("Estatísticas", "Conquistas", "Anotações", "Re
  * A seção Registros sai dos módulos (cada um com ícone e cor).
  */
 @Composable
-fun WellioDrawerContent(onModuleClick: (WellioModule) -> Unit, onItemClick: (String) -> Unit) {
+fun WellioDrawerContent(onProfileClick: () -> Unit, onModuleClick: (WellioModule) -> Unit, onItemClick: (String) -> Unit) {
     ModalDrawerSheet {
         Column(Modifier.verticalScroll(rememberScrollState()).padding(vertical = 16.dp)) {
             Column(
@@ -38,7 +40,9 @@ fun WellioDrawerContent(onModuleClick: (WellioModule) -> Unit, onItemClick: (Str
                 Box(
                     modifier = Modifier
                         .size(88.dp)
-                        .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape),
+                        .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
+                        .clip(CircleShape)
+                        .clickable(onClickLabel = "Abrir perfil", onClick = onProfileClick),
                     contentAlignment = Alignment.Center
                 ) {
                     WellioIcon("profile", size = MaterialTheme.typography.headlineLarge.fontSize)

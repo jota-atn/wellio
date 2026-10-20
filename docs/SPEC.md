@@ -204,7 +204,8 @@ Com "Remover animações" ligado, os elementos ficam parados (§2.8).
 | `workout_template` | id, name, iconKey |
 | `workout_template_item` | id, templateId, exerciseTypeId, minutes, position |
 | `weight_entry` | id, date, weightKg |
-| `goal` | id, title, metric, period, target, startDate, endDate, status |
+| `goal` | id, title, metric, target, periodKind (semana / mês / ano / datas), startDate, endDate, recurring, status (ativa / concluída / não concluída), completedAt?, celebrated |
+| `daily_goal_history` | effectiveFrom (data), waterMl, kcal, exerciseUnit, exercise: as metas diárias valendo a partir de cada dia (§9.2) |
 | `achievement_unlock` | achievementId, tier, unlockedAt, xp |
 | `streak_freeze` | id, earnedAt, usedOn? (data coberta) |
 | `note` | id, type, title, body, tags, pinned, color?, date?, reminderAt?, archived |
@@ -217,7 +218,8 @@ Com "Remover animações" ligado, os elementos ficam parados (§2.8).
 ### 4.2 DataStore
 
 - **Perfil**: nome, fotoUri?, dataNascimento?, sexo?, alturaCm?, nivelAtividade?, tituloExibido?, onboardingConcluido (objetivo derivado do peso alvo, que fica nas metas; §9.1)
-- **Metas diárias e semanais**: água (ml), kcal consumidas, exercício (unidade: kcal ou minutos); para cada uma, semanal automática (×7) ou valor próprio
+- **Metas diárias e semanais**: água (ml), kcal consumidas, exercício (unidade: kcal ou minutos); para cada uma, semanal automática (×7) ou valor próprio; dia de início da semana (padrão: segunda)
+- **Peso alvo**: alvo, peso de início e prazo opcional (§6.1, §9.2)
 - **Configurações**: ver §9.3
 - **Layout da Home e do painel rápido**: listas ordenadas de instâncias de card `{instanceId, cardType, size, config}`; `config` guarda o que é próprio da instância (ex.: lista do Checklist, linhas e nome do Combinado)
 
@@ -406,6 +408,27 @@ Junta **até 3 resumos** escolhidos pelo usuário num card só, com visual capri
 - Criado e editado no modo de edição da Home: escolher os resumos, a ordem e o nome.
 - TalkBack lê o card como a sequência das descrições faladas dos resumos.
 
+### 5.4 Tela do Dashboard (decidido para o M2b)
+
+Tela própria, aberta pelo card do Dashboard (o card cresce e vira a tela, §2.9). Substitui o dialog "Visão geral".
+
+```
+   ‹  Hoje  ›
+      ╭─────────╮
+    ╭─│─╭─────╮─│─╮
+    │ │ │ 78% │ │ │
+    ╰─│─╰─────╯─│─╯
+      ╰─────────╯
+ ● Água       1.400 / 2.000 ml  ›
+ ● Calorias   1.250 / 2.000     ›
+ ● Exercício     30 / 45 min    ›
+```
+
+- **Elemento ilustrativo**: **três anéis concêntricos** grandes (água por fora, kcal no meio, exercício por dentro, cada um na cor do módulo), que fecham ao bater a meta; no centro, o % do dia (média das 3, cada uma limitada a 100%, a mesma conta do mini-gráfico do card). Os anéis animam com mola ao abrir e ao mudar de dia; quando um anel fecha, ele brilha. São os mesmos anéis do card metade, em grande.
+- **Linhas das 3 metas** abaixo dos anéis: bolinha na cor do módulo, nome, valor/meta do dia. Tocar abre o sheet da meta (o mesmo da tela do módulo e da tela de Metas).
+- **Navegação entre dias** como nas outras telas (setas, deslizar e calendário, nunca depois de hoje). Os anéis e as linhas usam a meta que valia naquele dia (§9.2).
+- Exercício aparece na unidade da meta daquele dia (kcal ou min).
+
 ## 6. Água
 
 - Botões rápidos de adicionar (padrão **+200, +300, +500 ml**), configuráveis em Configurações.
@@ -423,7 +446,7 @@ Junta **até 3 resumos** escolhidos pelo usuário num card só, com visual capri
 ## 6.1 Peso
 
 - Tela própria, com a balança de banheiro no topo (§2.9).
-- **Peso alvo** definido na própria tela, **dentro da balança**: com alvo, uma linha compacta com quanto falta, barrinha de progresso (desde o peso do momento em que o alvo foi definido) e data estimada, que abre a edição ao tocar; sem alvo, um botão "Definir alvo". Linha tracejada na curva. No M2a o peso alvo aparece também no perfil, como objetivo (mesmo dado, §9.1).
+- **Peso alvo** definido na própria tela, **dentro da balança**: com alvo, uma linha compacta com quanto falta, barrinha de progresso (desde o peso do momento em que o alvo foi definido) e data estimada, que abre a edição ao tocar; sem alvo, um botão "Definir alvo". Linha tracejada na curva. No M2a o peso alvo aparece também no perfil, como objetivo (mesmo dado, §9.1). No M2b o alvo pode ganhar um **prazo**, pela meta de período de peso (§9.2): a linha do alvo mostra "até 31/12".
 - **Curva de evolução** por período (30 dias, 90 dias, tudo); segurar o dedo e arrastar mostra o peso e o dia de cada pesagem.
 - **Resumo do período**: menor, maior e média.
 - **Ritmo** médio em kg por semana (com pelo menos 7 dias entre a primeira e a última pesagem do período) e, com peso alvo, a **data estimada** para chegar lá, se o ritmo for na direção certa.
@@ -593,6 +616,61 @@ Dois níveis:
    - **Recorrência** opcional: meta semanal/mensal que se renova sozinha.
    - Cada meta mostra progresso, dias restantes e **projeção** ("no ritmo atual você chega a 52 L").
    - Ao concluir, toast de parabenização (§9.6); metas vencidas ficam no histórico como concluídas ou não.
+
+#### Decidido para o M2b
+
+**Tela de Metas** (tela própria, pela sidebar), separada da tela do Dashboard (§5.4): o Dashboard mostra o progresso, Metas configura.
+
+```
+  S    T    Q    Q    S    S    D
+ (◎)  (◎)  (○)  (◎)  (◍)  ( )  ( )
+        4 de 7 dias com os anéis fechados
+
+ Metas diárias
+ ● Água       2.000 ml/dia · 14 L/semana (auto) ›
+ ● Calorias   2.000 kcal/dia · 14.000/semana   ›
+ ● Exercício  45 min/dia · 315 min/semana      ›
+ A semana começa na: segunda                   ›
+
+ Metas de período                         [+ Nova]
+ ┌─────────────────────────────────────────┐
+ │ Beber 60 L em outubro                   │
+ │ ▓▓▓▓▓▓▓▓▓░░│░░░░░░                      │
+ │ 34 L de 60 L · 11 dias                  │
+ │ No ritmo atual: ~52 L                   │
+ └─────────────────────────────────────────┘
+ Histórico ›
+```
+
+- **Elemento ilustrativo**: a **semana em anéis**: os 7 dias da semana atual, cada um com os três anéis pequenos do Dashboard, e "N de 7 dias com os anéis fechados". Dias futuros ficam vazios. Tocar num dia abre o Dashboard naquele dia.
+- **Metas diárias**: uma linha por meta, com a diária e a semanal. Tocar abre o sheet da meta: valor diário (com a sugestão quando houver: água por 35 ml/kg, kcal pelo perfil, §9.1), unidade do exercício e a semanal **automática (diária × 7)** com uma chave para definir um valor próprio.
+- **Início da semana**: escolhido aqui (qualquer dia; padrão segunda). Vale para a meta semanal, a semana em anéis e o card do Dashboard. Configurações (M3) ganha um atalho para o mesmo ajuste.
+- **Histórico das metas diárias**: cada mudança vale **a partir do dia em que foi feita** (`daily_goal_history`); os dias anteriores continuam avaliados pela meta que valia neles. Isso vale também para a troca de unidade do exercício.
+
+**Metas de período**
+
+- **Métricas** (genéricas por meta diária):
+
+  | Métrica | Exemplo |
+  |---|---|
+  | Água: total no período | Beber 60 L em outubro |
+  | Água: dias batendo a meta | 25 dias em outubro |
+  | Calorias: total no período | (raro, mas existe pela simetria) |
+  | Calorias: dias dentro da meta (±10%) | 5 dias na semana |
+  | Exercício: total no período (kcal ou min, na unidade escolhida na criação) | 150 min por semana |
+  | Exercício: dias batendo a meta | 4 dias na semana |
+  | Nº de treinos | 12 treinos no mês |
+  | Peso alvo | Chegar a 75 kg até dezembro |
+
+  As de calorias usam o registro de comida que existir; com a Alimentação nova (M1b) passam a usar o novo.
+- **Criar**: botão "+ Nova" abre um **sheet em passos**: (1) métrica, com ícone e exemplo; (2) período: esta semana, este mês, este ano ou datas; (3) valor, já preenchido com uma sugestão pelo histórico (média dos últimos períodos iguais, ou a meta diária × dias); (4) recorrência (só para semana, mês e ano). O nome é gerado ("Beber 60 L em outubro") e pode ser editado.
+- **Peso alvo é o mesmo alvo da tela de Peso**: criar essa meta define o alvo da tela de Peso e acrescenta um prazo; mudar o alvo em qualquer lugar muda nos dois. Só existe um alvo por vez; criar outra meta de peso substitui a atual (com confirmação). O progresso conta desde o peso de início do alvo.
+- **Cartão com ritmo**: barra de progresso com uma **marca de "onde deveria estar hoje"** (proporcional aos dias passados), valor atual e alvo, dias restantes e a **projeção** pelo ritmo médio diário até agora ("No ritmo atual: ~52 L"). Métricas de "dias batendo" projetam pela proporção de dias batidos até agora. Peso projeta pelo ritmo da tela de Peso (§6.1).
+- Tocar no cartão abre a edição (valor, nome, recorrência; métrica e período não mudam) com "Apagar" (com desfazer).
+- **Recorrência**: ao terminar o período, a meta vai para o histórico (concluída ou não) e uma **nova igual começa sozinha** no período seguinte, com o mesmo valor.
+- **Ao concluir** (até o M6, que traz a parabenização de verdade): o cartão vira "Concluída" e, na próxima abertura da tela de Metas ou do Dashboard, **comemora**: o elemento do módulo anima (gota transbordando, fogueira em labareda, balança com confete) e um confete discreto cai. Uma vez só (`celebrated`). Depois a meta fica como concluída até o fim do período (ou vai para o histórico, se não recorrente).
+- **Histórico**: metas de período terminadas, da mais recente para a mais antiga, com o resultado final e o selo concluída / não concluída.
+- O Dashboard não mostra as metas de período; elas ficam só na tela de Metas.
 
 
 ### 9.3 Configurações
@@ -804,7 +882,7 @@ O tipo define o editor, mas todas compartilham a mesma tela de listagem.
 | **M1c — Extras do registro** | Leitor de código de barras (Open Food Facts); modelos de treino |
 | **M1 — Registros completos (visão geral)** | Telas de detalhe com editar/remover/desfazer; navegação entre dias; favoritos/recentes; bases TACO + extras e Compendium curado; medidas caseiras; resumos de cada funcionalidade; cadastro de alimentos e exercícios próprios; **leitor de código de barras**; **modelos de treino**; peso do perfil no cálculo; correções da §12 |
 | **M2a — Perfil e onboarding** | Tela de Perfil (foto com recorte, nome, corpo, atividade, objetivo derivado do alvo, ficha com idade/IMC/meta sugerida); cabeçalho da sidebar; onboarding (etapas 1–5) |
-| **M2b — Metas e Dashboard** | Tela de Metas (diárias, semanais e de período); tela da Visão geral do Dashboard |
+| **M2b — Metas e Dashboard** | Tela do Dashboard (três anéis, linhas das metas, navegação entre dias); tela de Metas (semana em anéis, diárias e semanais com histórico, início da semana, metas de período com ritmo, recorrência, comemoração e histórico); peso alvo com prazo |
 | **M2c — Widget** | **Widget na tela inicial** |
 | **M3 — Configurações e integrações** | Tema; notificações e lembretes; sons; backup/exportação; **Health Connect** |
 | **M4 — Home personalizável** | Catálogo de cards (inteiro/metade/mini), grid arrastável, painel rápido configurável, card Combinado, restaurar padrão |
@@ -939,6 +1017,10 @@ Modelo de dados adicional: `plan_item` (id, date, time?, kind: exercise/template
 - **Telas próprias para tudo** e personalidade visual por tela (gota na Água, curva + régua no Peso); transição "gelatina"; recipientes na tela de Água com fileira + modo edição e ícones desenhados (§2.2, §2.9, §6).
 - **M2 dividido em M2a/M2b/M2c**, cada parte especificada, implementada e mergeada antes da próxima (§11).
 - **Perfil**: tela própria, aberta com a foto crescendo a partir da sidebar; editar tocando em cada linha; sem biotipo; peso só na tela de Peso; objetivo derivado do peso alvo; meta sugerida aplicada pelo botão "Usar" (§9.1).
+- **Dashboard e Metas em telas separadas**: Dashboard com três anéis, as linhas das metas e navegação entre dias; Metas com a semana em anéis, a configuração e as metas de período (§5.4, §9.2).
+- **Semana**: dia de início escolhido pelo usuário (padrão segunda), na tela de Metas (§9.2).
+- **Metas de período**: métricas genéricas (total ou dias batendo, por meta diária, mais treinos e peso); criação em passos; cartão com ritmo e projeção; recorrência automática; comemoração no cartão até o M6; peso alvo é o mesmo da tela de Peso, com prazo (§9.2).
+- **Metas diárias valem a partir do dia em que mudam**; o passado é avaliado pela meta da época (§9.2).
 - **Onboarding**: entra no M2a sem a etapa de lembretes (M3); ilustração por etapa; quem já usa o app vê o onboarding preenchido uma vez (§5.0).
 - **Tom dos textos**: zoeiro e épico, sem ser brega; trilhas com nomes evocativos (Caudal, Fornalha...) (§9.5, `TEXTOS.md`).
 

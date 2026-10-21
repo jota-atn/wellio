@@ -31,6 +31,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.material3.TextButton
@@ -60,6 +61,7 @@ import com.projeto.wellio.ui.exercise.ExerciseRoute
 import com.projeto.wellio.ui.home.HomeRoute
 import com.projeto.wellio.ui.water.WaterRoute
 import com.projeto.wellio.ui.weight.WeightRoute
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 @Composable
@@ -165,7 +167,14 @@ fun WellioNavHost() {
             ) {
                 NavScope {
                 HomeRoute(
-                    onMenuClick = { scope.launch { drawerState.open() } },
+                    onMenuClick = {
+                        scope.launch {
+                            // O card que está voltando é desenhado por cima de tudo, inclusive da
+                            // sidebar: ela só abre quando a transição termina (dura menos de 0,5 s)
+                            snapshotFlow { isTransitionActive }.first { !it }
+                            drawerState.open()
+                        }
+                    },
                     onOpenModule = { module ->
                         // Pelo card: o card vira a tela (SPEC §2.9)
                         navController.navigate(module.destination(fromCard = true) ?: ComingSoonDestination(module.title))

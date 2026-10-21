@@ -178,7 +178,7 @@ Com "Remover animações" ligado, os elementos ficam parados (§2.8).
 
 **Transições entre telas** dependem de por onde se entra:
 - **Pela sidebar**: deslize com mola solta ("gelatina"): passa do ponto, volta e assenta devagar.
-- **Pelo card da Home**: o **card vira a tela** (transformação de container): o card cresce com mola até ocupar a tela, e os elementos ilustrativos voam do card para a tela (a gota do card vira a gota grande da Água; o visor do card vira o visor da balança do Peso). Voltar faz o caminho inverso: a tela encolhe de volta para dentro do card. O **gesto de voltar** dispara a mesma animação ao ser concluído; durante o arrasto a tela não acompanha o dedo (sem a prévia do voltar preditivo), porque a prévia comprime a mola e a volta fica rápida demais.
+- **Pelo card da Home**: o **card vira a tela** (transformação de container): o card **cresce com o próprio visual** (cor, elemento, números, relaid out no tamanho maior, sem esticar a tela nova dentro dele) com mola até ocupar a tela; **só no fim** o conteúdo da tela surge por cima com um fade rápido (decidido em 2026-10-20, depois de ver a versão em que a tela crescia espremida dentro do card). Os elementos ilustrativos voam do card para a tela (a gota do card vira a gota grande da Água; o visor do card vira o visor da balança do Peso). Voltar faz o caminho inverso: a tela encolhe de volta para dentro do card. O **gesto de voltar** dispara a mesma animação ao ser concluído; durante o arrasto a tela não acompanha o dedo (sem a prévia do voltar preditivo), porque a prévia comprime a mola e a volta fica rápida demais.
 
 ## 3. Regras gerais
 
@@ -428,6 +428,7 @@ Tela própria, aberta pelo card do Dashboard (o card cresce e vira a tela, §2.9
 - **Linhas das 3 metas** abaixo dos anéis: bolinha na cor do módulo, nome, valor/meta do dia. Tocar abre o sheet da meta (o mesmo da tela do módulo e da tela de Metas).
 - **Navegação entre dias** como nas outras telas (setas, deslizar e calendário, nunca depois de hoje). Os anéis e as linhas usam a meta que valia naquele dia (§9.2).
 - Exercício aparece na unidade da meta daquele dia (kcal ou min).
+- **Segurar um anel**: vibração leve; os outros dois anéis apagam, o segurado engrossa um pouco e o centro troca o % do dia pelo % daquela meta; um **balão** perto do anel mostra o resumo do dia da meta (Água: "1.400 de 2.000 ml · faltam 600 ml · 6 registros, o último às 15h"; Calorias: "1.250 de 2.000 kcal · faltam 750"; Exercício: "30 de 45 min · Corrida, Yoga"). Arrastar o dedo para outro anel troca o balão (com nova vibração); soltar volta tudo. O balão não tem botões. No TalkBack, cada linha de meta já lê o mesmo resumo.
 
 ## 6. Água
 
@@ -581,7 +582,9 @@ A Home fica **embaçada** atrás da sidebar, e à direita aparece uma coluna com
  Atividade    moderado         ›
 ```
 
-- **Elemento ilustrativo**: a foto grande e, abaixo, uma **ficha** com os derivados em destaque: idade, IMC (com um ponto na cor da faixa: abaixo do peso, normal, sobrepeso, obesidade) e a meta calórica sugerida. O que não puder ser calculado mostra o que falta ("informe a altura").
+- **Elemento ilustrativo** (refeito em 2026-10-20, "capa com personalidade"): uma **capa** azul-marinho de canto a canto no topo, com a gota, a fogueira e a balança desenhadas em marca-d'água; a **foto** fica metade sobre a capa, com um **anel nas três cores** do app (água, kcal, exercício); abaixo do nome, uma linha viva: "No Wellio há 23 dias · 412 registros" (desde o primeiro registro; registros de água, comida, treino e peso).
+- **Ficha** com os derivados em três peças com ícone desenhado: **idade** (bolo), **IMC** numa **régua colorida** das quatro faixas com o marcador deslizando até o valor, e **meta calórica sugerida** (chama). Os números **contam de 0** até o valor ao abrir. O que não puder ser calculado mostra o que falta ("informe a altura").
+- **Linhas de campo** com ícone desenhado: bolo (nascimento), pessoa (sexo), régua (altura), balança (peso), alvo (objetivo), tênis (atividade).
 - **Edição**: tocar numa linha abre um sheet pequeno só para aquele campo, como nas metas. A tela sempre mostra os valores.
 - **Foto**: escolhida pelo Photo Picker; em seguida, uma tela com a foto atrás de uma **máscara circular** para arrastar e pinçar até enquadrar, e Confirmar. O recorte é salvo no armazenamento interno do app. Dá para trocar ou remover.
 - **Nome** (obrigatório).

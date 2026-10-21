@@ -76,6 +76,8 @@ fun DashboardScreen(
     var editing by remember { mutableStateOf<GoalType?>(null) }
     // Anel sendo segurado (SPEC §5.4)
     var held by remember { mutableStateOf<GoalType?>(null) }
+    // O balão fica do lado oposto ao dedo, para não ser coberto por ele
+    var fingerOnTop by remember { mutableStateOf(true) }
     val rings = state.rings
 
     Scaffold(
@@ -125,7 +127,10 @@ fun DashboardScreen(
                             size = RingsSize,
                             stroke = RingsStroke,
                             highlight = held?.let(RingOrder::indexOf),
-                            modifier = Modifier.holdToInspect(onHold = { held = it })
+                            modifier = Modifier.holdToInspect(onHold = { type, onTop ->
+                                held = type
+                                fingerOnTop = onTop
+                            })
                         )
                     }
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -148,7 +153,11 @@ fun DashboardScreen(
                         }
                     }
                     held?.let { type ->
-                        RingBalloon(ringSummary(type, state, zone), modifier = Modifier.align(Alignment.TopCenter).offset(y = (-20).dp))
+                        RingBalloon(
+                            ringSummary(type, state, zone),
+                            modifier = if (fingerOnTop) Modifier.align(Alignment.BottomCenter).offset(y = 20.dp)
+                            else Modifier.align(Alignment.TopCenter).offset(y = (-20).dp)
+                        )
                     }
                 }
             }
@@ -216,11 +225,11 @@ private val RingsSize = 232.dp
 private val RingsStroke = 18.dp
 
 /**
- * Segurar um anel (SPEC §5.4): vibra, e [onHold] diz qual anel está sob o dedo; arrastar
- * para outro troca (vibrando de novo); soltar devolve null.
+ * Segurar um anel (SPEC §5.4): vibra, e [onHold] diz qual anel está sob o dedo (e se o dedo
+ * está na metade de cima); arrastar para outro troca (vibrando de novo); soltar devolve null.
  */
 @Composable
-private fun Modifier.holdToInspect(onHold: (GoalType?) -> Unit): Modifier {
+private fun Modifier.holdToInspect(onHold: (GoalType?, Boolean) -> Unit): Modifier {
     val haptics = LocalHapticFeedback.current
     val density = LocalDensity.current
     return pointerInput(Unit) {
@@ -234,21 +243,22 @@ private fun Modifier.holdToInspect(onHold: (GoalType?) -> Unit): Modifier {
             return RingOrder[index].takeIf { abs(distance - radius) <= stroke * 1.2f }
         }
         var current: GoalType? = null
-        fun update(type: GoalType?) {
+        fun update(point: Offset) {
+            val type = ringAt(point)
             if (type != null && type != current) haptics.performHapticFeedback(if (current == null) HapticFeedbackType.LongPress else HapticFeedbackType.SegmentTick)
             if (type != null) current = type
-            onHold(current)
+            onHold(current, point.y < size.height / 2f)
         }
         detectDragGesturesAfterLongPress(
-            onDragStart = { update(ringAt(it)) },
-            onDrag = { change, _ -> update(ringAt(change.position)) },
+            onDragStart = ::update,
+            onDrag = { change, _ -> update(change.position) },
             onDragEnd = {
                 current = null
-                onHold(null)
+                onHold(null, true)
             },
             onDragCancel = {
                 current = null
-                onHold(null)
+                onHold(null, true)
             }
         )
     }

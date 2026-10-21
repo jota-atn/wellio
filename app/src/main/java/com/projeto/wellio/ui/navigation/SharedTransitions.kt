@@ -37,9 +37,10 @@ private val GrowSpring = BoundsTransform { _, _ -> spring(dampingRatio = 0.82f, 
 
 /**
  * Container que vira a tela, em transformação contínua (SPEC §2.9): card de um lado, tela do
- * outro, com a mesma [key]; [screen] marca o lado da tela. O retângulo cresce com mola; nenhum
- * dos dois conteúdos estica: o do card fica centralizado e some no começo, o da tela fica no
- * tamanho real, preso no topo, e vai sendo revelado enquanto aparece. Na volta, o inverso.
+ * outro, com a mesma [key]; [screen] marca o lado da tela. O retângulo cresce com mola. O
+ * card se refaz no tamanho que cresce (o fundo dele cresce junto, sem esticar) e some aos
+ * poucos; a tela entra por cima desde cedo, no tamanho real, presa no topo, revelada pelo
+ * retângulo. Na volta, o inverso.
  */
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -51,14 +52,15 @@ fun Modifier.sharedContainer(key: String, shape: Shape, enabled: Boolean = true,
         this@sharedContainer.sharedBounds(
             sharedContentState = rememberSharedContentState(key),
             animatedVisibilityScope = animated,
-            // Os fades se sobrepõem um pouco: nunca sobra o retângulo vazio
-            enter = if (screen) fadeIn(tween(durationMillis = 260, delayMillis = 90)) else fadeIn(tween(durationMillis = 220, delayMillis = 100)),
-            exit = if (screen) fadeOut(tween(durationMillis = 180)) else fadeOut(tween(durationMillis = 200)),
+            // Os fades se cruzam: o card ainda está lá enquanto a tela aparece por cima
+            enter = if (screen) fadeIn(tween(durationMillis = 260, delayMillis = 60)) else fadeIn(tween(durationMillis = 200)),
+            exit = if (screen) fadeOut(tween(durationMillis = 200)) else fadeOut(tween(durationMillis = 380)),
             boundsTransform = GrowSpring,
-            resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds(
-                contentScale = ContentScale.None,
-                alignment = if (screen) Alignment.TopCenter else Alignment.Center
-            ),
+            resizeMode = if (screen) {
+                SharedTransitionScope.ResizeMode.scaleToBounds(contentScale = ContentScale.None, alignment = Alignment.TopCenter)
+            } else {
+                SharedTransitionScope.ResizeMode.RemeasureToBounds
+            },
             clipInOverlayDuringTransition = OverlayClip(shape)
         )
     }

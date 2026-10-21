@@ -679,13 +679,14 @@ Dois níveis:
 - Tocar no cartão abre a edição (valor, nome, recorrência; métrica e período não mudam) com "Apagar" (com desfazer).
 - **Recorrência**: ao terminar o período, a meta vai para o histórico (concluída ou não) e uma **nova igual começa sozinha** no período seguinte, com o mesmo valor.
 - **Ao concluir** (até o M6, que traz a parabenização de verdade): o cartão vira "concluída!" e a comemoração (confete de verdade e o aviso "Parabéns! Meta concluída: <nome>") aparece na hora, de onde a pessoa estiver (ver abaixo). Uma vez só (`celebrated`).
-- **Comemoração em qualquer lugar** (antecipa parte do §9.6, decidido em 2026-10-20): um vigia acompanha as metas diárias, as de período e a de peso; quando uma é cumprida, **onde quer que a pessoa esteja no app** (Home, FAB, qualquer tela), cai o confete e desce o aviso "Parabéns! Meta de água concluída" (ou "Parabéns! Meta concluída: <nome>", ou "Parabéns! Três anéis fechados. Lenda!"), com vibração. Cada meta diária comemora uma vez por dia; cada meta de período, uma vez. As telas dos módulos continuam com a gota transbordando e a fogueira em labareda ao bater a meta ali. Depois a meta fica como concluída até o fim do período (ou vai para o histórico, se não recorrente).
+- **Comemoração em qualquer lugar** (antecipa parte do §9.6, decidido em 2026-10-20): um vigia acompanha as metas diárias, as de período e a de peso; quando uma é cumprida, **onde quer que a pessoa esteja no app** (Home, FAB, qualquer tela), cai o confete e desce o aviso "Parabéns! Meta de água concluída" (ou "Parabéns! Meta concluída: <nome>", ou "Parabéns! Três anéis fechados. Lenda!"), com vibração. **Comemora toda vez** que um registro faz a meta passar de não cumprida para cumprida (apagar um registro e cumprir de novo comemora de novo); abrir o app, apagar dados ou baixar a meta abaixo do que já foi feito não comemoram. Dá para desligar em Configurações (§9.3). As telas dos módulos continuam com a gota transbordando e a fogueira em labareda ao bater a meta ali. Depois a meta fica como concluída até o fim do período (ou vai para o histórico, se não recorrente).
 - **Histórico**: metas de período terminadas, da mais recente para a mais antiga, com o resultado final e o selo concluída / não concluída.
 - O Dashboard não mostra as metas de período; elas ficam só na tela de Metas.
 
 
 ### 9.3 Configurações
 
+- **Comemorações** (já existe, 2026-10-20): liga/desliga o confete e o aviso das metas cumpridas (§9.2). A tela de Configurações nasceu com só esta seção; o resto abaixo chega no M3.
 - **Aparência**: tema (sistema / claro / escuro). Sem cores dinâmicas (Material You): o app usa sua própria paleta (§2.5).
 - **Notificações** (cada uma liga/desliga e tem horário):
   - lembrete de água: intervalo (ex.: a cada 2 h) dentro de uma janela de horário (ex.: 8h–22h); não dispara se a meta do dia já foi batida;

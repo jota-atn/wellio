@@ -2,6 +2,7 @@ package com.projeto.wellio.ui.goals
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -15,6 +16,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -32,6 +39,9 @@ import com.projeto.wellio.ui.format.formatInt
 import com.projeto.wellio.ui.navigation.sharedContainer
 import com.projeto.wellio.ui.theme.DarkWellioColors
 import com.projeto.wellio.ui.theme.WellioTheme
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import kotlin.math.abs
 
 @Composable
 fun DashboardRoute(
@@ -40,7 +50,7 @@ fun DashboardRoute(
     viewModel: DashboardViewModel = viewModel(factory = DashboardViewModel.Factory)
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    DashboardScreen(state, onBack, viewModel::selectDay, viewModel::saveGoal, fromCard)
+    DashboardScreen(state, viewModel.zone, onBack, viewModel::selectDay, viewModel::saveGoal, fromCard)
 }
 
 /** Ordem das linhas, a mesma dos anéis (de fora para dentro). */
@@ -56,6 +66,7 @@ private fun percent(score: Float) = (score * 100).toInt()
 @Composable
 fun DashboardScreen(
     state: DashboardUiState,
+    zone: ZoneId,
     onBack: () -> Unit,
     onDayChange: (java.time.LocalDate) -> Unit,
     onSaveGoal: (GoalType, Goal, ExerciseUnit) -> Unit,
@@ -63,6 +74,8 @@ fun DashboardScreen(
 ) {
     val colors = WellioTheme.colors.base
     var editing by remember { mutableStateOf<GoalType?>(null) }
+    // Anel sendo segurado (SPEC §5.4)
+    var held by remember { mutableStateOf<GoalType?>(null) }
     val rings = state.rings
 
     Scaffold(
@@ -106,14 +119,36 @@ fun DashboardScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     // Trocar de dia recomeça os anéis do zero
-                    key(state.day) { GoalRings(rings, size = 232.dp, stroke = 18.dp) }
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("${percent(rings.score)}%", style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold)
-                        Text(
-                            if (rings.allClosed) "anéis fechados!" else dayLabel(state.day, state.today).lowercase(),
-                            style = MaterialTheme.typography.labelLarge,
-                            color = colors.onContainer.copy(alpha = 0.8f)
+                    key(state.day) {
+                        GoalRings(
+                            rings,
+                            size = RingsSize,
+                            stroke = RingsStroke,
+                            highlight = held?.let(RingOrder::indexOf),
+                            modifier = Modifier.holdToInspect(onHold = { held = it })
                         )
+                    }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        val heldType = held
+                        if (heldType == null) {
+                            Text("${percent(rings.score)}%", style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold)
+                            Text(
+                                if (rings.allClosed) "anéis fechados!" else dayLabel(state.day, state.today).lowercase(),
+                                style = MaterialTheme.typography.labelLarge,
+                                color = colors.onContainer.copy(alpha = 0.8f)
+                            )
+                        } else {
+                            val value = when (heldType) {
+                                GoalType.WATER -> rings.water
+                                GoalType.FOOD -> rings.food
+                                GoalType.EXERCISE -> rings.exercise
+                            }
+                            Text("${percent(value)}%", style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold, color = ringColor(heldType))
+                            Text(goalTitle(heldType).lowercase(), style = MaterialTheme.typography.labelLarge, color = colors.onContainer.copy(alpha = 0.8f))
+                        }
+                    }
+                    held?.let { type ->
+                        RingBalloon(ringSummary(type, state, zone), modifier = Modifier.align(Alignment.TopCenter).offset(y = (-20).dp))
                     }
                 }
             }
@@ -174,5 +209,88 @@ private fun GoalLine(type: GoalType, state: DashboardUiState, onClick: () -> Uni
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+private val RingsSize = 232.dp
+private val RingsStroke = 18.dp
+
+/**
+ * Segurar um anel (SPEC §5.4): vibra, e [onHold] diz qual anel está sob o dedo; arrastar
+ * para outro troca (vibrando de novo); soltar devolve null.
+ */
+@Composable
+private fun Modifier.holdToInspect(onHold: (GoalType?) -> Unit): Modifier {
+    val haptics = LocalHapticFeedback.current
+    val density = LocalDensity.current
+    return pointerInput(Unit) {
+        val stroke = with(density) { RingsStroke.toPx() }
+        fun ringAt(point: Offset): GoalType? {
+            val distance = (point - Offset(size.width / 2f, size.height / 2f)).getDistance()
+            val index = RingOrder.indices.minByOrNull { i ->
+                abs(distance - (size.width / 2f - with(density) { ringInset(RingsStroke, i).toPx() } - stroke / 2))
+            } ?: return null
+            val radius = size.width / 2f - with(density) { ringInset(RingsStroke, index).toPx() } - stroke / 2
+            return RingOrder[index].takeIf { abs(distance - radius) <= stroke * 1.2f }
+        }
+        var current: GoalType? = null
+        fun update(type: GoalType?) {
+            if (type != null && type != current) haptics.performHapticFeedback(if (current == null) HapticFeedbackType.LongPress else HapticFeedbackType.SegmentTick)
+            if (type != null) current = type
+            onHold(current)
+        }
+        detectDragGesturesAfterLongPress(
+            onDragStart = { update(ringAt(it)) },
+            onDrag = { change, _ -> update(ringAt(change.position)) },
+            onDragEnd = {
+                current = null
+                onHold(null)
+            },
+            onDragCancel = {
+                current = null
+                onHold(null)
+            }
+        )
+    }
+}
+
+private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+
+/** Resumo do dia de uma meta para o balão: "1.400 de 2.000 ml · faltam 600 ml · 6 registros, o último às 15h". */
+private fun ringSummary(type: GoalType, state: DashboardUiState, zone: ZoneId): String {
+    val unit = goalUnit(type, state.goals.exerciseUnit)
+    val value = state.totals.toward(type, state.goals)
+    val goal = state.goals[type].daily
+    val left = goal - value
+    val parts = mutableListOf("${formatInt(value)} de ${formatInt(goal)} $unit")
+    parts += if (left > 0) "faltam ${formatInt(left)} $unit" else "meta batida!"
+    val details = state.details
+    when (type) {
+        GoalType.WATER -> if (details.waterEntries > 0) {
+            val last = details.lastWaterAt?.let { ", o último às ${timeFormatter.format(it.atZone(zone))}" } ?: ""
+            parts += (if (details.waterEntries == 1) "1 registro" else "${details.waterEntries} registros") + last
+        }
+        GoalType.EXERCISE -> if (details.workoutNames.isNotEmpty()) parts += details.workoutNames.joinToString(", ")
+        GoalType.FOOD -> Unit
+    }
+    return parts.joinToString(" · ")
+}
+
+/** Balão por cima dos anéis enquanto um é segurado. */
+@Composable
+private fun RingBalloon(text: String, modifier: Modifier = Modifier) {
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.inverseSurface,
+        contentColor = MaterialTheme.colorScheme.inverseOnSurface,
+        shadowElevation = 6.dp,
+        modifier = modifier.padding(horizontal = 16.dp)
+    ) {
+        Text(
+            text,
+            style = MaterialTheme.typography.bodyMedium,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
+        )
     }
 }

@@ -30,7 +30,9 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 
 data class DashboardUiState(
     val day: LocalDate,
@@ -40,16 +42,26 @@ data class DashboardUiState(
     val goals: Goals = Goals.Default,
     /** Metas de agora, que o sheet edita. */
     val currentGoals: Goals = Goals.Default,
-    val suggestions: Map<GoalType, Int> = emptyMap()
+    val suggestions: Map<GoalType, Int> = emptyMap(),
+    /** Para o balão de cada anel (SPEC §5.4). */
+    val details: DayDetails = DayDetails()
 ) {
     val rings: Rings get() = rings(totals, goals)
 }
+
+/** O que o balão de cada anel conta além do valor: registros de água e os treinos do dia. */
+data class DayDetails(
+    val waterEntries: Int = 0,
+    val lastWaterAt: Instant? = null,
+    val workoutNames: List<String> = emptyList()
+)
 
 /** Tela do Dashboard (SPEC §5.4): anéis e metas de um dia, com navegação entre dias. */
 @OptIn(ExperimentalCoroutinesApi::class)
 class DashboardViewModel(private val container: AppContainer, handle: SavedStateHandle) : ViewModel() {
 
     private val goalsStore = container.goalsStore
+    val zone: ZoneId = container.clock.zone
     private val initialToday = LocalDate.now(container.clock)
     private val selectedDay = MutableStateFlow(
         handle.toRoute<DashboardDestination>().day?.let(LocalDate::parse)?.takeIf { !it.isAfter(initialToday) } ?: initialToday
@@ -57,12 +69,12 @@ class DashboardViewModel(private val container: AppContainer, handle: SavedState
 
     val uiState: StateFlow<DashboardUiState> = combine(
         combine(selectedDay, todayFlow(container.clock), ::Pair),
-        selectedDay.flatMapLatest(::totals),
+        selectedDay.flatMapLatest { day -> combine(totals(day), details(day), ::Pair) },
         container.goalRepository.history,
         goalsStore.goals,
         goalSuggestions(container)
-    ) { (day, today), totals, history, current, suggestions ->
-        DashboardUiState(day, today, totals, goalsOn(day, history, current), current, suggestions)
+    ) { (day, today), (totals, details), history, current, suggestions ->
+        DashboardUiState(day, today, totals, goalsOn(day, history, current), current, suggestions, details)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DashboardUiState(selectedDay.value, initialToday))
 
     private fun totals(day: LocalDate): Flow<Totals> = combine(
@@ -71,6 +83,19 @@ class DashboardViewModel(private val container: AppContainer, handle: SavedState
         container.exerciseRepository.kcal(day..day),
         container.exerciseRepository.minutes(day..day)
     ) { water, consumed, burned, minutes -> Totals(water, consumed, burned, minutes) }
+
+    private fun details(day: LocalDate): Flow<DayDetails> = combine(
+        container.waterRepository.entries(day),
+        container.exerciseRepository.entries(day),
+        container.exerciseRepository.types
+    ) { water, workouts, types ->
+        val names = types.associate { it.id to it.name }
+        DayDetails(
+            waterEntries = water.size,
+            lastWaterAt = water.maxOfOrNull { it.timestamp },
+            workoutNames = workouts.sortedBy { it.timestamp }.mapNotNull { names[it.typeId] }.distinct()
+        )
+    }
 
     fun selectDay(day: LocalDate) {
         if (canOpen(day, uiState.value.today)) selectedDay.value = day

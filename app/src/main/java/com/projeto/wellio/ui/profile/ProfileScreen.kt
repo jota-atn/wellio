@@ -158,10 +158,12 @@ fun ProfileScreen(
                         ProfileFieldRow("Sexo", profile.sex?.label, R.drawable.ic_profile_person) { editing = ProfileField.Sex }
                         ProfileFieldRow("Altura", profile.heightCm?.let(::formatHeight), R.drawable.ic_profile_ruler) { editing = ProfileField.Height }
                         ProfileFieldRow("Peso", state.weightKg?.let(::formatKg) ?: "Registrar", R.drawable.ic_module_weight, onClick = onOpenWeight)
+                        // O objetivo sai do alvo: o alvo à direita, o objetivo embaixo do rótulo
                         ProfileFieldRow(
                             "Objetivo",
-                            listOfNotNull(state.objective.label, state.weightGoal?.let { "alvo ${formatKg(it.targetKg)}" }).joinToString(" · "),
-                            R.drawable.ic_profile_target
+                            state.weightGoal?.let { formatKg(it.targetKg) } ?: "Definir alvo",
+                            R.drawable.ic_profile_target,
+                            detail = state.objective.label
                         ) { editing = ProfileField.Objective }
                         ProfileFieldRow("Atividade", profile.activity?.label, R.drawable.ic_profile_sneaker) { editing = ProfileField.Activity }
                     }
@@ -524,15 +526,20 @@ private fun BmiRuler(bmi: Double) {
     }
 }
 
-/** Uma linha de campo: ícone, rótulo, valor (ou "Não informado") e a setinha. Também no onboarding. */
+/**
+ * Uma linha de campo: ícone, rótulo (com um [detail] menor embaixo), valor (ou "Não
+ * informado") numa linha só e a setinha. Também no onboarding.
+ */
 @Composable
-fun ProfileFieldRow(label: String, value: String?, icon: Int? = null, onClick: () -> Unit) {
+fun ProfileFieldRow(label: String, value: String?, icon: Int? = null, detail: String? = null, onClick: () -> Unit) {
     Row(
         Modifier
             .fillMaxWidth()
             .clickable(onClickLabel = "Editar ${label.lowercase()}", onClick = onClick)
             .padding(start = 16.dp, end = 12.dp, top = 12.dp, bottom = 12.dp)
-            .semantics(mergeDescendants = true) { contentDescription = "$label: ${value ?: "não informado"}" },
+            .semantics(mergeDescendants = true) {
+                contentDescription = listOfNotNull(label, detail, value ?: "não informado").joinToString(": ")
+            },
         verticalAlignment = Alignment.CenterVertically
     ) {
         icon?.let {
@@ -544,12 +551,18 @@ fun ProfileFieldRow(label: String, value: String?, icon: Int? = null, onClick: (
             }
             Spacer(Modifier.width(12.dp))
         }
-        Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+        Column(Modifier.weight(1f)) {
+            Text(label, style = MaterialTheme.typography.bodyLarge)
+            detail?.let {
+                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
         Text(
             value ?: "Não informado",
             style = MaterialTheme.typography.bodyLarge,
             color = if (value == null) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
-            fontWeight = if (value == null) FontWeight.Normal else FontWeight.Medium
+            fontWeight = if (value == null) FontWeight.Normal else FontWeight.Medium,
+            maxLines = 1
         )
         Icon(
             Icons.AutoMirrored.Filled.KeyboardArrowRight,

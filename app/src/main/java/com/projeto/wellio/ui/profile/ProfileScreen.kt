@@ -13,6 +13,7 @@ import kotlinx.coroutines.withContext
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -314,6 +315,7 @@ private fun ProfileCover(
     val name = state.profile.name
     val statusBar = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val photoBox = PhotoSize + RingWidth * 4
+    val arriving = LocalNavAnimatedScope.current?.transition?.targetState == EnterExitState.Visible
     Box(Modifier.fillMaxWidth()) {
         Box(
             Modifier
@@ -359,7 +361,9 @@ private fun ProfileCover(
                     name,
                     size = PhotoSize,
                     modifier = Modifier
-                        .sharedHero(PROFILE_PHOTO_KEY)
+                        // Só voa na ida: na volta, ligada à animação, ela às vezes ficava
+                        // flutuando no meio da tela
+                        .sharedHero(PROFILE_PHOTO_KEY, enabled = arriving)
                         .border(4.dp, MaterialTheme.colorScheme.background, CircleShape)
                         .clip(CircleShape)
                         .clickable(onClickLabel = if (state.photo == null) "Escolher foto" else "Trocar foto", onClick = onPhotoClick)

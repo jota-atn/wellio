@@ -47,6 +47,7 @@ import com.projeto.wellio.ui.goals.rememberCelebration
 import com.projeto.wellio.ui.goals.GoalsRoute
 import com.projeto.wellio.ui.onboarding.OnboardingRoute
 import com.projeto.wellio.ui.profile.ProfileRoute
+import com.projeto.wellio.ui.settings.SettingsRoute
 import com.projeto.wellio.ui.profile.ProfileViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -136,7 +137,13 @@ fun WellioNavHost() {
                 },
                 onItemClick = { title ->
                     scope.launch { drawerState.close() }
-                    navController.navigate(if (title == "Metas") GoalsDestination else ComingSoonDestination(title))
+                    navController.navigate(
+                        when (title) {
+                            "Metas" -> GoalsDestination
+                            "Configurações" -> SettingsDestination
+                            else -> ComingSoonDestination(title)
+                        }
+                    )
                 },
                 onResetClick = if (BuildConfig.DEV_TOOLS) ({ confirmingReset = true }) else null
             )
@@ -210,6 +217,10 @@ fun WellioNavHost() {
                     onBack = { navController.popFrom(entry) },
                     onOpenDay = { day -> navController.navigate(DashboardDestination(day = day.toString())) }
                 )
+            }
+            composable<SettingsDestination> { entry ->
+                JellyBack(navController, entry)
+                SettingsRoute(onBack = { navController.popFrom(entry) })
             }
             composable<ProfileDestination> { entry ->
                 JellyBack(navController, entry)

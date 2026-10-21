@@ -21,6 +21,9 @@ data object ProfileDestination
 @Serializable
 data object GoalsDestination
 
+@Serializable
+data object SettingsDestination
+
 /** Tela do Dashboard (SPEC §5.4); [day] (ISO) abre num dia passado, vindo da semana em anéis. */
 @Serializable
 data class DashboardDestination(val fromCard: Boolean = false, val day: String? = null)

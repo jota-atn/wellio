@@ -1,5 +1,19 @@
 package com.projeto.wellio.ui.goals
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import com.projeto.wellio.R
+import com.projeto.wellio.domain.goals.progress
+import com.projeto.wellio.ui.exercise.Campfire
+import com.projeto.wellio.ui.water.WaterDrop
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
@@ -10,7 +24,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -111,15 +124,19 @@ fun DashboardScreen(
                 contentColor = colors.onContainer,
                 modifier = Modifier.fillMaxWidth()
             ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Box(
                     Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 28.dp)
+                        .padding(top = 28.dp, bottom = 16.dp)
                         .clearAndSetSemantics {
-                            contentDescription = "${dayLabel(state.day, state.today)}: ${percent(rings.score)} por cento das metas"
+                            contentDescription = "${dayLabel(state.day, state.today)}: ${percent(rings.score)} por cento das metas" +
+                                (state.yesterdayScore?.let { ", ${comparedToYesterday(rings.score, it)}" } ?: "")
                         },
                     contentAlignment = Alignment.Center
                 ) {
+                    // Três anéis fechados: o quadro brilha e solta partículas
+                    if (rings.allClosed) ClosedGlow(Modifier.matchParentSize())
                     // Trocar de dia recomeça os anéis do zero
                     key(state.day) {
                         GoalRings(
@@ -152,6 +169,11 @@ fun DashboardScreen(
                             Text(goalTitle(heldType).lowercase(), style = MaterialTheme.typography.labelLarge, color = colors.onContainer.copy(alpha = 0.8f))
                         }
                     }
+                    if (held == null) {
+                        state.yesterdayScore?.let { yesterday ->
+                            YesterdayChip(comparedToYesterday(rings.score, yesterday), up = rings.score >= yesterday, modifier = Modifier.align(Alignment.TopEnd).padding(end = 12.dp))
+                        }
+                    }
                     held?.let { type ->
                         RingBalloon(
                             ringSummary(type, state, zone),
@@ -160,13 +182,18 @@ fun DashboardScreen(
                         )
                     }
                 }
-            }
-            Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surface) {
-                Column(Modifier.padding(vertical = 8.dp)) {
-                    RingOrder.forEach { type ->
-                        GoalLine(type, state, onClick = { editing = type })
-                    }
+                // Frase do dia (SPEC §5.4)
+                Text(
+                    dayPhrase(state.totals, state.goals, rings, isToday = state.day == state.today),
+                    style = MaterialTheme.typography.titleMedium,
+                    textAlign = TextAlign.Center,
+                    color = colors.onContainer,
+                    modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 22.dp)
+                )
                 }
+            }
+            RingOrder.forEach { type ->
+                GoalTile(type, state, onClick = { editing = type })
             }
         }
     }
@@ -192,32 +219,109 @@ private fun ringColor(type: GoalType) = when (type) {
     GoalType.EXERCISE -> DarkWellioColors.exercise.accent
 }
 
-/** "● Água   1.400 / 2.000 ml ›", na meta que valia no dia. */
+/**
+ * Peça de uma meta (SPEC §5.4): fundo na cor do módulo, o elemento dele em miniatura
+ * enchendo pelo dia (gota, prato, fogueira) e valor/meta, na meta que valia no dia.
+ */
 @Composable
-private fun GoalLine(type: GoalType, state: DashboardUiState, onClick: () -> Unit) {
+private fun GoalTile(type: GoalType, state: DashboardUiState, onClick: () -> Unit) {
+    val palette = when (type) {
+        GoalType.WATER -> WellioTheme.colors.water
+        GoalType.FOOD -> WellioTheme.colors.food
+        GoalType.EXERCISE -> WellioTheme.colors.exercise
+    }
     val unit = goalUnit(type, state.goals.exerciseUnit)
     val value = state.totals.toward(type, state.goals)
     val goal = state.goals[type].daily
-    Row(
-        Modifier
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(24.dp),
+        color = palette.container,
+        contentColor = palette.onContainer,
+        modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClickLabel = "Mudar meta", onClick = onClick)
-            .padding(start = 20.dp, end = 12.dp, top = 14.dp, bottom = 14.dp)
             .semantics(mergeDescendants = true) {
                 contentDescription = "${goalTitle(type)}: ${formatInt(value)} de ${formatInt(goal)} $unit"
-            },
-        verticalAlignment = Alignment.CenterVertically
+            }
     ) {
-        Box(Modifier.size(12.dp).clip(CircleShape).background(ringColor(type)))
-        Spacer(Modifier.width(12.dp))
-        Text(goalTitle(type), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-        Text(formatInt(value), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-        Text(
-            " / ${formatInt(goal)} $unit",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+        Row(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(56.dp), contentAlignment = Alignment.Center) {
+                when (type) {
+                    GoalType.WATER -> WaterDrop(value, goal, additions = 0, modifier = Modifier.size(width = 46.dp, height = 56.dp))
+                    GoalType.EXERCISE -> Campfire(value, goal, additions = 0, modifier = Modifier.size(width = 50.dp, height = 56.dp))
+                    GoalType.FOOD -> Box(
+                        Modifier.size(48.dp).clip(CircleShape).background(palette.accent.copy(alpha = 0.18f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(painterResource(R.drawable.ic_module_food), contentDescription = null, tint = palette.accent, modifier = Modifier.size(28.dp))
+                    }
+                }
+            }
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f)) {
+                Text(goalTitle(type), style = MaterialTheme.typography.labelLarge, color = palette.onContainer.copy(alpha = 0.8f))
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(formatInt(value), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Text(" / ${formatInt(goal)} $unit", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(bottom = 2.dp))
+                }
+            }
+            Text(
+                "${percent(progress(value, goal))}%",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = palette.accent
+            )
+        }
+    }
+}
+
+/** "+12% que ontem", no canto do quadro. */
+@Composable
+private fun YesterdayChip(text: String, up: Boolean, modifier: Modifier = Modifier) {
+    val colors = WellioTheme.colors.base
+    Surface(
+        shape = RoundedCornerShape(50),
+        color = colors.onContainer.copy(alpha = 0.12f),
+        contentColor = if (up) DarkWellioColors.food.accent else colors.onContainer.copy(alpha = 0.85f),
+        modifier = modifier
+    ) {
+        Text(text, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp))
+    }
+}
+
+private class Spark(val x: Float, val speed: Float, val phase: Float, val size: Float, val color: Color)
+
+/**
+ * Brilho de quando os três anéis fecham (SPEC §5.4): um halo que pulsa atrás dos anéis e
+ * partículas nas três cores subindo devagar, enquanto a tela estiver aberta.
+ */
+@Composable
+private fun ClosedGlow(modifier: Modifier = Modifier) {
+    val transition = rememberInfiniteTransition(label = "brilho")
+    val pulse by transition.animateFloat(0.6f, 1f, infiniteRepeatable(tween(1600), RepeatMode.Reverse), label = "halo")
+    val time by transition.animateFloat(0f, 1f, infiniteRepeatable(tween(6000, easing = LinearEasing)), label = "partículas")
+    val colors = listOf(DarkWellioColors.water.accent, DarkWellioColors.food.accent, DarkWellioColors.exercise.accent, Color(0xFFFFD45C))
+    val sparks = remember {
+        val random = kotlin.random.Random(7)
+        List(22) { Spark(random.nextFloat(), 0.6f + random.nextFloat() * 0.8f, random.nextFloat(), 2f + random.nextFloat() * 3f, colors[random.nextInt(colors.size)]) }
+    }
+    Canvas(modifier) {
+        drawCircle(
+            Brush.radialGradient(
+                listOf(Color(0xFFFFD45C).copy(alpha = 0.28f * pulse), Color.Transparent),
+                center = center,
+                radius = size.minDimension * 0.62f
+            ),
+            radius = size.minDimension * 0.62f,
+            center = center
         )
-        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        sparks.forEach { spark ->
+            val t = (time * spark.speed + spark.phase) % 1f
+            val y = size.height * (1f - t)
+            val x = size.width * spark.x + kotlin.math.sin(t * 12f + spark.phase * 6f) * 10.dp.toPx()
+            val alpha = if (t < 0.15f) t / 0.15f else if (t > 0.8f) (1f - t) / 0.2f else 1f
+            drawCircle(spark.color.copy(alpha = 0.8f * alpha), radius = spark.size.dp.toPx() / 2, center = Offset(x, y))
+        }
     }
 }
 

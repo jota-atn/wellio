@@ -44,7 +44,9 @@ data class DashboardUiState(
     val currentGoals: Goals = Goals.Default,
     val suggestions: Map<GoalType, Int> = emptyMap(),
     /** Para o balão de cada anel (SPEC §5.4). */
-    val details: DayDetails = DayDetails()
+    val details: DayDetails = DayDetails(),
+    /** "% do dia" de ontem, para a comparação (só vendo hoje; null se ontem não teve registro). */
+    val yesterdayScore: Float? = null
 ) {
     val rings: Rings get() = rings(totals, goals)
 }
@@ -69,12 +71,17 @@ class DashboardViewModel(private val container: AppContainer, handle: SavedState
 
     val uiState: StateFlow<DashboardUiState> = combine(
         combine(selectedDay, todayFlow(container.clock), ::Pair),
-        selectedDay.flatMapLatest { day -> combine(totals(day), details(day), ::Pair) },
+        selectedDay.flatMapLatest { day -> combine(totals(day), details(day), totals(day.minusDays(1)), ::Triple) },
         container.goalRepository.history,
         goalsStore.goals,
         goalSuggestions(container)
-    ) { (day, today), (totals, details), history, current, suggestions ->
-        DashboardUiState(day, today, totals, goalsOn(day, history, current), current, suggestions, details)
+    ) { (day, today), (totals, details, yesterday), history, current, suggestions ->
+        val yesterdayScore = if (day == today && yesterday != Totals()) {
+            rings(yesterday, goalsOn(day.minusDays(1), history, current)).score
+        } else {
+            null
+        }
+        DashboardUiState(day, today, totals, goalsOn(day, history, current), current, suggestions, details, yesterdayScore)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DashboardUiState(selectedDay.value, initialToday))
 
     private fun totals(day: LocalDate): Flow<Totals> = combine(

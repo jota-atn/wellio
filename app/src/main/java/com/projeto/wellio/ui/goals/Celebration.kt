@@ -94,30 +94,3 @@ fun CelebrationOverlay(state: CelebrationState, modifier: Modifier = Modifier) {
         }
     }
 }
-
-/**
- * Comemora quando um registro feito na tela faz o total do dia passar da meta (SPEC §9.2):
- * [additions] conta esses registros; abrir a tela ou trocar de dia não conta. [onReached]
- * decide se já comemorou hoje.
- */
-@Composable
-fun CelebrateWhenGoalReached(total: Int, goal: Int, additions: Int, isToday: Boolean, onReached: () -> Unit) {
-    val previous = remember { mutableIntStateOf(total) }
-    val handled = remember { mutableIntStateOf(additions) }
-    // O registro conta na hora do toque, mas o total só muda quando o banco responde:
-    // o toque deixa pendente e a próxima mudança do total decide
-    val pending = remember { mutableStateOf(false) }
-    LaunchedEffect(additions) {
-        if (additions > handled.intValue) {
-            handled.intValue = additions
-            pending.value = true
-        }
-    }
-    LaunchedEffect(total, goal) {
-        if (pending.value && total != previous.intValue) {
-            if (isToday && goal > 0 && previous.intValue < goal && total >= goal) onReached()
-            pending.value = false
-        }
-        previous.intValue = total
-    }
-}

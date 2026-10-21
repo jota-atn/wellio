@@ -253,17 +253,6 @@ class GoalsViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 
-    /** A comemoração foi mostrada: não repete (SPEC §9.2). */
-    fun celebrated(goal: PeriodGoal) {
-        viewModelScope.launch {
-            repository.update(goal.copy(celebrated = true, status = PeriodGoalStatus.Completed, completedAt = Instant.now(container.clock)))
-        }
-    }
-
-    fun weightCelebrated() {
-        viewModelScope.launch { goalsStore.setWeightCelebrated() }
-    }
-
     companion object {
         val Factory = viewModelFactory {
             initializer { GoalsViewModel((this[APPLICATION_KEY] as WellioApp).container) }

@@ -1,6 +1,5 @@
 package com.projeto.wellio.ui.goals
 
-import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -21,7 +20,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -75,9 +73,7 @@ fun GoalsRoute(
         onUpdate = viewModel::update,
         onDelete = viewModel::delete,
         onRestore = viewModel::restore,
-        onRemoveWeight = viewModel::removeWeightPeriod,
-        onCelebrated = viewModel::celebrated,
-        onWeightCelebrated = viewModel::weightCelebrated
+        onRemoveWeight = viewModel::removeWeightPeriod
     )
 }
 
@@ -109,16 +105,12 @@ fun GoalsScreen(
     onUpdate: (PeriodGoal) -> Unit,
     onDelete: (PeriodGoal) -> Unit,
     onRestore: (PeriodGoal) -> Unit,
-    onRemoveWeight: () -> Unit,
-    onCelebrated: (PeriodGoal) -> Unit,
-    onWeightCelebrated: () -> Unit
+    onRemoveWeight: () -> Unit
 ) {
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var editing by remember { mutableStateOf<GoalsEditing?>(null) }
     var showingHistory by rememberSaveable { mutableStateOf(false) }
-    // Comemoração por cima da tela quando uma meta conclui (SPEC §9.2)
-    val celebration = rememberCelebration()
 
     fun deleteWithUndo(goal: PeriodGoal) {
         onDelete(goal)
@@ -173,17 +165,11 @@ fun GoalsScreen(
                 }
                 state.weight?.let { weight ->
                     item(key = "periodo-peso") {
-                        WeightPeriodCard(weight, onClick = { editing = GoalsEditing.WeightPeriod }, onCelebrate = {
-                            celebration.celebrate("Meta de peso concluída!", moduleColor(MetricModule.Weight))
-                            onWeightCelebrated()
-                        })
+                        WeightPeriodCard(weight, onClick = { editing = GoalsEditing.WeightPeriod })
                     }
                 }
                 items(state.active, key = { it.goal.id }) { view ->
-                    PeriodGoalCard(view, state.today, onClick = { editing = GoalsEditing.Period(view.goal) }, onCelebrate = {
-                        celebration.celebrate("Meta concluída: ${view.goal.title}", moduleColor(moduleOf(view.goal.metric)))
-                        onCelebrated(view.goal)
-                    }, modifier = Modifier.animateItem())
+                    PeriodGoalCard(view, onClick = { editing = GoalsEditing.Period(view.goal) }, modifier = Modifier.animateItem())
                 }
                 if (state.active.isEmpty() && state.weight == null) {
                     item(key = "periodo-vazio") {
@@ -210,7 +196,6 @@ fun GoalsScreen(
                 }
             }
         }
-        CelebrationOverlay(celebration)
     }
 
     when (val current = editing) {
@@ -399,13 +384,10 @@ private fun moduleOf(metric: PeriodMetric) = when (metric) {
     PeriodMetric.Weight -> MetricModule.Weight
 }
 
-/**
- * Elemento do módulo no cartão. [celebrating] passa a valer quando a meta conclui: a gota
- * transborda, a fogueira vira labareda.
- */
+/** Elemento do módulo no cartão: a gota, o prato, a fogueira ou a balança. */
 @Composable
-private fun MetricElement(module: MetricModule, celebrating: Boolean) {
-    val additions = if (celebrating) 1 else 0
+private fun MetricElement(module: MetricModule) {
+    val additions = 0
     Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
         when (module) {
             MetricModule.Water -> WaterDrop(totalMl = 1, goalMl = 1, additions = additions, modifier = Modifier.size(width = 40.dp, height = 48.dp))
@@ -451,29 +433,13 @@ private fun moduleColor(module: MetricModule) = when (module) {
 
 /** Cartão com ritmo (SPEC §9.2): barra com a marca de hoje, valor, dias restantes e projeção. */
 @Composable
-private fun PeriodGoalCard(view: PeriodGoalView, today: LocalDate, onClick: () -> Unit, onCelebrate: () -> Unit, modifier: Modifier = Modifier) {
+private fun PeriodGoalCard(view: PeriodGoalView, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val goal = view.goal
     val progress = view.progress
     val module = moduleOf(goal.metric)
     val done = progress.reached || goal.status == PeriodGoalStatus.Completed
-    // Concluiu e ainda não comemorou: comemora uma vez ao aparecer
-    var celebrating by remember(goal.id) { mutableStateOf(false) }
-    LaunchedEffect(goal.id, progress.reached, goal.celebrated) {
-        if (progress.reached && !goal.celebrated) {
-            celebrating = true
-            onCelebrate()
-        }
-    }
-    // Comemorando: o cartão pulsa uma vez
-    val pulse = remember(goal.id) { Animatable(1f) }
-    LaunchedEffect(celebrating) {
-        if (celebrating) {
-            pulse.animateTo(1.06f, spring(dampingRatio = 0.4f, stiffness = Spring.StiffnessMedium))
-            pulse.animateTo(1f, spring(dampingRatio = 0.5f, stiffness = Spring.StiffnessLow))
-        }
-    }
-    GoalCardFrame(onClick, modifier.graphicsLayer { scaleX = pulse.value; scaleY = pulse.value }) {
-        MetricElement(module, celebrating)
+    GoalCardFrame(onClick, modifier) {
+        MetricElement(module)
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(goal.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
@@ -515,13 +481,10 @@ private val shortDay = DateTimeFormatter.ofPattern("dd/MM")
 
 /** O peso alvo com prazo, no mesmo formato dos outros cartões. */
 @Composable
-private fun WeightPeriodCard(weight: WeightPeriodView, onClick: () -> Unit, onCelebrate: () -> Unit) {
+private fun WeightPeriodCard(weight: WeightPeriodView, onClick: () -> Unit) {
     val progress = weight.progress
-    LaunchedEffect(weight.reached, weight.celebrated) {
-        if (weight.reached && !weight.celebrated) onCelebrate()
-    }
     GoalCardFrame(onClick) {
-        MetricElement(MetricModule.Weight, celebrating = false)
+        MetricElement(MetricModule.Weight)
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(

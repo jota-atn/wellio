@@ -25,6 +25,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,7 +35,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
+import com.projeto.wellio.ui.goals.CelebrationOverlay
+import com.projeto.wellio.ui.goals.CelebrationWatcher
 import com.projeto.wellio.ui.goals.DashboardRoute
+import com.projeto.wellio.ui.goals.rememberCelebration
 import com.projeto.wellio.ui.goals.GoalsRoute
 import com.projeto.wellio.ui.onboarding.OnboardingRoute
 import com.projeto.wellio.ui.profile.ProfileRoute
@@ -75,6 +79,14 @@ fun WellioNavHost() {
         return
     }
 
+    // Comemorações de metas, de onde a pessoa estiver (SPEC §9.2): por cima de tudo
+    val watcher: CelebrationWatcher = viewModel(factory = CelebrationWatcher.Factory)
+    val celebration = rememberCelebration()
+    LaunchedEffect(watcher) {
+        watcher.events.collect { celebration.celebrate(it.message, it.color) }
+    }
+
+    Box(Modifier.fillMaxSize()) {
     // A sidebar fica dentro da camada de transição para a foto dela voar até o Perfil
     SharedTransitionLayout {
     CompositionLocalProvider(LocalSharedTransitionScope provides this) {
@@ -190,6 +202,8 @@ fun WellioNavHost() {
         }
         }
         }
+    }
+    CelebrationOverlay(celebration)
     }
 }
 

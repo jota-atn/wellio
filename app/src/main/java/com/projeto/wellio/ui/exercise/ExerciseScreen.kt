@@ -51,10 +51,6 @@ import com.projeto.wellio.ui.icons.WellioIcons
 import com.projeto.wellio.ui.icons.exerciseIconRes
 import com.projeto.wellio.ui.navigation.sharedContainer
 import com.projeto.wellio.ui.navigation.sharedHero
-import com.projeto.wellio.ui.goals.CelebrateWhenGoalReached
-import com.projeto.wellio.ui.goals.CelebrationOverlay
-import com.projeto.wellio.ui.goals.rememberCelebration
-import com.projeto.wellio.ui.theme.DarkWellioColors
 import com.projeto.wellio.ui.theme.WellioTheme
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -82,8 +78,7 @@ fun ExerciseRoute(
         onRestore = viewModel::restore,
         onSetGoal = viewModel::setGoal,
         onToggleFavorite = viewModel::toggleFavorite,
-        onCreateCustom = viewModel::createCustom,
-        onClaimCelebration = viewModel::claimCelebration
+        onCreateCustom = viewModel::createCustom
     )
 }
 
@@ -114,8 +109,7 @@ fun ExerciseScreen(
     onSetGoal: (ExerciseUnit, Int) -> Unit,
     onToggleFavorite: (ExerciseFamily) -> Unit,
     onCreateCustom: (String, ExerciseCategory, Intensity, Double?, (ExerciseType) -> Unit) -> Unit,
-    fromCard: Boolean = false,
-    onClaimCelebration: (onCelebrate: () -> Unit) -> Unit = {}
+    fromCard: Boolean = false
 ) {
     val colors = WellioTheme.colors.exercise
     val snackbar = remember { SnackbarHostState() }
@@ -147,19 +141,6 @@ fun ExerciseScreen(
         showUndo("${item.type.name} · ${formatDuration(item.minutes)} registrado", onUndoQuickAdd)
     }
 
-    // Bater a meta registrando aqui: a fogueira vira labareda e a festa vem por cima (SPEC §9.2)
-    val celebration = rememberCelebration()
-    val dayTotals = exerciseTotals(state.entries)
-    CelebrateWhenGoalReached(
-        total = if (state.goals.exerciseUnit == ExerciseUnit.Minutes) dayTotals.minutes else dayTotals.kcal,
-        goal = state.goals.exercise.daily,
-        additions = additions,
-        isToday = state.day == state.today
-    ) {
-        onClaimCelebration { celebration.celebrate("Meta de exercício batida!", DarkWellioColors.exercise.accent) }
-    }
-
-    Box(Modifier.fillMaxSize()) {
     Scaffold(
         modifier = Modifier.sharedContainer("card-exercise", RoundedCornerShape(28.dp), enabled = fromCard, screen = true),
         topBar = {
@@ -250,9 +231,6 @@ fun ExerciseScreen(
             }
         }
     }
-    CelebrationOverlay(celebration)
-    }
-
     registering?.let { current ->
         val editingEntry = (current as? Registering.Edit)?.entry
         val initial = when (current) {

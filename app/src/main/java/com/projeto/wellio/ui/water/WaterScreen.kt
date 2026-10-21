@@ -39,10 +39,6 @@ import com.projeto.wellio.ui.format.formatTime
 import com.projeto.wellio.ui.icons.containerIconRes
 import com.projeto.wellio.ui.navigation.sharedContainer
 import com.projeto.wellio.ui.navigation.sharedHero
-import com.projeto.wellio.ui.goals.CelebrateWhenGoalReached
-import com.projeto.wellio.ui.goals.CelebrationOverlay
-import com.projeto.wellio.ui.goals.rememberCelebration
-import com.projeto.wellio.ui.theme.DarkWellioColors
 import com.projeto.wellio.ui.theme.WellioTheme
 import java.time.LocalDate
 import java.time.LocalTime
@@ -70,8 +66,7 @@ fun WaterRoute(
         onRestore = viewModel::restore,
         onSetGoal = viewModel::setGoal,
         onSaveContainer = viewModel::saveContainer,
-        onDeleteContainer = viewModel::deleteContainer,
-        onClaimCelebration = viewModel::claimCelebration
+        onDeleteContainer = viewModel::deleteContainer
     )
 }
 
@@ -98,8 +93,7 @@ fun WaterScreen(
     onSaveContainer: (id: String?, name: String, amountMl: Int, isQuick: Boolean, iconKey: String) -> Unit,
     onDeleteContainer: (WaterContainer) -> Unit,
     /** Aberta pelo card da Home: o card cresce e vira esta tela (SPEC §2.9). */
-    fromCard: Boolean = false,
-    onClaimCelebration: (onCelebrate: () -> Unit) -> Unit = {}
+    fromCard: Boolean = false
 ) {
     val colors = WellioTheme.colors.water
     val snackbar = remember { SnackbarHostState() }
@@ -131,13 +125,6 @@ fun WaterScreen(
         showUndo("${container.name} ${formatMl(container.amountMl)} registrado", onUndoQuickAdd)
     }
 
-    // Bater a meta registrando aqui: a gota transborda e a festa vem por cima (SPEC §9.2)
-    val celebration = rememberCelebration()
-    CelebrateWhenGoalReached(state.totalMl, state.goalMl, additions, isToday = state.day == state.today) {
-        onClaimCelebration { celebration.celebrate("Meta de água batida!", DarkWellioColors.water.accent) }
-    }
-
-    Box(Modifier.fillMaxSize()) {
     Scaffold(
         modifier = Modifier.sharedContainer("card-water", RoundedCornerShape(28.dp), enabled = fromCard, screen = true),
         topBar = {
@@ -244,9 +231,6 @@ fun WaterScreen(
                 }
             }
         )
-    }
-
-    CelebrationOverlay(celebration)
     }
 
     if (editingGoal) {

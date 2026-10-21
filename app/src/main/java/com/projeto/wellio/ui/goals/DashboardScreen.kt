@@ -64,7 +64,7 @@ fun DashboardRoute(
     viewModel: DashboardViewModel = viewModel(factory = DashboardViewModel.Factory)
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    DashboardScreen(state, viewModel.zone, onBack, viewModel::selectDay, viewModel::saveGoal, fromCard, viewModel::claimCelebrations)
+    DashboardScreen(state, viewModel.zone, onBack, viewModel::selectDay, viewModel::saveGoal, fromCard)
 }
 
 /** Ordem das linhas, a mesma dos anéis (de fora para dentro). */
@@ -85,8 +85,7 @@ fun DashboardScreen(
     onBack: () -> Unit,
     onDayChange: (java.time.LocalDate) -> Unit,
     onSaveGoal: (GoalType, Goal, ExerciseUnit) -> Unit,
-    fromCard: Boolean = false,
-    onClaimCelebrations: (List<GoalType>, (List<GoalType>) -> Unit) -> Unit = { _, _ -> }
+    fromCard: Boolean = false
 ) {
     val colors = WellioTheme.colors.base
     var editing by remember { mutableStateOf<GoalType?>(null) }
@@ -95,24 +94,7 @@ fun DashboardScreen(
     // O balão fica do lado oposto ao dedo, para não ser coberto por ele
     var fingerOnTop by remember { mutableStateOf(true) }
     val rings = state.rings
-    val celebration = rememberCelebration()
-    // Anéis de hoje fechados que ainda não comemoraram (fechados pelo FAB ou pelo card)
-    val closedToday = if (state.day != state.today) emptyList() else RingOrder.filter {
-        when (it) {
-            GoalType.WATER -> rings.water
-            GoalType.FOOD -> rings.food
-            GoalType.EXERCISE -> rings.exercise
-        } >= 1f
-    }
-    LaunchedEffect(closedToday) {
-        if (closedToday.isNotEmpty()) {
-            onClaimCelebrations(closedToday) { claimed ->
-                celebration.celebrate(celebrationMessage(claimed, rings.allClosed), ringColor(claimed.first()))
-            }
-        }
-    }
 
-    Box(Modifier.fillMaxSize()) {
     Scaffold(
         modifier = Modifier.sharedContainer("card-dashboard", RoundedCornerShape(28.dp), enabled = fromCard, screen = true),
         topBar = {
@@ -216,9 +198,6 @@ fun DashboardScreen(
                 GoalTile(type, state, onClick = { editing = type })
             }
         }
-    }
-
-    CelebrationOverlay(celebration)
     }
 
     editing?.let { type ->
@@ -346,13 +325,6 @@ private fun ClosedGlow(modifier: Modifier = Modifier) {
             drawCircle(spark.color.copy(alpha = 0.8f * alpha), radius = spark.size.dp.toPx() / 2, center = Offset(x, y))
         }
     }
-}
-
-/** Aviso da comemoração: uma meta, duas, ou as três (SPEC §9.2). */
-private fun celebrationMessage(claimed: List<GoalType>, allClosed: Boolean): String = when {
-    allClosed -> "Três anéis fechados. Lenda!"
-    claimed.size == 2 -> "Metas de ${goalTitle(claimed[0]).lowercase()} e ${goalTitle(claimed[1]).lowercase()} batidas!"
-    else -> "Meta de ${goalTitle(claimed.first()).lowercase()} batida!"
 }
 
 private val RingsSize = 232.dp

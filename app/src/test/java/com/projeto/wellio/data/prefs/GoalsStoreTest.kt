@@ -84,4 +84,20 @@ class GoalsStoreTest {
         assertEquals(null, store.weightGoal.first())
         assertFalse(store.weightCelebrated.first())
     }
+
+    @Test
+    fun `meta diaria comemora uma vez por dia`() = runTest {
+        val store = store()
+        val today = LocalDate.of(2026, 10, 20)
+
+        store.markDailyCelebrated(today, GoalType.WATER)
+        store.markDailyCelebrated(today, GoalType.EXERCISE)
+
+        assertEquals(setOf(GoalType.WATER, GoalType.EXERCISE), store.dailyCelebrated(today).first())
+        assertEquals(emptySet<GoalType>(), store.dailyCelebrated(today.plusDays(1)).first())
+
+        store.markDailyCelebrated(today.plusDays(1), GoalType.FOOD)
+
+        assertEquals(setOf(GoalType.FOOD), store.dailyCelebrated(today.plusDays(1)).first())
+    }
 }

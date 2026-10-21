@@ -129,6 +129,30 @@ class GoalsStore(
         }
     }
 
+    /** Metas diárias já comemoradas em [day] (SPEC §9.2): cada uma comemora uma vez por dia. */
+    fun dailyCelebrated(day: LocalDate): Flow<Set<GoalType>> = dataStore.data.map { prefs ->
+        val saved = prefs[dailyCelebratedKey] ?: return@map emptySet()
+        val (date, types) = saved.split(":", limit = 2).let { it[0] to it.getOrElse(1) { "" } }
+        if (date != day.toString()) emptySet() else types.split(",").mapNotNull { name -> GoalType.entries.firstOrNull { it.name == name } }.toSet()
+    }
+
+    suspend fun markDailyCelebrated(day: LocalDate, type: GoalType) {
+        dataStore.edit { prefs ->
+            val current = prefs[dailyCelebratedKey]?.takeIf { it.startsWith("$day:") }?.substringAfter(":")?.split(",")?.filter { it.isNotEmpty() }.orEmpty()
+            // Só o dia atual fica guardado: os anteriores não importam mais
+            prefs[dailyCelebratedKey] = "$day:" + (current + type.name).distinct().joinToString(",")
+        }
+    }
+
+    /** Pede a comemoração de [type] em [day]: true na primeira vez do dia (e já marca). */
+    suspend fun claimDailyCelebration(day: LocalDate, type: GoalType): Boolean {
+        if (type in dailyCelebrated(day).first()) return false
+        markDailyCelebrated(day, type)
+        return true
+    }
+
+    private val dailyCelebratedKey = stringPreferencesKey("goal_daily_celebrated")
+
     /** A conclusão da meta de peso já foi comemorada (SPEC §9.2). */
     val weightCelebrated: Flow<Boolean> = dataStore.data.map { it[weightCelebratedKey] ?: false }
 

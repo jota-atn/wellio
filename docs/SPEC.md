@@ -178,7 +178,7 @@ Com "Remover animações" ligado, os elementos ficam parados (§2.8).
 
 **Transições entre telas** dependem de por onde se entra:
 - **Pela sidebar**: deslize com mola solta ("gelatina"): passa do ponto, volta e assenta devagar.
-- **Pelo card da Home**: o **card vira a tela** (transformação de container): o card **cresce com o próprio visual** (cor, elemento, números, relaid out no tamanho maior, sem esticar a tela nova dentro dele) com mola até ocupar a tela; **só no fim** o conteúdo da tela surge por cima com um fade rápido (decidido em 2026-10-20, depois de ver a versão em que a tela crescia espremida dentro do card). Os elementos ilustrativos voam do card para a tela (a gota do card vira a gota grande da Água; o visor do card vira o visor da balança do Peso). Voltar faz o caminho inverso: a tela encolhe de volta para dentro do card. O **gesto de voltar** dispara a mesma animação ao ser concluído; durante o arrasto a tela não acompanha o dedo (sem a prévia do voltar preditivo), porque a prévia comprime a mola e a volta fica rápida demais.
+- **Pelo card da Home**: o **card vira a tela** (transformação de container): **transformação contínua** (container transform): o retângulo cresce com mola do card até a tela; no primeiro terço o conteúdo do card some com fade e, daí em diante, o conteúdo da tela aparece com fade **já no tamanho real**, revelado pelo retângulo que cresce: nada estica e nunca aparece um bloco de cor vazio (decidido em 2026-10-20, depois de duas versões recusadas: a tela espremida dentro do card, e o card crescendo como bloco de cor com a tela surgindo no fim). Os elementos ilustrativos voam do card para a tela (a gota do card vira a gota grande da Água; o visor do card vira o visor da balança do Peso). Voltar faz o caminho inverso: a tela encolhe de volta para dentro do card. O **gesto de voltar** dispara a mesma animação ao ser concluído; durante o arrasto a tela não acompanha o dedo (sem a prévia do voltar preditivo), porque a prévia comprime a mola e a volta fica rápida demais.
 
 ## 3. Regras gerais
 
@@ -253,6 +253,7 @@ Tudo que é preenchido aqui vai para o perfil e pode ser editado depois na tela 
 #### Decidido para o M2a
 
 - Chega no M2a com as etapas 1 a 5; a etapa 6 entra no M3.
+- **Capa colorida por etapa** (2026-10-20, depois de achar a primeira versão sem graça): a metade de cima de cada etapa é uma capa na cor do assunto (boas-vindas em azul-marinho, Você em azul, Corpo em azul-marinho, Ritmo em laranja, Metas num degradê das três cores), com a ilustração e o título grande em branco; os campos ficam num painel embaixo; bolinhas de progresso e botão na cor da etapa.
 - **Uma ilustração própria por etapa**, com os elementos do app (nada de emoji): nas boas-vindas, a gota, a fogueira e a balança juntas (o prato entra quando a Alimentação chegar); em "Você", a própria foto, com a inicial aparecendo enquanto o nome é digitado; no corpo, a balança da tela de Peso, que abre o seletor de peso; no estilo de vida, a fogueira, que cresce (e aviva) conforme o nível de atividade; nas metas, o elemento pequeno de cada uma ao lado do valor. Campos abaixo da ilustração.
 - **Navegação**: botão no rodapé ("Começar", "Continuar", "Concluir"), desabilitado sem os obrigatórios; "Pular" no topo do estilo de vida e das metas; deslizar para os lados entre as etapas já liberadas; bolinhas de progresso acima do botão.
 - **Metas no onboarding**: −/+ em cada uma (água de 100 em 100 ml, kcal de 50 em 50, exercício de 50 kcal ou 5 min), com "Usar a sugestão" quando o valor for diferente dela.
@@ -425,7 +426,10 @@ Tela própria, aberta pelo card do Dashboard (o card cresce e vira a tela, §2.9
 ```
 
 - **Elemento ilustrativo**: **três anéis concêntricos** grandes (água por fora, kcal no meio, exercício por dentro, cada um na cor do módulo), que fecham ao bater a meta; no centro, o % do dia (média das 3, cada uma limitada a 100%, a mesma conta do mini-gráfico do card). Os anéis animam com mola ao abrir e ao mudar de dia; quando um anel fecha, ele brilha. São os mesmos anéis do card metade, em grande.
-- **Linhas das 3 metas** abaixo dos anéis: bolinha na cor do módulo, nome, valor/meta do dia. Tocar abre o sheet da meta (o mesmo da tela do módulo e da tela de Metas).
+- **Peças das 3 metas** abaixo dos anéis (2026-10-20, "mais cor"): uma peça por meta no fundo da cor do módulo, com o elemento dele em miniatura enchendo pelo % do dia (a gota para água, um ícone de prato para calorias até o prato animado chegar com o M1b, a fogueira para exercício), o nome e valor/meta. Tocar abre o sheet da meta (o mesmo da tela do módulo e da tela de Metas).
+- **Frase do dia** abaixo dos anéis, no tom zoeiro e épico (`TEXTOS.md`), conforme o estado: nada registrado, falta pouco para uma meta, uma meta fechada, todas fechadas, dia passado.
+- **Comparação com ontem** ao lado do %: "+12% que ontem" (só no dia de hoje e se ontem teve algo).
+- **Brilho ao fechar tudo**: com os três anéis fechados, o quadro dos anéis ganha um brilho suave e partículas subindo devagar, enquanto a tela estiver aberta.
 - **Navegação entre dias** como nas outras telas (setas, deslizar e calendário, nunca depois de hoje). Os anéis e as linhas usam a meta que valia naquele dia (§9.2).
 - Exercício aparece na unidade da meta daquele dia (kcal ou min).
 - **Segurar um anel**: vibração leve; os outros dois anéis apagam, o segurado engrossa um pouco e o centro troca o % do dia pelo % daquela meta; um **balão** perto do anel mostra o resumo do dia da meta (Água: "1.400 de 2.000 ml · faltam 600 ml · 6 registros, o último às 15h"; Calorias: "1.250 de 2.000 kcal · faltam 750"; Exercício: "30 de 45 min · Corrida, Yoga"). Arrastar o dedo para outro anel troca o balão (com nova vibração); soltar volta tudo. O balão não tem botões. No TalkBack, cada linha de meta já lê o mesmo resumo.
@@ -588,6 +592,7 @@ A Home fica **embaçada** atrás da sidebar, e à direita aparece uma coluna com
 - **Edição**: tocar numa linha abre um sheet pequeno só para aquele campo, como nas metas. A tela sempre mostra os valores.
 - **Foto**: escolhida pelo Photo Picker; em seguida, uma tela com a foto atrás de uma **máscara circular** para arrastar e pinçar até enquadrar, e Confirmar. O recorte é salvo no armazenamento interno do app. Dá para trocar ou remover.
 - **Nome** (obrigatório).
+- **Capa editável**: um lápis no canto da capa abre um sheet com 8 cores do app e "Usar uma foto" (Photo Picker e recorte em faixa, no formato da capa). Com foto, a marca-d'água some e um escurecido leve mantém o título legível. Dá para voltar ao padrão (azul-marinho).
 - **Opcionais**: data de nascimento, sexo (**Masculino**, **Feminino** ou **Prefiro não informar**), altura e **nível de atividade** (sedentário, levemente ativo, moderado, muito ativo, atleta). Biotipo saiu.
 - **Peso**: o perfil mostra o peso mais recente, mas não edita; tocar abre a tela de Peso (§6.1), que continua sendo o único lugar de pesar.
 - **Objetivo**: **derivado do peso alvo** da tela de Peso: alvo abaixo do peso atual = perder, acima = ganhar, sem alvo ou a menos de 1 kg = manter. A linha Objetivo abre a edição do alvo (o mesmo sheet da tela de Peso).
@@ -671,7 +676,8 @@ Dois níveis:
 - **Cartão com ritmo**: barra de progresso com uma **marca de "onde deveria estar hoje"** (proporcional aos dias passados), valor atual e alvo, dias restantes e a **projeção** pelo ritmo médio diário até agora ("No ritmo atual: ~52 L"). Métricas de "dias batendo" projetam pela proporção de dias batidos até agora. Peso projeta pelo ritmo da tela de Peso (§6.1).
 - Tocar no cartão abre a edição (valor, nome, recorrência; métrica e período não mudam) com "Apagar" (com desfazer).
 - **Recorrência**: ao terminar o período, a meta vai para o histórico (concluída ou não) e uma **nova igual começa sozinha** no período seguinte, com o mesmo valor.
-- **Ao concluir** (até o M6, que traz a parabenização de verdade): o cartão vira "Concluída" e, na próxima abertura da tela de Metas, **comemora**: o elemento do módulo anima (gota transbordando, fogueira em labareda; a de peso, só o confete) e um confete discreto cai pela tela. Uma vez só (`celebrated`). Depois a meta fica como concluída até o fim do período (ou vai para o histórico, se não recorrente).
+- **Ao concluir** (até o M6, que traz a parabenização de verdade): o cartão vira "Concluída" e, na próxima abertura da tela de Metas, **comemora**: o cartão pulsa, o elemento do módulo anima (gota transbordando, fogueira em labareda), um **confete de verdade** (peças em dp, bem visíveis) cai pela tela e um **aviso no topo** diz "Meta concluída: <nome>". Uma vez só (`celebrated`).
+- **Metas diárias também comemoram** (antecipa parte do §9.6, decidido em 2026-10-20): ao fechar um anel do dia, a tela do módulo (registro feito ali) já transborda/aviva e ganha confete e o aviso "Meta de água batida!"; quem fechar o anel por outro lugar (FAB, card) vê a festa ao abrir o Dashboard: o anel brilha, confete e o aviso. Cada meta comemora uma vez por dia. Depois a meta fica como concluída até o fim do período (ou vai para o histórico, se não recorrente).
 - **Histórico**: metas de período terminadas, da mais recente para a mais antiga, com o resultado final e o selo concluída / não concluída.
 - O Dashboard não mostra as metas de período; elas ficam só na tela de Metas.
 

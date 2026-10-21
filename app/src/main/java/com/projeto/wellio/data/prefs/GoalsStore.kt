@@ -2,7 +2,6 @@ package com.projeto.wellio.data.prefs
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
@@ -99,7 +98,7 @@ class GoalsStore(
         )
     }
 
-    /** Define o alvo inteiro (com início e prazo); null remove o alvo e a comemoração. */
+    /** Define o alvo inteiro (com início e prazo); null remove o alvo. */
     suspend fun setWeightGoal(goal: WeightGoal?) {
         dataStore.edit { prefs ->
             if (goal == null) {
@@ -107,7 +106,6 @@ class GoalsStore(
                 prefs.remove(weightStartKey)
                 prefs.remove(weightDeadlineKey)
                 prefs.remove(weightSinceKey)
-                prefs.remove(weightCelebratedKey)
             } else {
                 prefs[weightTargetKey] = goal.targetKg
                 prefs[weightStartKey] = goal.startKg
@@ -125,46 +123,13 @@ class GoalsStore(
         dataStore.edit { prefs ->
             if (prefs[weightTargetKey] == null) prefs[weightStartKey] = currentKg
             prefs[weightTargetKey] = targetKg
-            prefs.remove(weightCelebratedKey)
         }
-    }
-
-    /** Metas diárias já comemoradas em [day] (SPEC §9.2): cada uma comemora uma vez por dia. */
-    fun dailyCelebrated(day: LocalDate): Flow<Set<GoalType>> = dataStore.data.map { prefs ->
-        val saved = prefs[dailyCelebratedKey] ?: return@map emptySet()
-        val (date, types) = saved.split(":", limit = 2).let { it[0] to it.getOrElse(1) { "" } }
-        if (date != day.toString()) emptySet() else types.split(",").mapNotNull { name -> GoalType.entries.firstOrNull { it.name == name } }.toSet()
-    }
-
-    suspend fun markDailyCelebrated(day: LocalDate, type: GoalType) {
-        dataStore.edit { prefs ->
-            val current = prefs[dailyCelebratedKey]?.takeIf { it.startsWith("$day:") }?.substringAfter(":")?.split(",")?.filter { it.isNotEmpty() }.orEmpty()
-            // Só o dia atual fica guardado: os anteriores não importam mais
-            prefs[dailyCelebratedKey] = "$day:" + (current + type.name).distinct().joinToString(",")
-        }
-    }
-
-    /** Pede a comemoração de [type] em [day]: true na primeira vez do dia (e já marca). */
-    suspend fun claimDailyCelebration(day: LocalDate, type: GoalType): Boolean {
-        if (type in dailyCelebrated(day).first()) return false
-        markDailyCelebrated(day, type)
-        return true
-    }
-
-    private val dailyCelebratedKey = stringPreferencesKey("goal_daily_celebrated")
-
-    /** A conclusão da meta de peso já foi comemorada (SPEC §9.2). */
-    val weightCelebrated: Flow<Boolean> = dataStore.data.map { it[weightCelebratedKey] ?: false }
-
-    suspend fun setWeightCelebrated() {
-        dataStore.edit { it[weightCelebratedKey] = true }
     }
 
     private val weightTargetKey = doublePreferencesKey("goal_weight_target_kg")
     private val weightStartKey = doublePreferencesKey("goal_weight_start_kg")
     private val weightDeadlineKey = stringPreferencesKey("goal_weight_deadline")
     private val weightSinceKey = stringPreferencesKey("goal_weight_since")
-    private val weightCelebratedKey = booleanPreferencesKey("goal_weight_celebrated")
 
     private fun dailyKey(type: GoalType) = intPreferencesKey("goal_${type.name.lowercase()}_daily")
     private fun weeklyKey(type: GoalType) = intPreferencesKey("goal_${type.name.lowercase()}_weekly")

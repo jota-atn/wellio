@@ -28,7 +28,8 @@ enum class PeriodGoalStatus { Active, Completed, Missed }
 
 /**
  * Meta de período (SPEC §9.2). [target] na unidade da métrica (ml, kcal, min, dias, treinos
- * ou kg). [celebrated]: a comemoração da conclusão já foi mostrada.
+ * ou kg). [celebrated] não é mais usado: a comemoração acontece toda vez que a meta é
+ * cumprida (SPEC §9.2); fica no banco só para não precisar de outra migração.
  */
 data class PeriodGoal(
     val id: String,

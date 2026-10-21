@@ -9,7 +9,9 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.projeto.wellio.AppContainer
 import com.projeto.wellio.WellioApp
 import com.projeto.wellio.data.time.todayFlow
+import com.projeto.wellio.domain.goals.GoalReading
 import com.projeto.wellio.domain.goals.PeriodGoalStatus
+import com.projeto.wellio.domain.goals.justReached
 import com.projeto.wellio.domain.goals.goalsOn
 import com.projeto.wellio.domain.goals.periodValue
 import com.projeto.wellio.domain.goals.rings
@@ -27,6 +29,8 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import java.time.Instant
+import java.time.LocalDate
+import kotlin.math.abs
 
 /** Uma comemoração para mostrar: o aviso e a cor dele. */
 data class CelebrationEvent(val message: String, val color: Color)
@@ -51,9 +55,9 @@ fun dailyCelebrationMessage(claimed: List<GoalType>, allClosed: Boolean): String
 }
 
 /**
- * Vigia de metas (SPEC §9.2): de onde a pessoa estiver no app, quando uma meta diária fecha
- * ou uma meta de período (ou a de peso) é concluída, avisa uma vez para a comemoração
- * aparecer por cima de tudo.
+ * Vigia de metas (SPEC §9.2): de onde a pessoa estiver no app, toda vez que um registro faz
+ * uma meta diária, uma de período ou a de peso passar de não cumprida para cumprida, avisa
+ * para a comemoração aparecer por cima de tudo (se estiver ligada nas Configurações).
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class CelebrationWatcher(private val container: AppContainer) : ViewModel() {
@@ -69,7 +73,13 @@ class CelebrationWatcher(private val container: AppContainer) : ViewModel() {
         viewModelScope.launch { watchWeight() }
     }
 
+    private suspend fun celebrate(event: CelebrationEvent) {
+        if (container.settingsStore.celebrationsEnabled.first()) channel.send(event)
+    }
+
     private suspend fun watchDaily() {
+        // Última leitura de cada meta no dia; a primeira de cada dia só serve de base
+        var previous: Pair<LocalDate, Map<GoalType, GoalReading>>? = null
         todayFlow(container.clock).flatMapLatest { day ->
             combine(
                 container.waterRepository.totalMl(day..day),
@@ -77,40 +87,54 @@ class CelebrationWatcher(private val container: AppContainer) : ViewModel() {
                 container.exerciseRepository.kcal(day..day),
                 container.exerciseRepository.minutes(day..day),
                 goalsStore.goals
-            ) { water, food, burned, minutes, goals -> day to rings(Totals(water, food, burned, minutes), goals) }
-        }.collect { (day, rings) ->
-            val closed = listOf(GoalType.WATER to rings.water, GoalType.FOOD to rings.food, GoalType.EXERCISE to rings.exercise)
-                .filter { it.second >= 1f }
-                .map { it.first }
-            val claimed = closed.filter { goalsStore.claimDailyCelebration(day, it) }
-            if (claimed.isNotEmpty()) channel.send(CelebrationEvent(dailyCelebrationMessage(claimed, rings.allClosed), goalColor(claimed.first())))
+            ) { water, food, burned, minutes, goals ->
+                val totals = Totals(water, food, burned, minutes)
+                Triple(day, GoalType.entries.associateWith { GoalReading(totals.toward(it, goals).toDouble(), goals[it].daily.toDouble()) }, rings(totals, goals))
+            }
+        }.collect { (day, readings, rings) ->
+            val before = previous?.takeIf { it.first == day }?.second
+            previous = day to readings
+            if (before == null) return@collect
+            val reached = listOf(GoalType.WATER, GoalType.FOOD, GoalType.EXERCISE).filter { justReached(before[it], readings.getValue(it)) }
+            if (reached.isNotEmpty()) celebrate(CelebrationEvent(dailyCelebrationMessage(reached, rings.allClosed), goalColor(reached.first())))
         }
     }
 
     private suspend fun watchPeriods() {
+        val previous = mutableMapOf<String, GoalReading>()
         combine(todayFlow(container.clock), repository.periodGoals, ::Pair).flatMapLatest { (today, goals) ->
-            val pending = goals.filter { it.finalValue == null && !it.celebrated && it.status != PeriodGoalStatus.Missed && !it.start.isAfter(today) }
-            val from = pending.minOfOrNull { it.start } ?: today
+            val active = goals.filter { it.finalValue == null && it.status != PeriodGoalStatus.Missed && !it.start.isAfter(today) }
+            val from = active.minOfOrNull { it.start } ?: today
             combine(dayLogs(container, from..today), repository.history, goalsStore.goals) { logs, history, current ->
-                pending.filter { goal ->
-                    periodValue(goal.metric, goal.start..goal.end, today, logs) { goalsOn(it, history, current) } >= goal.target
+                active.map { goal ->
+                    goal to GoalReading(periodValue(goal.metric, goal.start..goal.end, today, logs) { goalsOn(it, history, current) }, goal.target)
                 }
             }
-        }.collect { reached ->
-            reached.forEach { goal ->
-                repository.update(goal.copy(celebrated = true, status = PeriodGoalStatus.Completed, completedAt = Instant.now(container.clock)))
-                channel.send(CelebrationEvent("Parabéns! Meta concluída: ${goal.title}", DarkWellioColors.base.accent))
+        }.collect { readings ->
+            readings.forEach { (goal, reading) ->
+                val before = previous.put(goal.id, reading)
+                if (justReached(before, reading)) {
+                    repository.update(goal.copy(status = PeriodGoalStatus.Completed, completedAt = Instant.now(container.clock)))
+                    celebrate(CelebrationEvent("Parabéns! Meta concluída: ${goal.title}", DarkWellioColors.base.accent))
+                }
             }
         }
     }
 
     private suspend fun watchWeight() {
-        combine(goalsStore.weightGoal, container.weightRepository.entries, goalsStore.weightCelebrated, ::Triple).collect { (goal, entries, celebrated) ->
-            val current = latestWeight(entries)?.weightKg ?: return@collect
-            if (goal?.deadline != null && !celebrated && remainingKg(goal, current) == 0.0) {
-                goalsStore.setWeightCelebrated()
-                channel.send(CelebrationEvent("Parabéns! Meta de peso concluída", DarkWellioColors.base.accent))
+        var previous: GoalReading? = null
+        combine(goalsStore.weightGoal, container.weightRepository.entries, ::Pair).collect { (goal, entries) ->
+            val current = latestWeight(entries)?.weightKg
+            if (goal?.deadline == null || current == null) {
+                previous = null
+                return@collect
             }
+            // Em kg percorridos desde o início: cumprida quando não falta nada
+            val total = abs(goal.targetKg - goal.startKg)
+            val reading = GoalReading(total - remainingKg(goal, current).coerceAtMost(total), total)
+            val before = previous
+            previous = reading
+            if (justReached(before, reading)) celebrate(CelebrationEvent("Parabéns! Meta de peso concluída", DarkWellioColors.base.accent))
         }
     }
 

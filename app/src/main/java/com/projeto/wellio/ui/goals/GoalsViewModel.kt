@@ -58,7 +58,7 @@ data class WeekDay(val date: LocalDate, val rings: Rings, val future: Boolean)
 data class PeriodGoalView(val goal: PeriodGoal, val progress: PeriodProgress)
 
 /** O peso alvo com prazo, como meta de período (SPEC §9.2). */
-data class WeightPeriodView(val goal: WeightGoal, val currentKg: Double, val progress: PeriodProgress, val celebrated: Boolean) {
+data class WeightPeriodView(val goal: WeightGoal, val currentKg: Double, val progress: PeriodProgress) {
     val reached: Boolean get() = remainingKg(goal, currentKg) == 0.0
 }
 
@@ -127,15 +127,14 @@ class GoalsViewModel(private val container: AppContainer) : ViewModel() {
             dayLogs(container, from..b.today),
             goalSuggestions(container),
             container.weightRepository.entries,
-            goalsStore.weightGoal,
-            goalsStore.weightCelebrated
-        ) { logs, suggestions, weights, weightGoal, weightCelebrated ->
+            goalsStore.weightGoal
+        ) { logs, suggestions, weights, weightGoal ->
             val goalsFor = { day: LocalDate -> goalsOn(day, b.history, b.goals) }
             val currentKg = latestWeight(weights)?.weightKg
             val weight = if (weightGoal?.deadline != null && currentKg != null) {
                 val rate = weeklyRate(weightTrend(weights, b.today, WeightPeriod.Month))
                 weightPeriodProgress(weightGoal, currentKg, rate, b.today)?.let {
-                    WeightPeriodView(weightGoal, currentKg, it, weightCelebrated)
+                    WeightPeriodView(weightGoal, currentKg, it)
                 }
             } else {
                 null

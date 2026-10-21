@@ -80,7 +80,9 @@ fun WellioNavHost() {
     CompositionLocalProvider(LocalSharedTransitionScope provides this) {
     ModalNavigationDrawer(
         drawerState = drawerState,
-        gesturesEnabled = !homeEditing || drawerState.isOpen,
+        // Durante a transição de um card ele é desenhado por cima de tudo, inclusive da
+        // sidebar: o gesto só volta a abrir a sidebar quando ela termina
+        gesturesEnabled = (!homeEditing && !isTransitionActive) || drawerState.isOpen,
         drawerContent = {
             WellioDrawerContent(
                 profile = profile,
@@ -130,59 +132,59 @@ fun WellioNavHost() {
                 enterTransition = { if (targetState.openedFromCard()) EnterTransition.None else enterFromRight() },
                 popExitTransition = { if (initialState.openedFromCard()) ExitTransition.None else popExitToRight() }
             ) { entry ->
-                JellyBack(navController)
+                JellyBack(navController, entry)
                 NavScope {
-                    WaterRoute(fromCard = entry.toRoute<WaterDestination>().fromCard, onBack = { navController.popBackStack() })
+                    WaterRoute(fromCard = entry.toRoute<WaterDestination>().fromCard, onBack = { navController.popFrom(entry) })
                 }
             }
             composable<WeightDestination>(
                 enterTransition = { if (targetState.openedFromCard()) EnterTransition.None else enterFromRight() },
                 popExitTransition = { if (initialState.openedFromCard()) ExitTransition.None else popExitToRight() }
             ) { entry ->
-                JellyBack(navController)
+                JellyBack(navController, entry)
                 NavScope {
-                    WeightRoute(fromCard = entry.toRoute<WeightDestination>().fromCard, onBack = { navController.popBackStack() })
+                    WeightRoute(fromCard = entry.toRoute<WeightDestination>().fromCard, onBack = { navController.popFrom(entry) })
                 }
             }
             composable<ExerciseDestination>(
                 enterTransition = { if (targetState.openedFromCard()) EnterTransition.None else enterFromRight() },
                 popExitTransition = { if (initialState.openedFromCard()) ExitTransition.None else popExitToRight() }
             ) { entry ->
-                JellyBack(navController)
+                JellyBack(navController, entry)
                 NavScope {
-                    ExerciseRoute(fromCard = entry.toRoute<ExerciseDestination>().fromCard, onBack = { navController.popBackStack() })
+                    ExerciseRoute(fromCard = entry.toRoute<ExerciseDestination>().fromCard, onBack = { navController.popFrom(entry) })
                 }
             }
             composable<DashboardDestination>(
                 enterTransition = { if (targetState.openedFromCard()) EnterTransition.None else enterFromRight() },
                 popExitTransition = { if (initialState.openedFromCard()) ExitTransition.None else popExitToRight() }
             ) { entry ->
-                JellyBack(navController)
+                JellyBack(navController, entry)
                 NavScope {
-                    DashboardRoute(fromCard = entry.toRoute<DashboardDestination>().fromCard, onBack = { navController.popBackStack() })
+                    DashboardRoute(fromCard = entry.toRoute<DashboardDestination>().fromCard, onBack = { navController.popFrom(entry) })
                 }
             }
-            composable<GoalsDestination> {
-                JellyBack(navController)
+            composable<GoalsDestination> { entry ->
+                JellyBack(navController, entry)
                 GoalsRoute(
-                    onBack = { navController.popBackStack() },
+                    onBack = { navController.popFrom(entry) },
                     onOpenDay = { day -> navController.navigate(DashboardDestination(day = day.toString())) }
                 )
             }
-            composable<ProfileDestination> {
-                JellyBack(navController)
+            composable<ProfileDestination> { entry ->
+                JellyBack(navController, entry)
                 NavScope {
                     ProfileRoute(
-                        onBack = { navController.popBackStack() },
+                        onBack = { navController.popFrom(entry) },
                         onOpenWeight = { navController.navigate(WeightDestination()) }
                     )
                 }
             }
             composable<ComingSoonDestination> { entry ->
-                JellyBack(navController)
+                JellyBack(navController, entry)
                 ComingSoonScreen(
                     title = entry.toRoute<ComingSoonDestination>().title,
-                    onBack = { navController.popBackStack() }
+                    onBack = { navController.popFrom(entry) }
                 )
             }
         }
@@ -206,8 +208,8 @@ private fun AnimatedVisibilityScope.NavScope(content: @Composable () -> Unit) {
  * comprime a mola: ao soltar, sobrava só o fim da animação e a volta parecia rápida demais.
  */
 @Composable
-private fun JellyBack(navController: NavHostController) {
-    BackHandler { navController.popBackStack() }
+private fun JellyBack(navController: NavHostController, entry: NavBackStackEntry) {
+    BackHandler { navController.popFrom(entry) }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -229,4 +231,12 @@ private fun ComingSoonScreen(title: String, onBack: () -> Unit) {
             Text("Em breve")
         }
     }
+}
+
+/**
+ * Fecha [entry] só se ela ainda for a tela de cima: dois "voltar" rápidos (seta e gesto, ou
+ * dois toques) tiravam também a Home e a navegação ficava vazia, com a tela cinza.
+ */
+private fun NavHostController.popFrom(entry: NavBackStackEntry) {
+    if (currentBackStackEntry?.id == entry.id) popBackStack()
 }

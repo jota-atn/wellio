@@ -30,6 +30,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -69,6 +71,7 @@ import com.projeto.wellio.ui.weight.ScaleTape
 import com.projeto.wellio.ui.weight.TargetSheet
 import com.projeto.wellio.ui.weight.WeightPicker
 import com.projeto.wellio.ui.weight.WeightPickerState
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
@@ -115,7 +118,19 @@ fun OnboardingScreen(
 
     fun goTo(index: Int) {
         unlocked = maxOf(unlocked, index)
-        scope.launch { pager.animateScrollToPage(index) }
+        scope.launch {
+            // A etapa recém-liberada só existe no carrossel depois da próxima composição
+            snapshotFlow { pager.pageCount }.first { it > index }
+            pager.animateScrollToPage(index)
+        }
+    }
+
+    // Trocar de etapa (botão ou deslizar) fecha o teclado
+    val focusManager = LocalFocusManager.current
+    val keyboard = LocalSoftwareKeyboardController.current
+    LaunchedEffect(pager.currentPage) {
+        focusManager.clearFocus()
+        keyboard?.hide()
     }
 
     fun finish(saveGoals: Boolean) {
@@ -338,7 +353,11 @@ private fun BodyPage(draft: OnboardingDraft, today: LocalDate, onEdit: ((Onboard
         subtitle = if (draft.weightKg == null) "Quanto você pesa hoje?" else "Peso de hoje",
         detail = null,
         goalReached = false,
-        modifier = Modifier.fillMaxWidth()
+        // Tocar na balança também muda o peso (além do botão)
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(40.dp))
+            .clickable(onClickLabel = "Mudar peso") { editing = BodyField.Weight }
     ) {
         Surface(
             onClick = { editing = BodyField.Weight },
@@ -478,8 +497,9 @@ private fun LifestylePage(draft: OnboardingDraft, onEdit: ((OnboardingDraft) -> 
     Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surface) {
         ProfileFieldRow(
             "Peso alvo",
-            draft.targetKg?.let { "${formatKg(it)} · ${draft.objective.label.lowercase()}" },
-            R.drawable.ic_profile_target
+            draft.targetKg?.let(::formatKg),
+            R.drawable.ic_profile_target,
+            detail = draft.targetKg?.let { draft.objective.label }
         ) { editingTarget = true }
     }
 

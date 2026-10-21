@@ -55,6 +55,7 @@ import com.projeto.wellio.ui.theme.WellioTheme
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 @Composable
 fun DashboardRoute(
@@ -69,7 +70,8 @@ fun DashboardRoute(
 /** Ordem das linhas, a mesma dos anéis (de fora para dentro). */
 private val RingOrder = listOf(GoalType.WATER, GoalType.FOOD, GoalType.EXERCISE)
 
-private fun percent(score: Float) = (score * 100).toInt()
+// Arredondado como a comparação com ontem, para os dois números baterem
+private fun percent(score: Float) = (score * 100).roundToInt()
 
 /**
  * Tela do Dashboard (SPEC §5.4): os três anéis do dia com o % no centro e, abaixo, as

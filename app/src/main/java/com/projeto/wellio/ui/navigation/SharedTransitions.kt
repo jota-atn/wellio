@@ -11,7 +11,9 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Shape
 
 /*
@@ -34,9 +36,10 @@ val LocalCardTransitionEnabled = compositionLocalOf { true }
 private val GrowSpring = BoundsTransform { _, _ -> spring(dampingRatio = 0.82f, stiffness = Spring.StiffnessMediumLow) }
 
 /**
- * Container que vira a tela (card de um lado, tela do outro, com a mesma [key]; [screen]
- * marca o lado da tela). O card cresce com o próprio visual, refeito no tamanho maior (sem
- * esticar), e só no fim a tela surge por cima; na volta, a tela some rápido e o card encolhe.
+ * Container que vira a tela, em transformação contínua (SPEC §2.9): card de um lado, tela do
+ * outro, com a mesma [key]; [screen] marca o lado da tela. O retângulo cresce com mola; nenhum
+ * dos dois conteúdos estica: o do card fica centralizado e some no começo, o da tela fica no
+ * tamanho real, preso no topo, e vai sendo revelado enquanto aparece. Na volta, o inverso.
  */
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -48,11 +51,14 @@ fun Modifier.sharedContainer(key: String, shape: Shape, enabled: Boolean = true,
         this@sharedContainer.sharedBounds(
             sharedContentState = rememberSharedContentState(key),
             animatedVisibilityScope = animated,
-            enter = if (screen) fadeIn(tween(durationMillis = 200, delayMillis = 300)) else fadeIn(tween(durationMillis = 120, delayMillis = 60)),
-            exit = if (screen) fadeOut(tween(durationMillis = 120)) else fadeOut(tween(durationMillis = 150, delayMillis = 320)),
+            // Os fades se sobrepõem um pouco: nunca sobra o retângulo vazio
+            enter = if (screen) fadeIn(tween(durationMillis = 260, delayMillis = 90)) else fadeIn(tween(durationMillis = 220, delayMillis = 100)),
+            exit = if (screen) fadeOut(tween(durationMillis = 180)) else fadeOut(tween(durationMillis = 200)),
             boundsTransform = GrowSpring,
-            // A tela fica invisível enquanto cresce: escalar é mais leve que refazer o layout dela a cada quadro
-            resizeMode = if (screen) SharedTransitionScope.ResizeMode.scaleToBounds() else SharedTransitionScope.ResizeMode.RemeasureToBounds,
+            resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds(
+                contentScale = ContentScale.None,
+                alignment = if (screen) Alignment.TopCenter else Alignment.Center
+            ),
             clipInOverlayDuringTransition = OverlayClip(shape)
         )
     }

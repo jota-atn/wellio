@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.projeto.wellio.WellioApp
+import com.projeto.wellio.data.db.JourneyDao
 import com.projeto.wellio.data.prefs.GoalsStore
 import com.projeto.wellio.data.prefs.ProfilePhotoStore
 import com.projeto.wellio.data.prefs.ProfileStore
@@ -34,6 +35,7 @@ import kotlinx.coroutines.launch
 import java.io.File
 import java.time.Clock
 import java.time.LocalDate
+import java.time.temporal.ChronoUnit
 
 data class ProfileUiState(
     val today: LocalDate,
@@ -45,8 +47,14 @@ data class ProfileUiState(
     val weightGoal: WeightGoal? = null,
     val foodGoal: Goal = Goals.Default.food,
     /** Os dados já chegaram (antes disso, o perfil vazio não quer dizer onboarding pendente). */
-    val loaded: Boolean = false
+    val loaded: Boolean = false,
+    /** Dia do primeiro registro e quantos registros há (linha "No Wellio há N dias"). */
+    val firstRecord: LocalDate? = null,
+    val records: Int = 0
 ) {
+    /** Dias desde o primeiro registro, contando hoje; null sem registros. */
+    val daysInApp: Int? get() = firstRecord?.let { ChronoUnit.DAYS.between(it, today).toInt() + 1 }
+
     val age: Int? get() = profile.birthDate?.let { age(it, today) }
     val bmi: Double? get() = if (weightKg != null && profile.heightCm != null) bmi(weightKg, profile.heightCm) else null
     val bmiRange: BmiRange? get() = bmi?.let(BmiRange::of)
@@ -59,6 +67,7 @@ class ProfileViewModel(
     private val photoStore: ProfilePhotoStore,
     private val goalsStore: GoalsStore,
     weightRepository: WeightRepository,
+    journeyDao: JourneyDao,
     clock: Clock
 ) : ViewModel() {
 
@@ -69,8 +78,8 @@ class ProfileViewModel(
         profileStore.profile,
         weightRepository.entries,
         goalsStore.weightGoal,
-        goalsStore.goals
-    ) { today, profile, weights, weightGoal, goals ->
+        combine(goalsStore.goals, journeyDao.journey(), ::Pair)
+    ) { today, profile, weights, weightGoal, (goals, journey) ->
         ProfileUiState(
             today = today,
             profile = profile,
@@ -78,7 +87,9 @@ class ProfileViewModel(
             weightKg = latestWeight(weights)?.weightKg,
             weightGoal = weightGoal,
             foodGoal = goals.food,
-            loaded = true
+            loaded = true,
+            firstRecord = journey.firstDate,
+            records = journey.records
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ProfileUiState(initialDay))
 
@@ -124,6 +135,7 @@ class ProfileViewModel(
                     container.profilePhotoStore,
                     container.goalsStore,
                     container.weightRepository,
+                    container.journeyDao,
                     container.clock
                 )
             }

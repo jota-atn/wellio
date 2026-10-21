@@ -189,3 +189,18 @@ interface GoalDao {
     @Query("UPDATE goal SET deletedAt = NULL, updatedAt = :at WHERE id = :id")
     suspend fun restore(id: String, at: Instant)
 }
+
+/** Desde quando e quanto o usuário registrou (linha "No Wellio há N dias", SPEC §9.1). */
+data class JourneyRow(val firstDate: LocalDate?, val records: Int)
+
+@Dao
+interface JourneyDao {
+    @Query(
+        "SELECT MIN(date) AS firstDate, COUNT(*) AS records FROM (" +
+            "SELECT date FROM water_entry WHERE deletedAt IS NULL UNION ALL " +
+            "SELECT date FROM food_entry WHERE deletedAt IS NULL UNION ALL " +
+            "SELECT date FROM exercise_entry WHERE deletedAt IS NULL UNION ALL " +
+            "SELECT date FROM weight_entry WHERE deletedAt IS NULL)"
+    )
+    fun journey(): Flow<JourneyRow>
+}

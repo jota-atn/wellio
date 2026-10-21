@@ -10,6 +10,17 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.scaleIn
+import androidx.compose.animation.core.Animatable
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import com.projeto.wellio.ui.theme.DarkWellioColors
+import com.projeto.wellio.ui.theme.ModuleColors
+import kotlin.math.roundToInt
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -113,33 +124,26 @@ fun ProfileScreen(
     }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Perfil") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar")
-                    }
-                }
-            )
-        },
         snackbarHost = { SnackbarHost(snackbar) },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = MaterialTheme.colorScheme.background,
+        // A capa vai até o topo da tela, por baixo da barra de status
+        contentWindowInsets = WindowInsets(0)
     ) { innerPadding ->
         LazyColumn(
             modifier = Modifier.padding(innerPadding).fillMaxSize(),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 32.dp),
+            contentPadding = PaddingValues(bottom = 32.dp) + WindowInsets.navigationBars.asPaddingValues(),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            item(key = "foto") {
-                PhotoHeader(
+            item(key = "capa") {
+                ProfileCover(
                     state = state,
+                    onBack = onBack,
                     onPhotoClick = { if (state.photo == null) launchPicker() else editing = ProfileField.Photo },
                     onNameClick = { editing = ProfileField.Name }
                 )
             }
             item(key = "ficha") {
-                ProfileSheetCard(state, onUse = { kcal ->
+                ProfileSheetCard(state, Modifier.padding(horizontal = 16.dp), onUse = { kcal ->
                     onUseSuggestion(kcal)
                     scope.launch {
                         snackbar.currentSnackbarData?.dismiss()
@@ -148,17 +152,18 @@ fun ProfileScreen(
                 })
             }
             item(key = "campos") {
-                Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surface) {
+                Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surface, modifier = Modifier.padding(horizontal = 16.dp)) {
                     Column(Modifier.padding(vertical = 8.dp)) {
-                        ProfileFieldRow("Nascimento", profile.birthDate?.format(birthFormatter)) { editing = ProfileField.BirthDate }
-                        ProfileFieldRow("Sexo", profile.sex?.label) { editing = ProfileField.Sex }
-                        ProfileFieldRow("Altura", profile.heightCm?.let(::formatHeight)) { editing = ProfileField.Height }
-                        ProfileFieldRow("Peso", state.weightKg?.let(::formatKg) ?: "Registrar", onClick = onOpenWeight)
+                        ProfileFieldRow("Nascimento", profile.birthDate?.format(birthFormatter), R.drawable.ic_profile_cake) { editing = ProfileField.BirthDate }
+                        ProfileFieldRow("Sexo", profile.sex?.label, R.drawable.ic_profile_person) { editing = ProfileField.Sex }
+                        ProfileFieldRow("Altura", profile.heightCm?.let(::formatHeight), R.drawable.ic_profile_ruler) { editing = ProfileField.Height }
+                        ProfileFieldRow("Peso", state.weightKg?.let(::formatKg) ?: "Registrar", R.drawable.ic_module_weight, onClick = onOpenWeight)
                         ProfileFieldRow(
                             "Objetivo",
-                            listOfNotNull(state.objective.label, state.weightGoal?.let { "alvo ${formatKg(it.targetKg)}" }).joinToString(" · ")
+                            listOfNotNull(state.objective.label, state.weightGoal?.let { "alvo ${formatKg(it.targetKg)}" }).joinToString(" · "),
+                            R.drawable.ic_profile_target
                         ) { editing = ProfileField.Objective }
-                        ProfileFieldRow("Atividade", profile.activity?.label) { editing = ProfileField.Activity }
+                        ProfileFieldRow("Atividade", profile.activity?.label, R.drawable.ic_profile_sneaker) { editing = ProfileField.Activity }
                     }
                 }
             }
@@ -239,53 +244,142 @@ internal val birthFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
 /** A foto do cabeçalho da sidebar voa e cresce até a do Perfil (SPEC §9.1). */
 const val PROFILE_PHOTO_KEY = "profile-photo"
 
-/** Foto grande com o selo de câmera e o nome logo abaixo. */
+private val CoverHeight = 152.dp
+private val PhotoSize = 128.dp
+private val RingWidth = 5.dp
+
+/**
+ * Capa (SPEC §9.1): azul-marinho de canto a canto, com a gota, a fogueira e a balança em
+ * marca-d'água; a foto metade sobre ela, num anel com as três cores; o nome e há quanto
+ * tempo a pessoa usa o app.
+ */
 @Composable
-private fun PhotoHeader(state: ProfileUiState, onPhotoClick: () -> Unit, onNameClick: () -> Unit) {
+private fun ProfileCover(state: ProfileUiState, onBack: () -> Unit, onPhotoClick: () -> Unit, onNameClick: () -> Unit) {
     val colors = WellioTheme.colors.base
     val name = state.profile.name
-    Column(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Box {
-            ProfileAvatar(
-                state.photo,
-                name,
-                size = 136.dp,
-                modifier = Modifier
-                    .sharedHero(PROFILE_PHOTO_KEY)
-                    .clip(CircleShape)
-                    .clickable(onClickLabel = if (state.photo == null) "Escolher foto" else "Trocar foto", onClick = onPhotoClick)
-            )
-            // Selo da câmera sobre a borda da foto; chegando pela sidebar, só aparece depois
-            // que a foto pousa (durante o voo ela fica por cima de tudo e o cobriria)
-            Box(
-                Modifier
-                    .align(Alignment.BottomEnd)
-                    .popInAfterArrival()
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(colors.accent)
-                    .border(3.dp, MaterialTheme.colorScheme.background, CircleShape)
-                    .clickable(onClickLabel = "Trocar foto", onClick = onPhotoClick),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(painterResource(R.drawable.ic_profile_camera), contentDescription = null, tint = colors.onAccent, modifier = Modifier.size(20.dp))
+    val statusBar = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val photoBox = PhotoSize + RingWidth * 4
+    Box(Modifier.fillMaxWidth()) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(statusBar + CoverHeight)
+                .clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp))
+                .background(colors.container)
+        ) {
+            CoverWatermark(Modifier.matchParentSize())
+            IconButton(onClick = onBack, modifier = Modifier.padding(top = statusBar + 4.dp, start = 4.dp)) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar", tint = colors.onContainer)
             }
+            Text(
+                "Perfil",
+                style = MaterialTheme.typography.titleLarge,
+                color = colors.onContainer,
+                modifier = Modifier.align(Alignment.TopCenter).padding(top = statusBar + 14.dp)
+            )
         }
-        Spacer(Modifier.height(8.dp))
-        Text(
-            name.ifBlank { "Toque para pôr seu nome" },
-            style = if (name.isBlank()) MaterialTheme.typography.titleMedium else MaterialTheme.typography.headlineSmall,
-            fontWeight = if (name.isBlank()) FontWeight.Normal else FontWeight.SemiBold,
-            color = if (name.isBlank()) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier
-                .clip(RoundedCornerShape(12.dp))
-                .clickable(onClickLabel = "Editar nome", onClick = onNameClick)
-                .padding(horizontal = 12.dp, vertical = 4.dp)
-        )
+        Column(
+            Modifier.fillMaxWidth().padding(top = statusBar + CoverHeight - photoBox / 2),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(Modifier.size(photoBox), contentAlignment = Alignment.Center) {
+                TricolorRing(Modifier.matchParentSize())
+                ProfileAvatar(
+                    state.photo,
+                    name,
+                    size = PhotoSize,
+                    modifier = Modifier
+                        .sharedHero(PROFILE_PHOTO_KEY)
+                        .border(4.dp, MaterialTheme.colorScheme.background, CircleShape)
+                        .clip(CircleShape)
+                        .clickable(onClickLabel = if (state.photo == null) "Escolher foto" else "Trocar foto", onClick = onPhotoClick)
+                )
+                // Selo da câmera sobre a borda da foto; chegando pela sidebar, só aparece depois
+                // que a foto pousa (durante o voo ela fica por cima de tudo e o cobriria)
+                Box(
+                    Modifier
+                        .align(Alignment.BottomEnd)
+                        .popInAfterArrival()
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(colors.accent)
+                        .border(3.dp, MaterialTheme.colorScheme.background, CircleShape)
+                        .clickable(onClickLabel = "Trocar foto", onClick = onPhotoClick),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(painterResource(R.drawable.ic_profile_camera), contentDescription = null, tint = colors.onAccent, modifier = Modifier.size(20.dp))
+                }
+            }
+            Spacer(Modifier.height(6.dp))
+            Text(
+                name.ifBlank { "Toque para pôr seu nome" },
+                style = if (name.isBlank()) MaterialTheme.typography.titleMedium else MaterialTheme.typography.headlineSmall,
+                fontWeight = if (name.isBlank()) FontWeight.Normal else FontWeight.SemiBold,
+                color = if (name.isBlank()) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable(onClickLabel = "Editar nome", onClick = onNameClick)
+                    .padding(horizontal = 12.dp, vertical = 2.dp)
+            )
+            Text(
+                journeyText(state.daysInApp, state.records),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 
-/** Cor do ponto do IMC: azul abaixo, verde normal, âmbar sobrepeso, vermelho obesidade. */
+/** "No Wellio há 23 dias · 412 registros". */
+private fun journeyText(days: Int?, records: Int): String {
+    if (days == null) return "Começando a jornada no Wellio"
+    val since = if (days == 1) "No Wellio desde hoje" else "No Wellio há $days dias"
+    return "$since · ${formatInt(records)} ${if (records == 1) "registro" else "registros"}"
+}
+
+/** Gota, fogueira e balança espalhadas na capa, bem apagadas. */
+@Composable
+private fun CoverWatermark(modifier: Modifier = Modifier) {
+    val tint = WellioTheme.colors.base.onContainer.copy(alpha = 0.08f)
+    BoxWithConstraints(modifier) {
+        listOf(
+            Triple(R.drawable.ic_module_water, Offset(0.08f, 0.35f), -14f),
+            Triple(R.drawable.ic_module_exercise, Offset(0.78f, 0.22f), 12f),
+            Triple(R.drawable.ic_module_weight, Offset(0.62f, 0.62f), -8f),
+            Triple(R.drawable.ic_module_water, Offset(0.88f, 0.7f), 18f),
+            Triple(R.drawable.ic_module_exercise, Offset(0.2f, 0.72f), 6f)
+        ).forEach { (icon, at, angle) ->
+            Icon(
+                painterResource(icon),
+                contentDescription = null,
+                tint = tint,
+                modifier = Modifier
+                    .offset(x = maxWidth * at.x, y = maxHeight * at.y)
+                    .size(56.dp)
+                    .graphicsLayer { rotationZ = angle }
+            )
+        }
+    }
+}
+
+/** Anel com as cores da água, das calorias e do exercício, que se desenha ao abrir. */
+@Composable
+private fun TricolorRing(modifier: Modifier = Modifier) {
+    val colors = listOf(DarkWellioColors.water.accent, DarkWellioColors.food.accent, DarkWellioColors.exercise.accent)
+    val sweep = remember { Animatable(0f) }
+    LaunchedEffect(Unit) { sweep.animateTo(1f, tween(durationMillis = 900, delayMillis = 250, easing = FastOutSlowInEasing)) }
+    Canvas(modifier) {
+        val width = RingWidth.toPx()
+        val arc = Size(size.width - width, size.height - width)
+        val topLeft = Offset(width / 2, width / 2)
+        colors.forEachIndexed { index, color ->
+            // Três arcos de 120° com um respiro entre eles
+            drawArc(color, -90f + index * 120f + 6f, (120f - 12f) * sweep.value, false, topLeft, arc, style = Stroke(width, cap = StrokeCap.Round))
+        }
+    }
+}
+
+/** Cor da faixa do IMC: azul abaixo, verde normal, âmbar sobrepeso, vermelho obesidade. */
 @Composable
 private fun bmiColor(range: BmiRange): Color = when (range) {
     BmiRange.Under -> WellioTheme.colors.water.accent
@@ -294,53 +388,73 @@ private fun bmiColor(range: BmiRange): Color = when (range) {
     BmiRange.Obese -> Color(0xFFFF6B6B)
 }
 
-/** A ficha: idade, IMC e meta calórica sugerida, com o botão "Usar" (SPEC §9.1). */
+/** Número que conta de 0 até [value] ao aparecer (e anima ao mudar). */
 @Composable
-private fun ProfileSheetCard(state: ProfileUiState, onUse: (Int) -> Unit) {
+private fun CountUp(value: Double, format: (Double) -> String, style: androidx.compose.ui.text.TextStyle) {
+    val shown = remember { Animatable(0f) }
+    LaunchedEffect(value) { shown.animateTo(value.toFloat(), tween(durationMillis = 900, easing = FastOutSlowInEasing)) }
+    Text(format(shown.value.toDouble()), style = style, fontWeight = FontWeight.Bold)
+}
+
+/**
+ * A ficha (SPEC §9.1): idade, IMC na régua das faixas e a meta calórica sugerida, com o
+ * botão "Usar". Os números contam ao abrir.
+ */
+@Composable
+private fun ProfileSheetCard(state: ProfileUiState, modifier: Modifier = Modifier, onUse: (Int) -> Unit) {
     val colors = WellioTheme.colors.base
     val suggestion = state.suggestion
-    Surface(shape = RoundedCornerShape(24.dp), color = colors.container, contentColor = colors.onContainer) {
-        Column(Modifier.padding(vertical = 18.dp, horizontal = 8.dp)) {
-            Row(Modifier.height(IntrinsicSize.Min)) {
-                SheetStat(
-                    value = state.age?.toString() ?: "—",
-                    caption = if (state.age != null) "anos" else "informe o nascimento",
-                    modifier = Modifier.weight(1f)
-                )
-                VerticalDivider(color = colors.onContainer.copy(alpha = 0.2f))
-                val bmi = state.bmi
-                SheetStat(
-                    value = bmi?.let { String.format(Locale.forLanguageTag("pt-BR"), "%.1f", it) } ?: "—",
-                    caption = state.bmiRange?.let { "IMC · ${it.label.lowercase()}" }
-                        ?: if (state.profile.heightCm == null) "informe a altura" else "registre o peso",
-                    dot = state.bmiRange?.let { bmiColor(it) },
-                    modifier = Modifier.weight(1f)
-                )
-                VerticalDivider(color = colors.onContainer.copy(alpha = 0.2f))
-                SheetStat(
-                    value = (suggestion as? CalorieSuggestion.Ready)?.let { formatInt(it.kcal) } ?: "—",
-                    caption = when (suggestion) {
-                        is CalorieSuggestion.Ready -> if (suggestion.atFloor) "kcal · mínimo recomendado" else "kcal sugeridas"
-                        is CalorieSuggestion.Missing -> "falta " + suggestion.fields.joinToString(", ") { it.label }
-                        CalorieSuggestion.SexUndisclosed -> "a fórmula depende do sexo"
-                    },
-                    modifier = Modifier.weight(1f)
-                )
+    val numberStyle = MaterialTheme.typography.headlineSmall
+    Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surface, modifier = modifier) {
+        Column(Modifier.padding(16.dp)) {
+            Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                SheetTile(R.drawable.ic_profile_cake, WellioTheme.colors.water, Modifier.weight(1f)) {
+                    val age = state.age
+                    if (age != null) CountUp(age.toDouble(), { it.roundToInt().toString() }, numberStyle) else Missing()
+                    TileCaption(if (age != null) "anos" else "informe o nascimento")
+                }
+                SheetTile(R.drawable.ic_profile_ruler, WellioTheme.colors.food, Modifier.weight(1.3f)) {
+                    val bmi = state.bmi
+                    if (bmi != null) {
+                        CountUp(bmi, { String.format(Locale.forLanguageTag("pt-BR"), "%.1f", it) }, numberStyle)
+                        Spacer(Modifier.height(6.dp))
+                        BmiRuler(bmi)
+                        Spacer(Modifier.height(4.dp))
+                        TileCaption("IMC · ${state.bmiRange?.label?.lowercase()}")
+                    } else {
+                        Missing()
+                        TileCaption(if (state.profile.heightCm == null) "informe a altura" else "registre o peso")
+                    }
+                }
+                SheetTile(R.drawable.ic_profile_flame, WellioTheme.colors.exercise, Modifier.weight(1f)) {
+                    if (suggestion is CalorieSuggestion.Ready) {
+                        CountUp(suggestion.kcal.toDouble(), { formatInt(it.roundToInt()) }, numberStyle)
+                    } else {
+                        Missing()
+                    }
+                    TileCaption(
+                        when (suggestion) {
+                            is CalorieSuggestion.Ready -> if (suggestion.atFloor) "kcal · mínimo recomendado" else "kcal sugeridas"
+                            is CalorieSuggestion.Missing -> "falta " + suggestion.fields.joinToString(", ") { it.label }
+                            CalorieSuggestion.SexUndisclosed -> "a fórmula depende do sexo"
+                        }
+                    )
+                }
             }
             if (suggestion is CalorieSuggestion.Ready) {
-                Spacer(Modifier.height(14.dp))
-                Row(Modifier.padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                Spacer(Modifier.height(12.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     val current = state.foodGoal.daily
                     Text(
                         if (current == suggestion.kcal) "É a sua meta diária de kcal" else "Sua meta hoje: ${formatInt(current)} kcal",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = colors.onContainer.copy(alpha = 0.8f),
-                        modifier = Modifier.weight(1f)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f).padding(start = 4.dp)
                     )
                     if (current != suggestion.kcal) {
                         Button(
                             onClick = { onUse(suggestion.kcal) },
-                            colors = ButtonDefaults.buttonColors(containerColor = colors.accent, contentColor = colors.onAccent),
+                            colors = ButtonDefaults.buttonColors(containerColor = colors.container, contentColor = colors.onContainer),
                             contentPadding = PaddingValues(horizontal = 18.dp, vertical = 6.dp)
                         ) { Text("Usar") }
                     }
@@ -350,39 +464,86 @@ private fun ProfileSheetCard(state: ProfileUiState, onUse: (Int) -> Unit) {
     }
 }
 
+/** Uma peça da ficha: ícone num círculo na cor do módulo e o conteúdo abaixo. */
 @Composable
-private fun SheetStat(value: String, caption: String, modifier: Modifier = Modifier, dot: Color? = null) {
-    Column(
-        modifier.padding(horizontal = 6.dp).semantics(mergeDescendants = true) {},
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(value, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-            dot?.let {
-                Spacer(Modifier.width(6.dp))
-                Box(Modifier.size(10.dp).clip(CircleShape).background(it))
+private fun SheetTile(icon: Int, palette: ModuleColors, modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
+    Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), modifier = modifier.fillMaxHeight()) {
+        Column(
+            Modifier.padding(vertical = 12.dp, horizontal = 8.dp).semantics(mergeDescendants = true) {},
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(Modifier.size(36.dp).clip(CircleShape).background(palette.container), contentAlignment = Alignment.Center) {
+                Icon(painterResource(icon), contentDescription = null, tint = palette.accent, modifier = Modifier.size(20.dp))
             }
+            Spacer(Modifier.height(6.dp))
+            content()
         }
-        Text(
-            caption,
-            style = MaterialTheme.typography.labelMedium,
-            textAlign = TextAlign.Center,
-            color = LocalContentColor.current.copy(alpha = 0.8f)
-        )
     }
 }
 
-/** Uma linha de campo: rótulo, valor (ou "Não informado") e a setinha. Também no onboarding. */
 @Composable
-fun ProfileFieldRow(label: String, value: String?, onClick: () -> Unit) {
+private fun Missing() {
+    Text("—", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+}
+
+@Composable
+private fun TileCaption(text: String) {
+    Text(text, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
+}
+
+/** Faixas do IMC na régua: de 15 a 35, nas larguras de cada faixa. */
+private val BmiBands = listOf(BmiRange.Under to 3.5f, BmiRange.Normal to 6.5f, BmiRange.Over to 5f, BmiRange.Obese to 5f)
+
+/** Régua colorida das faixas, com o marcador deslizando até o IMC (SPEC §9.1). */
+@Composable
+private fun BmiRuler(bmi: Double) {
+    val target = ((bmi - 15) / 20).toFloat().coerceIn(0f, 1f)
+    val position = remember { Animatable(0f) }
+    LaunchedEffect(target) { position.animateTo(target, tween(durationMillis = 1100, delayMillis = 150, easing = FastOutSlowInEasing)) }
+    val bandColors = BmiBands.map { (range, width) -> bmiColor(range) to width }
+    val marker = MaterialTheme.colorScheme.onSurface
+    Canvas(Modifier.fillMaxWidth().height(16.dp)) {
+        val barHeight = 6.dp.toPx()
+        val top = size.height - barHeight
+        var x = 0f
+        val total = bandColors.sumOf { it.second.toDouble() }.toFloat()
+        bandColors.forEach { (color, width) ->
+            val w = size.width * width / total
+            drawRect(color, Offset(x, top), Size(w, barHeight))
+            x += w
+        }
+        // Marcador: um triângulo apontando para a régua
+        val mx = size.width * position.value
+        val path = Path().apply {
+            moveTo(mx - 5.dp.toPx(), 0f)
+            lineTo(mx + 5.dp.toPx(), 0f)
+            lineTo(mx, top - 1.dp.toPx())
+            close()
+        }
+        drawPath(path, marker)
+    }
+}
+
+/** Uma linha de campo: ícone, rótulo, valor (ou "Não informado") e a setinha. Também no onboarding. */
+@Composable
+fun ProfileFieldRow(label: String, value: String?, icon: Int? = null, onClick: () -> Unit) {
     Row(
         Modifier
             .fillMaxWidth()
             .clickable(onClickLabel = "Editar ${label.lowercase()}", onClick = onClick)
-            .padding(start = 20.dp, end = 12.dp, top = 14.dp, bottom = 14.dp)
+            .padding(start = 16.dp, end = 12.dp, top = 12.dp, bottom = 12.dp)
             .semantics(mergeDescendants = true) { contentDescription = "$label: ${value ?: "não informado"}" },
         verticalAlignment = Alignment.CenterVertically
     ) {
+        icon?.let {
+            Box(
+                Modifier.size(36.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(painterResource(it), contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+            }
+            Spacer(Modifier.width(12.dp))
+        }
         Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
         Text(
             value ?: "Não informado",

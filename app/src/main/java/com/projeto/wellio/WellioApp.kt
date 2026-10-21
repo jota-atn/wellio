@@ -39,6 +39,7 @@ class AppContainer(context: Context) {
 
     val clock: Clock = Clock.systemDefaultZone()
     val goalRepository = GoalRepository(database.goalDao(), clock)
+    val journeyDao = database.journeyDao()
     val goalsStore = GoalsStore(context.preferences, onDailyGoalsChanged = goalRepository::recordDaily)
     val homeLayoutStore = HomeLayoutStore(context.preferences)
     val profileStore = ProfileStore(context.preferences)

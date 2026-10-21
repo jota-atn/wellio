@@ -358,9 +358,9 @@ private fun BodyPage(draft: OnboardingDraft, today: LocalDate, onEdit: ((Onboard
     Spacer(Modifier.height(16.dp))
     Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surface) {
         Column(Modifier.padding(vertical = 8.dp)) {
-            ProfileFieldRow("Nascimento", draft.birthDate?.format(birthFormatter)) { editing = BodyField.BirthDate }
-            ProfileFieldRow("Sexo", draft.sex?.label) { editing = BodyField.Sex }
-            ProfileFieldRow("Altura", draft.heightCm?.let(::formatHeight)) { editing = BodyField.Height }
+            ProfileFieldRow("Nascimento", draft.birthDate?.format(birthFormatter), R.drawable.ic_profile_cake) { editing = BodyField.BirthDate }
+            ProfileFieldRow("Sexo", draft.sex?.label, R.drawable.ic_profile_person) { editing = BodyField.Sex }
+            ProfileFieldRow("Altura", draft.heightCm?.let(::formatHeight), R.drawable.ic_profile_ruler) { editing = BodyField.Height }
         }
     }
 
@@ -478,7 +478,8 @@ private fun LifestylePage(draft: OnboardingDraft, onEdit: ((OnboardingDraft) -> 
     Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surface) {
         ProfileFieldRow(
             "Peso alvo",
-            draft.targetKg?.let { "${formatKg(it)} · ${draft.objective.label.lowercase()}" }
+            draft.targetKg?.let { "${formatKg(it)} · ${draft.objective.label.lowercase()}" },
+            R.drawable.ic_profile_target
         ) { editingTarget = true }
     }
 

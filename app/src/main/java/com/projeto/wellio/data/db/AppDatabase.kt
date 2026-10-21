@@ -27,6 +27,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun exerciseDao(): ExerciseDao
     abstract fun weightDao(): WeightDao
     abstract fun goalDao(): GoalDao
+    abstract fun journeyDao(): JourneyDao
 
     companion object {
         fun build(context: Context): AppDatabase =

@@ -142,7 +142,7 @@ fun ExerciseScreen(
     }
 
     Scaffold(
-        modifier = Modifier.sharedContainer("card-exercise", RoundedCornerShape(28.dp), enabled = fromCard),
+        modifier = Modifier.sharedContainer("card-exercise", RoundedCornerShape(28.dp), enabled = fromCard, screen = true),
         topBar = {
             TopAppBar(
                 title = { Text("Exercício") },

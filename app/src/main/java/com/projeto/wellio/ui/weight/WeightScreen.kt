@@ -109,7 +109,7 @@ fun WeightScreen(
     }
 
     Scaffold(
-        modifier = Modifier.sharedContainer("card-weight", RoundedCornerShape(28.dp), enabled = fromCard),
+        modifier = Modifier.sharedContainer("card-weight", RoundedCornerShape(28.dp), enabled = fromCard, screen = true),
         topBar = {
             TopAppBar(
                 title = { Text("Peso") },

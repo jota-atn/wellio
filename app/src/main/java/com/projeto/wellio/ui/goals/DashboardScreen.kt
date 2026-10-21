@@ -79,7 +79,7 @@ fun DashboardScreen(
     val rings = state.rings
 
     Scaffold(
-        modifier = Modifier.sharedContainer("card-dashboard", RoundedCornerShape(28.dp), enabled = fromCard),
+        modifier = Modifier.sharedContainer("card-dashboard", RoundedCornerShape(28.dp), enabled = fromCard, screen = true),
         topBar = {
             TopAppBar(
                 title = { Text("Dashboard") },

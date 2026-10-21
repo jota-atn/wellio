@@ -126,7 +126,7 @@ fun WaterScreen(
     }
 
     Scaffold(
-        modifier = Modifier.sharedContainer("card-water", RoundedCornerShape(28.dp), enabled = fromCard),
+        modifier = Modifier.sharedContainer("card-water", RoundedCornerShape(28.dp), enabled = fromCard, screen = true),
         topBar = {
             TopAppBar(
                 title = { Text("Água") },

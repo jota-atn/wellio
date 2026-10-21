@@ -6,6 +6,9 @@ import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Modifier
@@ -30,10 +33,14 @@ val LocalCardTransitionEnabled = compositionLocalOf { true }
 @OptIn(ExperimentalSharedTransitionApi::class)
 private val GrowSpring = BoundsTransform { _, _ -> spring(dampingRatio = 0.82f, stiffness = Spring.StiffnessMediumLow) }
 
-/** Container que vira a tela (card de um lado, tela do outro, com a mesma [key]). */
+/**
+ * Container que vira a tela (card de um lado, tela do outro, com a mesma [key]; [screen]
+ * marca o lado da tela). O card cresce com o próprio visual, refeito no tamanho maior (sem
+ * esticar), e só no fim a tela surge por cima; na volta, a tela some rápido e o card encolhe.
+ */
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun Modifier.sharedContainer(key: String, shape: Shape, enabled: Boolean = true): Modifier {
+fun Modifier.sharedContainer(key: String, shape: Shape, enabled: Boolean = true, screen: Boolean = false): Modifier {
     val shared = LocalSharedTransitionScope.current
     val animated = LocalNavAnimatedScope.current
     if (!enabled || !LocalCardTransitionEnabled.current || shared == null || animated == null) return this
@@ -41,8 +48,11 @@ fun Modifier.sharedContainer(key: String, shape: Shape, enabled: Boolean = true)
         this@sharedContainer.sharedBounds(
             sharedContentState = rememberSharedContentState(key),
             animatedVisibilityScope = animated,
+            enter = if (screen) fadeIn(tween(durationMillis = 200, delayMillis = 300)) else fadeIn(tween(durationMillis = 120, delayMillis = 60)),
+            exit = if (screen) fadeOut(tween(durationMillis = 120)) else fadeOut(tween(durationMillis = 150, delayMillis = 320)),
             boundsTransform = GrowSpring,
-            resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds(),
+            // A tela fica invisível enquanto cresce: escalar é mais leve que refazer o layout dela a cada quadro
+            resizeMode = if (screen) SharedTransitionScope.ResizeMode.scaleToBounds() else SharedTransitionScope.ResizeMode.RemeasureToBounds,
             clipInOverlayDuringTransition = OverlayClip(shape)
         )
     }

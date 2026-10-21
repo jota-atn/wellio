@@ -20,9 +20,14 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // Ferramentas de teste (ex.: "Resetar app" na sidebar): só em debug e staging
+        buildConfigField("boolean", "DEV_TOOLS", "false")
     }
 
     buildTypes {
+        debug {
+            buildConfigField("boolean", "DEV_TOOLS", "true")
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
@@ -39,6 +44,7 @@ android {
             applicationIdSuffix = ".staging"
             versionNameSuffix = "-staging"
             matchingFallbacks += "release"
+            buildConfigField("boolean", "DEV_TOOLS", "true")
         }
     }
     compileOptions {
@@ -47,6 +53,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     sourceSets {
         // Schemas exportados do Room, usados pelos testes de migração

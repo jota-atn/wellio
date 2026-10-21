@@ -33,6 +33,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.AlertDialog
+import androidx.compose.ui.platform.LocalContext
+import com.projeto.wellio.WellioApp
+import com.projeto.wellio.BuildConfig
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import com.projeto.wellio.ui.goals.CelebrationOverlay
@@ -79,6 +84,28 @@ fun WellioNavHost() {
         return
     }
 
+    // Ferramenta de teste: zerar o app e voltar ao onboarding
+    var confirmingReset by remember { mutableStateOf(false) }
+    if (confirmingReset) {
+        val container = (LocalContext.current.applicationContext as WellioApp).container
+        AlertDialog(
+            onDismissRequest = { confirmingReset = false },
+            title = { Text("Resetar o app?") },
+            text = { Text("Apaga registros, perfil, metas, fotos e o layout da Home, e volta ao onboarding. Não dá para desfazer.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmingReset = false
+                    scope.launch {
+                        drawerState.close()
+                        navController.popBackStack(HomeDestination, inclusive = false)
+                        container.resetAll()
+                    }
+                }) { Text("Resetar", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = { TextButton(onClick = { confirmingReset = false }) { Text("Cancelar") } }
+        )
+    }
+
     // Comemorações de metas, de onde a pessoa estiver (SPEC §9.2): por cima de tudo
     val watcher: CelebrationWatcher = viewModel(factory = CelebrationWatcher.Factory)
     val celebration = rememberCelebration()
@@ -110,7 +137,8 @@ fun WellioNavHost() {
                 onItemClick = { title ->
                     scope.launch { drawerState.close() }
                     navController.navigate(if (title == "Metas") GoalsDestination else ComingSoonDestination(title))
-                }
+                },
+                onResetClick = if (BuildConfig.DEV_TOOLS) ({ confirmingReset = true }) else null
             )
         }
     ) {

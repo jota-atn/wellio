@@ -16,6 +16,9 @@ import com.projeto.wellio.data.repository.WeightRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
+import androidx.datastore.preferences.core.edit
 import java.io.File
 import java.time.Clock
 
@@ -49,6 +52,23 @@ class AppContainer(context: Context) {
     val foodRepository = FoodRepository(database.foodDao(), clock)
     val weightRepository = WeightRepository(database.weightDao(), clock)
     val exerciseRepository = ExerciseRepository(database.exerciseDao(), weightRepository, clock)
+
+    private val appContext = context.applicationContext
+
+    /**
+     * Ferramenta de teste (só em debug e staging): apaga registros, perfil, metas, fotos e o
+     * layout da Home, e devolve o app ao primeiro uso (o onboarding volta sozinho).
+     */
+    suspend fun resetAll() {
+        withContext(Dispatchers.IO) {
+            database.clearAllTables()
+            File(appContext.filesDir, "profile").deleteRecursively()
+        }
+        appContext.preferences.edit { it.clear() }
+        waterRepository.seedIfEmpty()
+        foodRepository.seedIfEmpty()
+        exerciseRepository.seedIfEmpty()
+    }
 
     fun seedDatabase() {
         scope.launch {

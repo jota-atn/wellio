@@ -47,7 +47,9 @@ fun WellioDrawerContent(
     photoVisible: Boolean,
     onProfileClick: () -> Unit,
     onModuleClick: (WellioModule) -> Unit,
-    onItemClick: (String) -> Unit
+    onItemClick: (String) -> Unit,
+    /** Ferramenta de teste: só aparece em debug e staging. */
+    onResetClick: (() -> Unit)? = null
 ) {
     ModalDrawerSheet {
         Column(Modifier.verticalScroll(rememberScrollState()).padding(vertical = 16.dp)) {
@@ -76,6 +78,15 @@ fun WellioDrawerContent(
             }
             HorizontalDivider(Modifier.padding(vertical = 8.dp, horizontal = 16.dp))
             menuItems.forEach { DrawerItem(it, onItemClick) }
+            onResetClick?.let { reset ->
+                HorizontalDivider(Modifier.padding(vertical = 8.dp, horizontal = 16.dp))
+                NavigationDrawerItem(
+                    label = { Text("Resetar app (teste)", color = MaterialTheme.colorScheme.error) },
+                    selected = false,
+                    onClick = reset,
+                    modifier = Modifier.padding(horizontal = 12.dp)
+                )
+            }
         }
     }
 }

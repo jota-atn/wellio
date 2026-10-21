@@ -19,6 +19,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -317,7 +318,13 @@ private fun WeekRings(state: GoalsUiState, onOpenDay: (LocalDate) -> Unit) {
                             color = colors.onContainer.copy(alpha = if (isToday) 1f else 0.7f)
                         )
                         Spacer(Modifier.height(6.dp))
-                        GoalRings(if (day.future) Rings(0f, 0f, 0f) else day.rings, size = 38.dp, stroke = 4.dp)
+                        GoalRings(
+                            if (day.future) Rings(0f, 0f, 0f) else day.rings,
+                            size = 38.dp,
+                            stroke = 4.dp,
+                            // Dias que ainda não chegaram ficam apagados
+                            modifier = Modifier.alpha(if (day.future) 0.35f else 1f)
+                        )
                         Spacer(Modifier.height(4.dp))
                         Box(Modifier.size(4.dp).clip(CircleShape).background(if (isToday) colors.accent else Color.Transparent))
                     }

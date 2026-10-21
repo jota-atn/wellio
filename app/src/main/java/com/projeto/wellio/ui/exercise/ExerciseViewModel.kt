@@ -78,6 +78,13 @@ class ExerciseViewModel(
         ExerciseUiState(day, today, types, uses, entries, goals, weightKg)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ExerciseUiState(initialDay, initialDay))
 
+    /** A meta do dia foi batida por um registro aqui: comemora se ainda não comemorou hoje. */
+    fun claimCelebration(onCelebrate: () -> Unit) {
+        viewModelScope.launch {
+            if (goalsStore.claimDailyCelebration(uiState.value.today, GoalType.EXERCISE)) onCelebrate()
+        }
+    }
+
     fun selectDay(day: LocalDate) {
         if (canOpen(day, uiState.value.today)) selectedDay.value = day
     }

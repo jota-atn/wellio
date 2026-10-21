@@ -108,6 +108,15 @@ class DashboardViewModel(private val container: AppContainer, handle: SavedState
         if (canOpen(day, uiState.value.today)) selectedDay.value = day
     }
 
+    /** Anéis de hoje fechados por outro lugar (FAB, card): comemora os que ainda não comemoraram (SPEC §9.2). */
+    fun claimCelebrations(closed: List<GoalType>, onCelebrate: (List<GoalType>) -> Unit) {
+        viewModelScope.launch {
+            val today = uiState.value.today
+            val claimed = closed.filter { goalsStore.claimDailyCelebration(today, it) }
+            if (claimed.isNotEmpty()) onCelebrate(claimed)
+        }
+    }
+
     fun saveGoal(type: GoalType, goal: Goal, unit: ExerciseUnit) {
         viewModelScope.launch { goalsStore.saveDaily(type, goal, unit) }
     }

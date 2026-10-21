@@ -1,5 +1,6 @@
 package com.projeto.wellio.ui.goals
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -20,6 +21,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -115,8 +117,8 @@ fun GoalsScreen(
     val scope = rememberCoroutineScope()
     var editing by remember { mutableStateOf<GoalsEditing?>(null) }
     var showingHistory by rememberSaveable { mutableStateOf(false) }
-    // Confete por cima da tela enquanto alguma meta comemora
-    var confetti by remember { mutableIntStateOf(0) }
+    // Comemoração por cima da tela quando uma meta conclui (SPEC §9.2)
+    val celebration = rememberCelebration()
 
     fun deleteWithUndo(goal: PeriodGoal) {
         onDelete(goal)
@@ -172,14 +174,14 @@ fun GoalsScreen(
                 state.weight?.let { weight ->
                     item(key = "periodo-peso") {
                         WeightPeriodCard(weight, onClick = { editing = GoalsEditing.WeightPeriod }, onCelebrate = {
-                            confetti++
+                            celebration.celebrate("Meta de peso concluída!", moduleColor(MetricModule.Weight))
                             onWeightCelebrated()
                         })
                     }
                 }
                 items(state.active, key = { it.goal.id }) { view ->
                     PeriodGoalCard(view, state.today, onClick = { editing = GoalsEditing.Period(view.goal) }, onCelebrate = {
-                        confetti++
+                        celebration.celebrate("Meta concluída: ${view.goal.title}", moduleColor(moduleOf(view.goal.metric)))
                         onCelebrated(view.goal)
                     }, modifier = Modifier.animateItem())
                 }
@@ -208,9 +210,7 @@ fun GoalsScreen(
                 }
             }
         }
-        if (confetti > 0) {
-            Confetti(seed = confetti, modifier = Modifier.fillMaxSize())
-        }
+        CelebrationOverlay(celebration)
     }
 
     when (val current = editing) {
@@ -464,7 +464,15 @@ private fun PeriodGoalCard(view: PeriodGoalView, today: LocalDate, onClick: () -
             onCelebrate()
         }
     }
-    GoalCardFrame(onClick, modifier) {
+    // Comemorando: o cartão pulsa uma vez
+    val pulse = remember(goal.id) { Animatable(1f) }
+    LaunchedEffect(celebrating) {
+        if (celebrating) {
+            pulse.animateTo(1.06f, spring(dampingRatio = 0.4f, stiffness = Spring.StiffnessMedium))
+            pulse.animateTo(1f, spring(dampingRatio = 0.5f, stiffness = Spring.StiffnessLow))
+        }
+    }
+    GoalCardFrame(onClick, modifier.graphicsLayer { scaleX = pulse.value; scaleY = pulse.value }) {
         MetricElement(module, celebrating)
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {

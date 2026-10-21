@@ -81,6 +81,13 @@ class WaterViewModel(
     private var lastQuickAddId: String? = null
 
     /** Toque num recipiente: registra na hora, no dia aberto. */
+    /** A meta do dia foi batida por um registro aqui: comemora se ainda não comemorou hoje. */
+    fun claimCelebration(onCelebrate: () -> Unit) {
+        viewModelScope.launch {
+            if (goalsStore.claimDailyCelebration(uiState.value.today, GoalType.WATER)) onCelebrate()
+        }
+    }
+
     fun quickAdd(container: WaterContainer) {
         val day = selectedDay.value
         val time = LocalTime.now(clock)

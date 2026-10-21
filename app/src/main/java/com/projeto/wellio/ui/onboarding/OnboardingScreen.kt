@@ -29,6 +29,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -63,6 +64,7 @@ import com.projeto.wellio.ui.profile.PhotoCropDialog
 import com.projeto.wellio.ui.profile.ProfileAvatar
 import com.projeto.wellio.ui.profile.ProfileFieldRow
 import com.projeto.wellio.ui.profile.birthFormatter
+import com.projeto.wellio.ui.theme.Navy
 import com.projeto.wellio.ui.theme.NeedleRed
 import com.projeto.wellio.ui.theme.WellioTheme
 import com.projeto.wellio.ui.water.WaterDrop
@@ -114,7 +116,6 @@ fun OnboardingScreen(
     val pager = rememberPagerState { unlocked + 1 }
     val scope = rememberCoroutineScope()
     val step = steps[pager.currentPage]
-    val colors = WellioTheme.colors.base
 
     fun goTo(index: Int) {
         unlocked = maxOf(unlocked, index)
@@ -144,35 +145,20 @@ fun OnboardingScreen(
     }
     BackHandler(enabled = pager.currentPage > 0) { goTo(pager.currentPage - 1) }
 
+    val look = lookOf(step)
+    val buttonColor by animateColorAsState(look.button, label = "botão da etapa")
+    val onButtonColor by animateColorAsState(look.onButton, label = "texto do botão da etapa")
+
     Column(
         Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .systemBarsPadding()
             .imePadding()
     ) {
-        Row(Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (pager.currentPage > 0) {
-                IconButton(onClick = { goTo(pager.currentPage - 1) }) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar")
-                }
-            }
-            Spacer(Modifier.weight(1f))
-            if (step.skippable) {
-                TextButton(onClick = {
-                    if (step == OnboardingStep.Lifestyle) {
-                        onSkipLifestyle()
-                        goTo(OnboardingStep.Goals.ordinal)
-                    } else {
-                        finish(saveGoals = false)
-                    }
-                }) { Text("Pular") }
-            }
-        }
-
-        HorizontalPager(pager, modifier = Modifier.weight(1f).fillMaxWidth(), verticalAlignment = Alignment.Top) { page ->
+        Box(Modifier.weight(1f).fillMaxWidth()) {
+        HorizontalPager(pager, modifier = Modifier.fillMaxSize(), verticalAlignment = Alignment.Top) { page ->
             Column(
-                Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp),
+                Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 when (steps[page]) {
@@ -185,16 +171,39 @@ fun OnboardingScreen(
                 Spacer(Modifier.height(24.dp))
             }
         }
+        // Voltar e Pular ficam fixos sobre a capa
+        Row(
+            Modifier.fillMaxWidth().statusBarsPadding().height(56.dp).padding(horizontal = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (pager.currentPage > 0) {
+                IconButton(onClick = { goTo(pager.currentPage - 1) }) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar", tint = Color.White)
+                }
+            }
+            Spacer(Modifier.weight(1f))
+            if (step.skippable) {
+                TextButton(onClick = {
+                    if (step == OnboardingStep.Lifestyle) {
+                        onSkipLifestyle()
+                        goTo(OnboardingStep.Goals.ordinal)
+                    } else {
+                        finish(saveGoals = false)
+                    }
+                }) { Text("Pular", color = Color.White) }
+            }
+        }
+        }
 
-        Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            StepDots(count = steps.size, current = pager.currentPage)
+        Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            StepDots(count = steps.size, current = pager.currentPage, color = buttonColor)
             Spacer(Modifier.height(16.dp))
             Button(
                 onClick = {
                     if (step == OnboardingStep.Goals) finish(saveGoals = true) else goTo(pager.currentPage + 1)
                 },
                 enabled = draft.canContinue(step),
-                colors = ButtonDefaults.buttonColors(containerColor = colors.container, contentColor = colors.onContainer),
+                colors = ButtonDefaults.buttonColors(containerColor = buttonColor, contentColor = onButtonColor),
                 modifier = Modifier.fillMaxWidth().height(52.dp)
             ) {
                 Text(
@@ -212,8 +221,7 @@ fun OnboardingScreen(
 
 /** Bolinhas de progresso; a atual se alonga. */
 @Composable
-private fun StepDots(count: Int, current: Int) {
-    val colors = WellioTheme.colors.base
+private fun StepDots(count: Int, current: Int, color: Color) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         modifier = Modifier.semantics { contentDescription = "Etapa ${current + 1} de $count" }
@@ -221,7 +229,7 @@ private fun StepDots(count: Int, current: Int) {
         repeat(count) { index ->
             val width by animateDpAsState(if (index == current) 24.dp else 8.dp, label = "bolinha")
             val color by animateColorAsState(
-                if (index <= current) colors.accent else MaterialTheme.colorScheme.outlineVariant,
+                if (index <= current) color else MaterialTheme.colorScheme.outlineVariant,
                 label = "cor da bolinha"
             )
             Box(Modifier.size(width, 8.dp).clip(CircleShape).background(color))
@@ -229,47 +237,80 @@ private fun StepDots(count: Int, current: Int) {
     }
 }
 
-@Composable
-private fun StepTitle(title: String, subtitle: String) {
-    Text(title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-    Spacer(Modifier.height(8.dp))
-    Text(
-        subtitle,
-        style = MaterialTheme.typography.bodyLarge,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        textAlign = TextAlign.Center
+/** Cores de cada etapa (SPEC §5.0): a capa e o botão. */
+private class StepLook(val cover: Brush, val button: Color, val onButton: Color)
+
+private val NavyCover = Brush.verticalGradient(listOf(Navy, Color(0xFF2C3E80)))
+
+private fun lookOf(step: OnboardingStep): StepLook = when (step) {
+    OnboardingStep.Welcome -> StepLook(NavyCover, Color(0xFF8C9EFF), Navy)
+    OnboardingStep.You -> StepLook(Brush.verticalGradient(listOf(Color(0xFF1E4FD8), Color(0xFF3B82F6))), Color(0xFF7AA7FF), Color(0xFF0B1F40))
+    OnboardingStep.Body -> StepLook(NavyCover, Color(0xFF8C9EFF), Navy)
+    OnboardingStep.Lifestyle -> StepLook(Brush.verticalGradient(listOf(Color(0xFFB23C14), Color(0xFFFF8A3D))), Color(0xFFFF8A62), Color(0xFF3A1206))
+    OnboardingStep.Goals -> StepLook(
+        Brush.linearGradient(listOf(Color(0xFF1E4FD8), Color(0xFF2E7D32), Color(0xFFC4471B))),
+        Color(0xFF6FCF7A),
+        Color(0xFF0B2410)
     )
-    Spacer(Modifier.height(24.dp))
+}
+
+/**
+ * Capa da etapa (SPEC §5.0): a cor do assunto até o topo da tela, com a ilustração e o
+ * título grande em branco. Os campos vêm embaixo, em [StepFields].
+ */
+@Composable
+private fun StepCover(step: OnboardingStep, title: String, subtitle: String, illustration: @Composable () -> Unit) {
+    val top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp))
+            .background(lookOf(step).cover)
+            .padding(start = 24.dp, end = 24.dp, top = top + 56.dp, bottom = 28.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        illustration()
+        Spacer(Modifier.height(20.dp))
+        Text(title, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, color = Color.White)
+        Spacer(Modifier.height(8.dp))
+        Text(subtitle, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center, color = Color.White.copy(alpha = 0.88f))
+    }
+    Spacer(Modifier.height(20.dp))
+}
+
+/** Os campos da etapa, com a margem das laterais. */
+@Composable
+private fun StepFields(content: @Composable ColumnScope.() -> Unit) {
+    Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp), horizontalAlignment = Alignment.CenterHorizontally, content = content)
 }
 
 /** Boas-vindas: a gota, a fogueira e a balança juntas. */
 @Composable
 private fun WelcomePage(returning: Boolean) {
-    Spacer(Modifier.height(32.dp))
-    Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.Bottom) {
-        WaterDrop(totalMl = 650, goalMl = 1000, additions = 0, modifier = Modifier.size(width = 88.dp, height = 110.dp))
-        Campfire(total = 3, goal = 5, additions = 0, modifier = Modifier.size(width = 100.dp, height = 120.dp))
-        MiniScale(Modifier.size(88.dp))
-    }
-    Spacer(Modifier.height(40.dp))
-    if (returning) {
-        StepTitle(
-            "Agora o Wellio sabe quem você é",
-            "Complete seu perfil em um minuto e as metas passam a ser do seu tamanho."
-        )
-    } else {
-        StepTitle(
-            "Bem-vindo ao Wellio",
-            "Água, comida, treino e peso num lugar só, com metas do seu tamanho. Bora montar o seu em um minuto."
-        )
+    StepCover(
+        OnboardingStep.Welcome,
+        if (returning) "Agora o Wellio sabe quem você é" else "Bem-vindo ao Wellio",
+        if (returning) "Complete seu perfil em um minuto e as metas passam a ser do seu tamanho."
+        else "Água, comida, treino e peso num lugar só, com metas do seu tamanho. Bora montar o seu em um minuto."
+    ) {
+        Row(
+            Modifier.padding(top = 24.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.Bottom
+        ) {
+            WaterDrop(totalMl = 650, goalMl = 1000, additions = 0, modifier = Modifier.size(width = 88.dp, height = 110.dp))
+            Campfire(total = 3, goal = 5, additions = 0, modifier = Modifier.size(width = 100.dp, height = 120.dp))
+            MiniScale(Modifier.size(88.dp))
+        }
     }
 }
 
-/** A balança em miniatura: base azul-marinho com o visor e a agulha. */
+/** A balança em miniatura: o visor com a agulha numa base clara. */
 @Composable
 private fun MiniScale(modifier: Modifier = Modifier) {
     val colors = WellioTheme.colors.base
-    Box(modifier.clip(RoundedCornerShape(22.dp)).background(colors.container).padding(12.dp)) {
+    // Sobre a capa azul-marinho: base clara para a balança não sumir
+    Box(modifier.clip(RoundedCornerShape(22.dp)).background(Color.White.copy(alpha = 0.16f)).padding(12.dp)) {
         ScaleTape(
             valueKg = 70f,
             tick = colors.onContainer,
@@ -299,13 +340,16 @@ private fun YouPage(
     }
     val pick = { pickPhoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
 
-    Spacer(Modifier.height(16.dp))
+    StepCover(OnboardingStep.You, "Como te chamamos?", "A foto é opcional; dá para trocar depois no perfil.") {
     Box {
         ProfileAvatar(
             photo,
             draft.name,
-            size = 160.dp,
-            modifier = Modifier.clip(CircleShape).clickable(onClickLabel = "Escolher foto", onClick = pick)
+            size = 144.dp,
+            modifier = Modifier
+                .border(4.dp, Color.White, CircleShape)
+                .clip(CircleShape)
+                .clickable(onClickLabel = "Escolher foto", onClick = pick)
         )
         Box(
             Modifier
@@ -313,15 +357,15 @@ private fun YouPage(
                 .size(44.dp)
                 .clip(CircleShape)
                 .background(colors.accent)
-                .border(3.dp, MaterialTheme.colorScheme.background, CircleShape)
+                .border(3.dp, Color.White, CircleShape)
                 .clickable(onClickLabel = "Escolher foto", onClick = pick),
             contentAlignment = Alignment.Center
         ) {
             Icon(painterResource(R.drawable.ic_profile_camera), contentDescription = null, tint = colors.onAccent, modifier = Modifier.size(22.dp))
         }
     }
-    Spacer(Modifier.height(24.dp))
-    StepTitle("Como te chamamos?", "A foto é opcional; dá para trocar depois no perfil.")
+    }
+    StepFields {
     OutlinedTextField(
         value = draft.name,
         onValueChange = { text -> onEdit { it.copy(name = text.take(40)) } },
@@ -330,6 +374,7 @@ private fun YouPage(
         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Done),
         modifier = Modifier.fillMaxWidth()
     )
+    }
 
     cropping?.let { uri ->
         PhotoCropDialog(uri, onDismiss = { cropping = null }, onCropped = {
@@ -347,7 +392,10 @@ private fun BodyPage(draft: OnboardingDraft, today: LocalDate, onEdit: ((Onboard
     val colors = WellioTheme.colors.base
     var editing by remember { mutableStateOf<BodyField?>(null) }
 
-    StepTitle("Seu corpo", "Só o peso é obrigatório; o resto deixa as sugestões mais certeiras.")
+    StepCover(OnboardingStep.Body, "Seu corpo", "Só o peso é obrigatório; o resto deixa as sugestões mais certeiras.") {
+        Icon(painterResource(R.drawable.ic_profile_ruler), contentDescription = null, tint = Color.White, modifier = Modifier.size(56.dp))
+    }
+    StepFields {
     BathroomScale(
         currentKg = draft.weightKg,
         subtitle = if (draft.weightKg == null) "Quanto você pesa hoje?" else "Peso de hoje",
@@ -381,6 +429,7 @@ private fun BodyPage(draft: OnboardingDraft, today: LocalDate, onEdit: ((Onboard
             ProfileFieldRow("Sexo", draft.sex?.label, R.drawable.ic_profile_person) { editing = BodyField.Sex }
             ProfileFieldRow("Altura", draft.heightCm?.let(::formatHeight), R.drawable.ic_profile_ruler) { editing = BodyField.Height }
         }
+    }
     }
 
     when (editing) {
@@ -467,9 +516,10 @@ private fun LifestylePage(draft: OnboardingDraft, onEdit: ((OnboardingDraft) -> 
     var raises by remember { mutableIntStateOf(0) }
     val level = draft.activity?.ordinal?.plus(1) ?: 0
 
-    Campfire(total = level, goal = ActivityLevel.entries.size, additions = raises, modifier = Modifier.size(width = 140.dp, height = 160.dp))
-    Spacer(Modifier.height(16.dp))
-    StepTitle("Seu ritmo", "Quanto você se mexe entra na conta da meta de calorias.")
+    StepCover(OnboardingStep.Lifestyle, "Seu ritmo", "Quanto você se mexe entra na conta da meta de calorias.") {
+        Campfire(total = level, goal = ActivityLevel.entries.size, additions = raises, modifier = Modifier.size(width = 130.dp, height = 150.dp))
+    }
+    StepFields {
     Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surface) {
         Column(Modifier.selectableGroup().padding(vertical = 8.dp)) {
             ActivityLevel.entries.forEach { option ->
@@ -502,6 +552,7 @@ private fun LifestylePage(draft: OnboardingDraft, onEdit: ((OnboardingDraft) -> 
             detail = draft.targetKg?.let { draft.objective.label }
         ) { editingTarget = true }
     }
+    }
 
     if (editingTarget) {
         val current = draft.weightKg ?: DEFAULT_WEIGHT_KG
@@ -528,10 +579,20 @@ private fun LifestylePage(draft: OnboardingDraft, onEdit: ((OnboardingDraft) -> 
 @Composable
 private fun GoalsPage(draft: OnboardingDraft, today: LocalDate, onEdit: ((OnboardingDraft) -> OnboardingDraft) -> Unit) {
     val food = WellioTheme.colors.food
-    StepTitle(
+    StepCover(
+        OnboardingStep.Goals,
         "Suas metas diárias",
         if (draft.returning) "Estas são as suas metas de agora. Ajuste se quiser." else "Já vêm sugeridas pelo que você contou. Ajuste se quiser."
-    )
+    ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(20.dp), verticalAlignment = Alignment.Bottom) {
+            WaterDrop(totalMl = 1, goalMl = 1, additions = 0, modifier = Modifier.size(width = 56.dp, height = 70.dp))
+            Box(Modifier.size(60.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.2f)), contentAlignment = Alignment.Center) {
+                Icon(painterResource(R.drawable.ic_module_food), contentDescription = null, tint = Color.White, modifier = Modifier.size(32.dp))
+            }
+            Campfire(total = 1, goal = 1, additions = 0, modifier = Modifier.size(width = 60.dp, height = 72.dp))
+        }
+    }
+    StepFields {
     GoalStepper(
         title = "Água",
         value = formatMl(draft.waterMl),
@@ -575,6 +636,7 @@ private fun GoalsPage(draft: OnboardingDraft, today: LocalDate, onEdit: ((Onboar
                 )
             }
         }
+    }
     }
 }
 

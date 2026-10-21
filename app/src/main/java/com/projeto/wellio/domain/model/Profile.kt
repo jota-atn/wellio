@@ -29,5 +29,8 @@ data class Profile(
     val sex: Sex? = null,
     val heightCm: Int? = null,
     val activity: ActivityLevel? = null,
-    val onboardingDone: Boolean = false
+    val onboardingDone: Boolean = false,
+    /** Capa do perfil: uma cor do app (nome) ou uma foto (arquivo); nenhuma = azul-marinho. */
+    val coverColor: String? = null,
+    val coverPhoto: String? = null
 )

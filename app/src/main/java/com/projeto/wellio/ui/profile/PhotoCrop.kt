@@ -20,6 +20,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.BlendMode
@@ -45,18 +46,20 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 
-/** Lado do recorte salvo, em pixels. */
-private const val CROP_SIZE = 512
+/** Largura do recorte salvo, em pixels (a foto de perfil é um quadrado de 512). */
+private const val CROP_WIDTH_ROUND = 512
+private const val CROP_WIDTH_WIDE = 1080
 
 /** Maior lado da foto carregada para recortar: o bastante para o recorte, sem pesar na memória. */
 private const val MAX_SOURCE_SIDE = 2048
 
 /**
- * Enquadrar a foto escolhida (SPEC §9.1): a foto atrás de uma máscara circular; arrastar
- * move e pinçar aproxima. Confirmar devolve o quadrado sob o círculo.
+ * Enquadrar a foto escolhida (SPEC §9.1): a foto atrás de uma máscara (círculo para a foto
+ * de perfil; com [aspect] largura/altura maior que 1, uma faixa, para a capa); arrastar move
+ * e pinçar aproxima. Confirmar devolve o que está sob a máscara.
  */
 @Composable
-fun PhotoCropDialog(uri: Uri, onDismiss: () -> Unit, onCropped: (Bitmap) -> Unit) {
+fun PhotoCropDialog(uri: Uri, onDismiss: () -> Unit, onCropped: (Bitmap) -> Unit, aspect: Float = 1f) {
     val context = LocalContext.current
     val source by produceState<Result<Bitmap>?>(null, uri) {
         value = withContext(Dispatchers.IO) { runCatching { loadBitmap(context, uri) } }
@@ -71,29 +74,34 @@ fun PhotoCropDialog(uri: Uri, onDismiss: () -> Unit, onCropped: (Bitmap) -> Unit
                     Text("Não deu para abrir essa foto", color = Color.White)
                     TextButton(onClick = onDismiss) { Text("Voltar") }
                 }
-                else -> Cropper(bitmap, onDismiss, onCropped)
+                else -> Cropper(bitmap, aspect, onDismiss, onCropped)
             }
         }
     }
 }
 
 @Composable
-private fun BoxScope.Cropper(bitmap: Bitmap, onDismiss: () -> Unit, onCropped: (Bitmap) -> Unit) {
+private fun BoxScope.Cropper(bitmap: Bitmap, aspect: Float, onDismiss: () -> Unit, onCropped: (Bitmap) -> Unit) {
+    val round = aspect == 1f
     val density = LocalDensity.current
     val image = remember(bitmap) { bitmap.asImageBitmap() }
     var area by remember { mutableStateOf(IntSize.Zero) }
-    // Zoom do usuário (1 = a foto cobre o círculo) e deslocamento do centro, em pixels de tela
+    // Zoom do usuário (1 = a foto cobre a máscara) e deslocamento do centro, em pixels de tela
     var zoom by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
 
-    val diameter = with(density) { min(area.width, area.height).toFloat() - 48.dp.toPx() }.coerceAtLeast(1f)
-    val baseScale = diameter / min(bitmap.width, bitmap.height)
+    // Tamanho da máscara na tela: o círculo cabe no lado menor; a faixa ocupa a largura
+    val frameWidth = with(density) {
+        (if (round) min(area.width, area.height).toFloat() else area.width.toFloat()) - 48.dp.toPx()
+    }.coerceAtLeast(1f)
+    val frameHeight = frameWidth / aspect
+    val baseScale = max(frameWidth / bitmap.width, frameHeight / bitmap.height)
     val scale = baseScale * zoom
 
-    /** Não deixa sobrar borda dentro do círculo. */
+    /** Não deixa sobrar borda dentro da máscara. */
     fun clamp(o: Offset, s: Float): Offset {
-        val maxX = max(0f, (bitmap.width * s - diameter) / 2)
-        val maxY = max(0f, (bitmap.height * s - diameter) / 2)
+        val maxX = max(0f, (bitmap.width * s - frameWidth) / 2)
+        val maxY = max(0f, (bitmap.height * s - frameHeight) / 2)
         return Offset(o.x.coerceIn(-maxX, maxX), o.y.coerceIn(-maxY, maxY))
     }
 
@@ -101,7 +109,7 @@ private fun BoxScope.Cropper(bitmap: Bitmap, onDismiss: () -> Unit, onCropped: (
         Modifier
             .fillMaxSize()
             .onSizeChanged { area = it }
-            .pointerInput(bitmap, diameter) {
+            .pointerInput(bitmap, frameWidth) {
                 detectTransformGestures { _, pan, gestureZoom, _ ->
                     zoom = (zoom * gestureZoom).coerceIn(1f, 5f)
                     offset = clamp(offset + pan, baseScale * zoom)
@@ -122,11 +130,19 @@ private fun BoxScope.Cropper(bitmap: Bitmap, onDismiss: () -> Unit, onCropped: (
                     translationY = offset.y
                 }
         )
-        // Escurece fora do círculo
+        // Escurece fora da máscara
         Canvas(Modifier.fillMaxSize().graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }) {
             drawRect(Color.Black.copy(alpha = 0.6f))
-            drawCircle(Color.Black, radius = diameter / 2, center = center, blendMode = BlendMode.Clear)
-            drawCircle(Color.White.copy(alpha = 0.8f), radius = diameter / 2, center = center, style = Stroke(1.5.dp.toPx()))
+            if (round) {
+                drawCircle(Color.Black, radius = frameWidth / 2, center = center, blendMode = BlendMode.Clear)
+                drawCircle(Color.White.copy(alpha = 0.8f), radius = frameWidth / 2, center = center, style = Stroke(1.5.dp.toPx()))
+            } else {
+                val topLeft = Offset(center.x - frameWidth / 2, center.y - frameHeight / 2)
+                val frame = Size(frameWidth, frameHeight)
+                val corner = CornerRadius(16.dp.toPx())
+                drawRoundRect(Color.Black, topLeft, frame, corner, blendMode = BlendMode.Clear)
+                drawRoundRect(Color.White.copy(alpha = 0.8f), topLeft, frame, corner, style = Stroke(1.5.dp.toPx()))
+            }
         }
     }
 
@@ -142,21 +158,25 @@ private fun BoxScope.Cropper(bitmap: Bitmap, onDismiss: () -> Unit, onCropped: (
         Spacer(Modifier.weight(1f))
         val colors = WellioTheme.colors.base
         Button(
-            onClick = { onCropped(crop(bitmap, diameter, scale, offset)) },
+            onClick = { onCropped(crop(bitmap, frameWidth, frameHeight, scale, offset, if (round) CROP_WIDTH_ROUND else CROP_WIDTH_WIDE)) },
             colors = ButtonDefaults.buttonColors(containerColor = colors.accent, contentColor = colors.onAccent)
         ) { Text("Confirmar", style = MaterialTheme.typography.labelLarge) }
     }
 }
 
-/** Quadrado da foto sob o círculo de [diameter] (tela), com a foto em [scale] e deslocada de [offset]. */
-private fun crop(bitmap: Bitmap, diameter: Float, scale: Float, offset: Offset): Bitmap {
-    val side = (diameter / scale).roundToInt().coerceIn(1, min(bitmap.width, bitmap.height))
+/**
+ * Parte da foto sob a máscara de [frameWidth] × [frameHeight] (tela), com a foto em [scale] e
+ * deslocada de [offset], salva com [outWidth] de largura.
+ */
+private fun crop(bitmap: Bitmap, frameWidth: Float, frameHeight: Float, scale: Float, offset: Offset, outWidth: Int): Bitmap {
+    val width = (frameWidth / scale).roundToInt().coerceIn(1, bitmap.width)
+    val height = (frameHeight / scale).roundToInt().coerceIn(1, bitmap.height)
     val centerX = bitmap.width / 2f - offset.x / scale
     val centerY = bitmap.height / 2f - offset.y / scale
-    val left = (centerX - side / 2f).roundToInt().coerceIn(0, bitmap.width - side)
-    val top = (centerY - side / 2f).roundToInt().coerceIn(0, bitmap.height - side)
-    val square = Bitmap.createBitmap(bitmap, left, top, side, side)
-    return Bitmap.createScaledBitmap(square, CROP_SIZE, CROP_SIZE, true)
+    val left = (centerX - width / 2f).roundToInt().coerceIn(0, bitmap.width - width)
+    val top = (centerY - height / 2f).roundToInt().coerceIn(0, bitmap.height - height)
+    val part = Bitmap.createBitmap(bitmap, left, top, width, height)
+    return Bitmap.createScaledBitmap(part, outWidth, (outWidth * frameHeight / frameWidth).roundToInt(), true)
 }
 
 /** Lê a foto já reduzida e na orientação certa (o ImageDecoder aplica a rotação da câmera). */

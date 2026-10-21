@@ -39,7 +39,9 @@ class ProfileStoreTest {
             sex = Sex.Male,
             heightCm = 178,
             activity = ActivityLevel.Moderate,
-            onboardingDone = true
+            onboardingDone = true,
+            coverColor = "Orange",
+            coverPhoto = "cover_1.jpg"
         )
 
         store.save(profile)
@@ -66,7 +68,7 @@ class ProfilePhotoStoreTest {
     @Test
     fun `foto nova ganha nome novo e apaga a antiga`() = runTest {
         var clock = 1L
-        val store = ProfilePhotoStore(folder.root) { clock }
+        val store = ProfilePhotoStore(folder.root, now = { clock })
 
         val first = store.save { it.write(byteArrayOf(1)) }
         clock = 2L
@@ -79,11 +81,23 @@ class ProfilePhotoStoreTest {
 
     @Test
     fun `remover apaga a foto`() = runTest {
-        val store = ProfilePhotoStore(folder.root) { 1L }
+        val store = ProfilePhotoStore(folder.root, now = { 1L })
         val name = store.save { it.write(byteArrayOf(1)) }
 
         store.clear()
 
         assertFalse(store.file(name).exists())
+    }
+
+    @Test
+    fun `foto da capa nao apaga a do perfil`() = runTest {
+        val photos = ProfilePhotoStore(folder.root, now = { 1L })
+        val covers = ProfilePhotoStore(folder.root, prefix = "cover", now = { 2L })
+        val photo = photos.save { it.write(byteArrayOf(1)) }
+
+        covers.save { it.write(byteArrayOf(2)) }
+        covers.clear()
+
+        assertTrue(photos.file(photo).exists())
     }
 }

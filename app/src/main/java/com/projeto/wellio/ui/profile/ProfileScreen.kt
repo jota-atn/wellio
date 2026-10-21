@@ -2,6 +2,14 @@ package com.projeto.wellio.ui.profile
 
 import android.graphics.Bitmap
 import android.net.Uri
+import android.graphics.BitmapFactory
+import androidx.compose.foundation.Image
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -80,12 +88,18 @@ fun ProfileRoute(
         onRemovePhoto = viewModel::removePhoto,
         onUseSuggestion = viewModel::useSuggestion,
         onSetTarget = viewModel::setTarget,
-        onClearTarget = viewModel::clearTarget
+        onClearTarget = viewModel::clearTarget,
+        onCoverColor = viewModel::setCoverColor,
+        onCoverPhoto = viewModel::setCoverPhoto,
+        onResetCover = viewModel::resetCover
     )
 }
 
 /** Campo do perfil sendo editado num sheet. */
-private enum class ProfileField { Photo, Name, BirthDate, Sex, Height, Objective, Activity }
+private enum class ProfileField { Photo, Cover, Name, BirthDate, Sex, Height, Objective, Activity }
+
+/** Proporção da foto da capa (largura / altura). */
+private const val COVER_ASPECT = 2.4f
 
 /**
  * Tela de Perfil (SPEC §9.1): a foto e a ficha com idade, IMC e meta sugerida no topo;
@@ -102,7 +116,10 @@ fun ProfileScreen(
     onRemovePhoto: () -> Unit,
     onUseSuggestion: (Int) -> Unit,
     onSetTarget: (Double) -> Unit,
-    onClearTarget: () -> Unit
+    onClearTarget: () -> Unit,
+    onCoverColor: (CoverColor) -> Unit = {},
+    onCoverPhoto: (Bitmap) -> Unit = {},
+    onResetCover: () -> Unit = {}
 ) {
     val profile = state.profile
     val snackbar = remember { SnackbarHostState() }
@@ -111,6 +128,11 @@ fun ProfileScreen(
     var cropping by remember { mutableStateOf<Uri?>(null) }
     val pickPhoto = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) cropping = uri
+    }
+
+    var croppingCover by remember { mutableStateOf<Uri?>(null) }
+    val pickCover = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) croppingCover = uri
     }
 
     fun launchPicker() {
@@ -139,7 +161,8 @@ fun ProfileScreen(
                     state = state,
                     onBack = onBack,
                     onPhotoClick = { if (state.photo == null) launchPicker() else editing = ProfileField.Photo },
-                    onNameClick = { editing = ProfileField.Name }
+                    onNameClick = { editing = ProfileField.Name },
+                    onCoverClick = { editing = ProfileField.Cover }
                 )
             }
             item(key = "ficha") {
@@ -179,6 +202,24 @@ fun ProfileScreen(
             onPick = ::launchPicker,
             onRemove = {
                 onRemovePhoto()
+                editing = null
+            }
+        )
+        ProfileField.Cover -> CoverSheet(
+            selected = CoverColor.of(profile.coverColor),
+            hasPhoto = state.coverPhoto != null,
+            custom = profile.coverColor != null || profile.coverPhoto != null,
+            onDismiss = { editing = null },
+            onColor = {
+                onCoverColor(it)
+                editing = null
+            },
+            onPhoto = {
+                editing = null
+                pickCover.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+            },
+            onReset = {
+                onResetCover()
                 editing = null
             }
         )
@@ -239,6 +280,12 @@ fun ProfileScreen(
             cropping = null
         })
     }
+    croppingCover?.let { uri ->
+        PhotoCropDialog(uri, aspect = COVER_ASPECT, onDismiss = { croppingCover = null }, onCropped = {
+            onCoverPhoto(it)
+            croppingCover = null
+        })
+    }
 }
 
 internal val birthFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
@@ -256,7 +303,13 @@ private val RingWidth = 5.dp
  * tempo a pessoa usa o app.
  */
 @Composable
-private fun ProfileCover(state: ProfileUiState, onBack: () -> Unit, onPhotoClick: () -> Unit, onNameClick: () -> Unit) {
+private fun ProfileCover(
+    state: ProfileUiState,
+    onBack: () -> Unit,
+    onPhotoClick: () -> Unit,
+    onNameClick: () -> Unit,
+    onCoverClick: () -> Unit
+) {
     val colors = WellioTheme.colors.base
     val name = state.profile.name
     val statusBar = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
@@ -267,18 +320,33 @@ private fun ProfileCover(state: ProfileUiState, onBack: () -> Unit, onPhotoClick
                 .fillMaxWidth()
                 .height(statusBar + CoverHeight)
                 .clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp))
-                .background(colors.container)
+                .background(CoverColor.of(state.profile.coverColor).brush)
         ) {
-            CoverWatermark(Modifier.matchParentSize())
+            val coverImage by produceState<ImageBitmap?>(null, state.coverPhoto) {
+                value = state.coverPhoto?.let { file ->
+                    withContext(Dispatchers.IO) { BitmapFactory.decodeFile(file.path)?.asImageBitmap() }
+                }
+            }
+            val image = coverImage
+            if (image != null) {
+                Image(image, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
+                // Escurecido leve para o título e os botões continuarem legíveis
+                Box(Modifier.matchParentSize().background(Color.Black.copy(alpha = 0.35f)))
+            } else {
+                CoverWatermark(Modifier.matchParentSize())
+            }
             IconButton(onClick = onBack, modifier = Modifier.padding(top = statusBar + 4.dp, start = 4.dp)) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar", tint = colors.onContainer)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar", tint = Color.White)
             }
             Text(
                 "Perfil",
                 style = MaterialTheme.typography.titleLarge,
-                color = colors.onContainer,
+                color = Color.White,
                 modifier = Modifier.align(Alignment.TopCenter).padding(top = statusBar + 14.dp)
             )
+            IconButton(onClick = onCoverClick, modifier = Modifier.align(Alignment.TopEnd).padding(top = statusBar + 4.dp, end = 4.dp)) {
+                Icon(Icons.Default.Edit, contentDescription = "Mudar a capa", tint = Color.White)
+            }
         }
         Column(
             Modifier.fillMaxWidth().padding(top = statusBar + CoverHeight - photoBox / 2),
@@ -342,7 +410,7 @@ private fun journeyText(days: Int?, records: Int): String {
 /** Gota, fogueira e balança espalhadas na capa, bem apagadas. */
 @Composable
 private fun CoverWatermark(modifier: Modifier = Modifier) {
-    val tint = WellioTheme.colors.base.onContainer.copy(alpha = 0.08f)
+    val tint = Color.White.copy(alpha = 0.1f)
     BoxWithConstraints(modifier) {
         listOf(
             Triple(R.drawable.ic_module_water, Offset(0.08f, 0.35f), -14f),

@@ -44,6 +44,7 @@ class AppContainer(context: Context) {
     val homeLayoutStore = HomeLayoutStore(context.preferences)
     val profileStore = ProfileStore(context.preferences)
     val profilePhotoStore = ProfilePhotoStore(File(context.filesDir, "profile"))
+    val profileCoverStore = ProfilePhotoStore(File(context.filesDir, "profile"), prefix = "cover")
     val waterRepository = WaterRepository(database.waterDao(), clock)
     val foodRepository = FoodRepository(database.foodDao(), clock)
     val weightRepository = WeightRepository(database.weightDao(), clock)

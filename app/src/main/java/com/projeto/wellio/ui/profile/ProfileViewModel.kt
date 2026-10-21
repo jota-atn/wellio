@@ -42,6 +42,8 @@ data class ProfileUiState(
     val profile: Profile = Profile(),
     /** Recorte salvo da foto, se houver. */
     val photo: File? = null,
+    /** Foto da capa, se houver (senão vale a cor). */
+    val coverPhoto: File? = null,
     /** Pesagem mais recente; null sem pesagens. */
     val weightKg: Double? = null,
     val weightGoal: WeightGoal? = null,
@@ -65,6 +67,7 @@ data class ProfileUiState(
 class ProfileViewModel(
     private val profileStore: ProfileStore,
     private val photoStore: ProfilePhotoStore,
+    private val coverStore: ProfilePhotoStore,
     private val goalsStore: GoalsStore,
     weightRepository: WeightRepository,
     journeyDao: JourneyDao,
@@ -84,6 +87,7 @@ class ProfileViewModel(
             today = today,
             profile = profile,
             photo = profile.photoFile?.let(photoStore::file),
+            coverPhoto = profile.coverPhoto?.let(coverStore::file),
             weightKg = latestWeight(weights)?.weightKg,
             weightGoal = weightGoal,
             foodGoal = goals.food,
@@ -112,6 +116,28 @@ class ProfileViewModel(
         }
     }
 
+    /** Capa numa cor do app: a foto da capa, se houver, sai. */
+    fun setCoverColor(color: CoverColor) {
+        viewModelScope.launch {
+            profileStore.save(uiState.value.profile.copy(coverColor = color.name, coverPhoto = null))
+            coverStore.clear()
+        }
+    }
+
+    fun setCoverPhoto(cropped: Bitmap) {
+        viewModelScope.launch {
+            val name = coverStore.save { cropped.compress(Bitmap.CompressFormat.JPEG, 88, it) }
+            profileStore.save(uiState.value.profile.copy(coverPhoto = name))
+        }
+    }
+
+    fun resetCover() {
+        viewModelScope.launch {
+            profileStore.save(uiState.value.profile.copy(coverColor = null, coverPhoto = null))
+            coverStore.clear()
+        }
+    }
+
     /** "Usar": a sugestão vira a meta diária de kcal; a semanal própria, se houver, fica. */
     fun useSuggestion(kcal: Int) {
         viewModelScope.launch { goalsStore.setGoal(GoalType.FOOD, uiState.value.foodGoal.copy(daily = kcal)) }
@@ -133,6 +159,7 @@ class ProfileViewModel(
                 ProfileViewModel(
                     container.profileStore,
                     container.profilePhotoStore,
+                    container.profileCoverStore,
                     container.goalsStore,
                     container.weightRepository,
                     container.journeyDao,

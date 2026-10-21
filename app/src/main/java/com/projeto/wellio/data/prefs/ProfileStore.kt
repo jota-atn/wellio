@@ -25,7 +25,9 @@ class ProfileStore(private val dataStore: DataStore<Preferences>) {
             sex = Sex.entries.firstOrNull { it.name == prefs[sexKey] },
             heightCm = prefs[heightKey],
             activity = ActivityLevel.entries.firstOrNull { it.name == prefs[activityKey] },
-            onboardingDone = prefs[onboardingKey] ?: false
+            onboardingDone = prefs[onboardingKey] ?: false,
+            coverColor = prefs[coverColorKey],
+            coverPhoto = prefs[coverPhotoKey]
         )
     }
 
@@ -39,6 +41,8 @@ class ProfileStore(private val dataStore: DataStore<Preferences>) {
             prefs.put(heightKey, profile.heightCm)
             prefs.put(activityKey, profile.activity?.name)
             prefs[onboardingKey] = profile.onboardingDone
+            prefs.put(coverColorKey, profile.coverColor)
+            prefs.put(coverPhotoKey, profile.coverPhoto)
         }
     }
 
@@ -53,4 +57,6 @@ class ProfileStore(private val dataStore: DataStore<Preferences>) {
     private val heightKey = intPreferencesKey("profile_height_cm")
     private val activityKey = stringPreferencesKey("profile_activity")
     private val onboardingKey = booleanPreferencesKey("profile_onboarding_done")
+    private val coverColorKey = stringPreferencesKey("profile_cover_color")
+    private val coverPhotoKey = stringPreferencesKey("profile_cover_photo")
 }

@@ -5,6 +5,11 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -40,6 +45,7 @@ import com.projeto.wellio.ui.components.DayPickerDialog
 import com.projeto.wellio.ui.format.formatHeight
 import com.projeto.wellio.ui.format.formatInt
 import com.projeto.wellio.ui.format.formatKg
+import com.projeto.wellio.ui.navigation.LocalNavAnimatedScope
 import com.projeto.wellio.ui.navigation.sharedHero
 import com.projeto.wellio.ui.theme.WellioTheme
 import com.projeto.wellio.ui.weight.TargetSheet
@@ -249,10 +255,12 @@ private fun PhotoHeader(state: ProfileUiState, onPhotoClick: () -> Unit, onNameC
                     .clip(CircleShape)
                     .clickable(onClickLabel = if (state.photo == null) "Escolher foto" else "Trocar foto", onClick = onPhotoClick)
             )
-            // Selo da câmera sobre a borda da foto
+            // Selo da câmera sobre a borda da foto; chegando pela sidebar, só aparece depois
+            // que a foto pousa (durante o voo ela fica por cima de tudo e o cobriria)
             Box(
                 Modifier
                     .align(Alignment.BottomEnd)
+                    .popInAfterArrival()
                     .size(40.dp)
                     .clip(CircleShape)
                     .background(colors.accent)
@@ -386,6 +394,19 @@ fun ProfileFieldRow(label: String, value: String?, onClick: () -> Unit) {
             Icons.AutoMirrored.Filled.KeyboardArrowRight,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+/** Surge com uma mola depois da transição da tela (nada fora do NavHost, como nas prévias). */
+@Composable
+private fun Modifier.popInAfterArrival(): Modifier {
+    val animated = LocalNavAnimatedScope.current ?: return this
+    return with(animated) {
+        this@popInAfterArrival.animateEnterExit(
+            enter = fadeIn(tween(durationMillis = 120, delayMillis = 380)) +
+                scaleIn(tween(durationMillis = 260, delayMillis = 380, easing = FastOutSlowInEasing), initialScale = 0.3f),
+            exit = ExitTransition.None
         )
     }
 }

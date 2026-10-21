@@ -28,6 +28,13 @@ val LocalSharedTransitionScope = compositionLocalOf<SharedTransitionScope?> { nu
 /** A animação da tela atual no NavHost (entrando ou saindo). */
 val LocalNavAnimatedScope = compositionLocalOf<AnimatedVisibilityScope?> { null }
 
+/**
+ * A sidebar está aparecendo (mesmo que só um pedaço, no começo do arrasto). Durante a
+ * transição, o card e os elementos que voam são desenhados numa camada por cima de tudo;
+ * com a sidebar à vista, eles passam a ser desenhados no lugar, por baixo dela.
+ */
+val LocalDrawerVisible = compositionLocalOf { false }
+
 /** Desliga a transformação (ex.: prévias do catálogo, que não podem disputar a chave com o card da Home). */
 val LocalCardTransitionEnabled = compositionLocalOf { true }
 
@@ -56,6 +63,7 @@ fun Modifier.sharedContainer(key: String, shape: Shape, enabled: Boolean = true,
             enter = if (screen) fadeIn(tween(durationMillis = 260, delayMillis = 60)) else fadeIn(tween(durationMillis = 200)),
             exit = if (screen) fadeOut(tween(durationMillis = 200)) else fadeOut(tween(durationMillis = 380)),
             boundsTransform = GrowSpring,
+            renderInOverlayDuringTransition = !LocalDrawerVisible.current,
             resizeMode = if (screen) {
                 SharedTransitionScope.ResizeMode.scaleToBounds(contentScale = ContentScale.None, alignment = Alignment.TopCenter)
             } else {
@@ -77,7 +85,8 @@ fun Modifier.sharedHero(key: String, enabled: Boolean = true): Modifier {
         this@sharedHero.sharedElement(
             sharedContentState = rememberSharedContentState(key),
             animatedVisibilityScope = animated,
-            boundsTransform = GrowSpring
+            boundsTransform = GrowSpring,
+            renderInOverlayDuringTransition = !LocalDrawerVisible.current
         )
     }
 }

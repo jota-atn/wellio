@@ -29,9 +29,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.material3.TextButton
@@ -61,7 +63,6 @@ import com.projeto.wellio.ui.exercise.ExerciseRoute
 import com.projeto.wellio.ui.home.HomeRoute
 import com.projeto.wellio.ui.water.WaterRoute
 import com.projeto.wellio.ui.weight.WeightRoute
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 @Composable
@@ -116,15 +117,30 @@ fun WellioNavHost() {
         watcher.events.collect { celebration.celebrate(it.message, it.color) }
     }
 
+    // A sidebar à vista, nem que seja um pedaço no começo do arrasto: o card que estiver
+    // voltando para a Home passa a ser desenhado por baixo dela (SharedTransitions.kt).
+    // A posição de fechada é a menor já vista (a sidebar fora da tela, à esquerda).
+    val closedOffset = remember { mutableFloatStateOf(Float.NaN) }
+    LaunchedEffect(drawerState) {
+        snapshotFlow { drawerState.currentOffset }.collect { offset ->
+            if (!offset.isNaN() && (closedOffset.floatValue.isNaN() || offset < closedOffset.floatValue)) closedOffset.floatValue = offset
+        }
+    }
+    val drawerVisible by remember {
+        derivedStateOf {
+            val offset = drawerState.currentOffset
+            val closed = closedOffset.floatValue
+            !offset.isNaN() && !closed.isNaN() && offset > closed + 1f
+        }
+    }
+
     Box(Modifier.fillMaxSize()) {
     // A sidebar fica dentro da camada de transição para a foto dela voar até o Perfil
     SharedTransitionLayout {
-    CompositionLocalProvider(LocalSharedTransitionScope provides this) {
+    CompositionLocalProvider(LocalSharedTransitionScope provides this, LocalDrawerVisible provides drawerVisible) {
     ModalNavigationDrawer(
         drawerState = drawerState,
-        // Durante a transição de um card ele é desenhado por cima de tudo, inclusive da
-        // sidebar: o gesto só volta a abrir a sidebar quando ela termina
-        gesturesEnabled = (!homeEditing && !isTransitionActive) || drawerState.isOpen,
+        gesturesEnabled = !homeEditing || drawerState.isOpen,
         drawerContent = {
             WellioDrawerContent(
                 profile = profile,
@@ -167,14 +183,7 @@ fun WellioNavHost() {
             ) {
                 NavScope {
                 HomeRoute(
-                    onMenuClick = {
-                        scope.launch {
-                            // O card que está voltando é desenhado por cima de tudo, inclusive da
-                            // sidebar: ela só abre quando a transição termina (dura menos de 0,5 s)
-                            snapshotFlow { isTransitionActive }.first { !it }
-                            drawerState.open()
-                        }
-                    },
+                    onMenuClick = { scope.launch { drawerState.open() } },
                     onOpenModule = { module ->
                         // Pelo card: o card vira a tela (SPEC §2.9)
                         navController.navigate(module.destination(fromCard = true) ?: ComingSoonDestination(module.title))

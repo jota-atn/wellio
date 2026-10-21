@@ -8,6 +8,7 @@ import com.projeto.wellio.data.prefs.GoalsStore
 import com.projeto.wellio.data.prefs.HomeLayoutStore
 import com.projeto.wellio.data.prefs.ProfilePhotoStore
 import com.projeto.wellio.data.prefs.ProfileStore
+import com.projeto.wellio.data.prefs.SettingsStore
 import com.projeto.wellio.data.repository.ExerciseRepository
 import com.projeto.wellio.data.repository.FoodRepository
 import com.projeto.wellio.data.repository.GoalRepository
@@ -45,6 +46,7 @@ class AppContainer(context: Context) {
     val journeyDao = database.journeyDao()
     val goalsStore = GoalsStore(context.preferences, onDailyGoalsChanged = goalRepository::recordDaily)
     val homeLayoutStore = HomeLayoutStore(context.preferences)
+    val settingsStore = SettingsStore(context.preferences)
     val profileStore = ProfileStore(context.preferences)
     val profilePhotoStore = ProfilePhotoStore(File(context.filesDir, "profile"))
     val profileCoverStore = ProfilePhotoStore(File(context.filesDir, "profile"), prefix = "cover")
